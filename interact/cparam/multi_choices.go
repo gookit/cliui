@@ -1,7 +1,7 @@
 package cparam
 
 import (
-	"github.com/gookit/gcli/v3/interact"
+	"github.com/gookit/cliui/interact"
 	"github.com/gookit/goutil/errorx"
 )
 

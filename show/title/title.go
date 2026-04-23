@@ -4,9 +4,9 @@ import (
 	"strings"
 
 	"github.com/gookit/color"
-	"github.com/gookit/gcli/v3/gclicom"
-	"github.com/gookit/gcli/v3/show/showcom"
-	"github.com/gookit/gcli/v3/show/symbols"
+	"github.com/gookit/cliui/gclicom"
+	"github.com/gookit/cliui/show/showcom"
+	"github.com/gookit/cliui/show/symbols"
 	"github.com/gookit/goutil/comdef"
 	"github.com/gookit/goutil/strutil"
 )

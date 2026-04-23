@@ -6,7 +6,7 @@ import (
 	"io"
 
 	"github.com/gookit/color"
-	"github.com/gookit/gcli/v3/gclicom"
+	"github.com/gookit/cliui/gclicom"
 	"github.com/gookit/goutil/strutil"
 )
 

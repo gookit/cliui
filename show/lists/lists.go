@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"reflect"
 
-	"github.com/gookit/gcli/v3/show/showcom"
+	"github.com/gookit/cliui/show/showcom"
 	"github.com/gookit/goutil/reflects"
 	"github.com/gookit/goutil/structs"
 )

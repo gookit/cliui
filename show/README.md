@@ -17,12 +17,12 @@ contains `section, panel, padding, helpPanel, table, tree, title, list, multiLis
 
 ## GoDoc
 
-Please see https://pkg.go.dev/github.com/gookit/gcli/v3/show
+Please see https://pkg.go.dev/github.com/gookit/cliui/show
 
 ## Install
 
 ```shell
-go get github.com/gookit/gcli/v3/show
+go get github.com/gookit/cliui/show
 ```
 
 ## Develop

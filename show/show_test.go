@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/gookit/gcli/v3/show"
-	"github.com/gookit/gcli/v3/show/lists"
+	"github.com/gookit/cliui/show"
+	"github.com/gookit/cliui/show/lists"
 	"github.com/gookit/goutil/testutil/assert"
 )
 

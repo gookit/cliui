@@ -3,8 +3,8 @@ package interact_test
 import (
 	"testing"
 
-	"github.com/gookit/gcli/v3/interact"
-	"github.com/gookit/gcli/v3/interact/cparam"
+	"github.com/gookit/cliui/interact"
+	"github.com/gookit/cliui/interact/cparam"
 	"github.com/gookit/goutil/testutil/assert"
 )
 

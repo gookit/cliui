@@ -4,7 +4,7 @@ import (
 	"reflect"
 
 	"github.com/gookit/color"
-	"github.com/gookit/gcli/v3/show/showcom"
+	"github.com/gookit/cliui/show/showcom"
 	"github.com/gookit/goutil/arrutil"
 	"github.com/gookit/goutil/maputil"
 	"github.com/gookit/goutil/strutil"

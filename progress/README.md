@@ -10,12 +10,12 @@ Package progress provide terminal progress bar display. Such as: `Txt`, `Bar`, `
 
 ## GoDoc
 
-Please see https://pkg.go.dev/github.com/gookit/gcli/v3/progress
+Please see https://pkg.go.dev/github.com/gookit/cliui/progress
 
 ## Install
 
 ```bash
-go get github.com/gookit/gcli/v3/progress
+go get github.com/gookit/cliui/progress
 ```
 
 ## Usage
@@ -28,7 +28,7 @@ package main
 import (
 	"time"
 
-	"github.com/gookit/gcli/v3/progress"
+	"github.com/gookit/cliui/progress"
 )
 
 func main()  {
@@ -46,15 +46,7 @@ func main()  {
 }
 ```
 
-> More demos please see [progress_demo.go](../_examples/cmd/progress_demo.go)
-
-run demos:
-
-```bash
-go run ./_examples/cliapp.go prog txt
-go run ./_examples/cliapp.go prog bar
-go run ./_examples/cliapp.go prog roundTrip
-```
+See package tests and exported constructors for more usage patterns.
 
 ## Progress Bar
 
@@ -91,7 +83,7 @@ Examples:
 
 ```go
 package main
-import "github.com/gookit/gcli/v3/progress"
+import "github.com/gookit/cliui/progress"
 
 // CustomBar create custom progress bar
 func main() {

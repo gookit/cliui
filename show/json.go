@@ -1,6 +1,6 @@
 package show
 
-import "github.com/gookit/gcli/v3/show/showcom"
+import "github.com/gookit/cliui/show/showcom"
 
 // PrettyJSON struct
 type PrettyJSON struct {

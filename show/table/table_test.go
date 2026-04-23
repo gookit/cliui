@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gookit/gcli/v3/show/table"
+	"github.com/gookit/cliui/show/table"
 	"github.com/gookit/goutil/testutil/assert"
 	"github.com/gookit/goutil/x/ccolor"
 )

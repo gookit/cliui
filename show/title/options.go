@@ -1,7 +1,7 @@
 package title
 
 import (
-	"github.com/gookit/gcli/v3/gclicom"
+	"github.com/gookit/cliui/gclicom"
 	"github.com/gookit/goutil/comdef"
 )
 

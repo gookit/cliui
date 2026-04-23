@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gookit/gcli/v3/show/banner"
-	"github.com/gookit/gcli/v3/show/showcom"
+	"github.com/gookit/cliui/show/banner"
+	"github.com/gookit/cliui/show/showcom"
 	"github.com/gookit/goutil/comdef"
 	"github.com/gookit/goutil/envutil"
 	"github.com/gookit/goutil/testutil"

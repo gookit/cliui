@@ -14,12 +14,12 @@ command-line interactive util methods
 
 ## GoDoc
 
-Please see https://pkg.go.dev/github.com/gookit/gcli/v3/interact
+Please see https://pkg.go.dev/github.com/gookit/cliui/interact
 
 ## Install
 
 ```shell
-go get github.com/gookit/gcli/v3/interact
+go get github.com/gookit/cliui/interact
 ```
 
 ## Select & Choice
@@ -34,7 +34,7 @@ import (
 	"os/exec"
 
 	"github.com/gookit/color"
-	"github.com/gookit/gcli/v3/interact"
+	"github.com/gookit/cliui/interact"
 )
 
 func main() {

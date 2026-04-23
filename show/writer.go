@@ -3,7 +3,7 @@ package show
 import (
 	"io"
 
-	"github.com/gookit/gcli/v3/gclicom"
+	"github.com/gookit/cliui/gclicom"
 )
 
 // Writer definition
