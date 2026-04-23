@@ -2,11 +2,11 @@
 
 `cliui` is a terminal UI helper module extracted from `gookit/gcli`.
 
-It focuses on three areas for CLI applications:
+It focuses on three core areas for CLI applications:
 
-- `show`: structured terminal output helpers such as table, title, banner and json
-- `progress`: progress bar and loading display helpers
-- `interact`: interactive input, select, confirm and prompt helpers
+- `show`: structured terminal output helpers
+- `interact`: interactive input helpers
+- `progress`: progress and loading display helpers
 
 ## Install
 
@@ -22,26 +22,51 @@ go get github.com/gookit/cliui/progress
 go get github.com/gookit/cliui/interact
 ```
 
-## Packages
+## Package Overview
 
-- `github.com/gookit/cliui/show`
-- `github.com/gookit/cliui/progress`
-- `github.com/gookit/cliui/interact`
+### `show`
 
-## Status
+Provides structured terminal output helpers for displaying formatted content in CLI applications. It includes components such as table, title, banner, list, alert and JSON output.
 
-This repository was split from `gookit/gcli` and keeps the related package history.
-The first step keeps the package layout stable for easier migration from:
+Import:
 
-- `github.com/gookit/gcli/v3/show`
-- `github.com/gookit/gcli/v3/progress`
-- `github.com/gookit/gcli/v3/interact`
+```go
+github.com/gookit/cliui/show
+```
 
-to:
+Details: [show/README.md](show/README.md)
 
-- `github.com/gookit/cliui/show`
-- `github.com/gookit/cliui/progress`
-- `github.com/gookit/cliui/interact`
+### `interact`
+
+Provides interactive input helpers for CLI programs. It supports prompt, confirm, question, select, multi-select, password input and other common terminal interaction patterns.
+
+Import:
+
+```go
+github.com/gookit/cliui/interact
+```
+
+Details: [interact/README.md](interact/README.md)
+
+### `progress`
+
+Provides progress and loading display helpers for long-running tasks. It includes progress bars, text bars, spinner/loading indicators, counters and dynamic text output.
+
+Import:
+
+```go
+github.com/gookit/cliui/progress
+```
+
+Details: [progress/README.md](progress/README.md)
+
+## Migration
+
+If you are migrating from `gookit/gcli/v3`, the corresponding package paths are:
+
+- `github.com/gookit/gcli/v3/show` -> `github.com/gookit/cliui/show`
+- `github.com/gookit/gcli/v3/interact` -> `github.com/gookit/cliui/interact`
+- `github.com/gookit/gcli/v3/progress` -> `github.com/gookit/cliui/progress`
 
 ## Development
 

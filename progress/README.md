@@ -1,16 +1,18 @@
-# Progress Display
+# progress
 
-Package progress provide terminal progress bar display. Such as: `Txt`, `Bar`, `Loading`, `RoundTrip`, `DynamicText` ...
+`progress` provides terminal progress and loading display helpers.
+
+It supports progress output patterns such as `Txt`, `Bar`, `Loading`, `RoundTrip` and `DynamicText`.
 
 - progress bar
 - text progress bar
 - pending/loading progress bar
 - counter
-- dynamic Text
+- dynamic text
 
-## GoDoc
+## Documentation
 
-Please see https://pkg.go.dev/github.com/gookit/cliui/progress
+- GoDoc: https://pkg.go.dev/github.com/gookit/cliui/progress
 
 ## Install
 
@@ -18,9 +20,9 @@ Please see https://pkg.go.dev/github.com/gookit/cliui/progress
 go get github.com/gookit/cliui/progress
 ```
 
-## Usage
+## Quick Example
 
-Examples:
+Basic usage:
 
 ```go
 package main
@@ -31,7 +33,7 @@ import (
 	"github.com/gookit/cliui/progress"
 )
 
-func main()  {
+func main() {
 	speed := 100
 	maxSteps := 110
 	p := progress.Bar(maxSteps)
@@ -64,7 +66,7 @@ See package tests and exported constructors for more usage patterns.
 
 ### Custom Progress Bar
 
-Allow you custom progress bar render format. There are internal format for Progress
+You can customize the progress bar render format. Built-in formats include:
 
 ```go
 // txt bar
@@ -79,29 +81,34 @@ DefBarFormat  = "{@bar} {@percent:4s}%({@current}/{@max}){@message}"
 FullBarFormat = "{@bar} {@percent:4s}%({@current}/{@max}) {@elapsed:7s}/{@estimated:-7s} {@memory:6s}"
 ```
 
-Examples:
+Example:
 
 ```go
 package main
-import "github.com/gookit/cliui/progress"
+
+import (
+	"time"
+
+	"github.com/gookit/cliui/progress"
+)
 
 // CustomBar create custom progress bar
 func main() {
-    maxSteps := 100
+	maxSteps := 100
 	// use special bar style: [==============>-------------]
 	// barStyle := progress.BarStyles[0]
 	// use random bar style
 	barStyle := progress.RandomBarStyle()
 
-	p: = progress.New(maxSteps).
-	Config(func(p *Progress) {
+	p := progress.New(maxSteps)
+	p.Config(func(p *progress.Progress) {
 		p.Format = progress.DefBarFormat
-	}).
-	AddWidget("bar", progress.BarWidget(60, barStyle))
+	})
+	p.AddWidget("bar", progress.BarWidget(60, barStyle))
 
 	p.Start()
 
-	for i := 0; i < maxStep; i++ {
+	for i := 0; i < maxSteps; i++ {
 		time.Sleep(80 * time.Millisecond)
 		p.Advance()
 	}

@@ -1,6 +1,8 @@
-# Interactive
+# interact
 
-command-line interactive util methods
+`interact` provides command-line interactive input helpers.
+
+It includes common terminal interaction methods such as:
 
 - `ReadInput`
 - `ReadLine`
@@ -12,9 +14,9 @@ command-line interactive util methods
 - `MultiSelect/Checkbox`
 - `ReadPassword`
 
-## GoDoc
+## Documentation
 
-Please see https://pkg.go.dev/github.com/gookit/cliui/interact
+- GoDoc: https://pkg.go.dev/github.com/gookit/cliui/interact
 
 ## Install
 
@@ -22,16 +24,15 @@ Please see https://pkg.go.dev/github.com/gookit/cliui/interact
 go get github.com/gookit/cliui/interact
 ```
 
-## Select & Choice
+## Quick Example
 
-Usage:
+Select and choice usage:
 
 ```go
 package main
 
 import (
 	"fmt"
-	"os/exec"
 
 	"github.com/gookit/color"
 	"github.com/gookit/cliui/interact"
@@ -77,7 +78,7 @@ Preview:
 
 ![](images/select.png)
 
-## Refers
+## Related
 
 - https://github.com/manifoldco/promptui
 - https://github.com/chzyer/readline

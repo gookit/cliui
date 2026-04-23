@@ -1,6 +1,8 @@
-# Show data
+# show
 
-contains `section, panel, padding, helpPanel, table, tree, title, list, multiList`
+`show` provides structured terminal output helpers for CLI applications.
+
+It is designed for rendering readable terminal content such as:
 
 - banner
 - title
@@ -10,14 +12,13 @@ contains `section, panel, padding, helpPanel, table, tree, title, list, multiLis
 - padding
 - list
 - multi list
-- alert(block)
-
+- alert block
 - markdown
-- json
+- JSON
 
-## GoDoc
+## Documentation
 
-Please see https://pkg.go.dev/github.com/gookit/cliui/show
+- GoDoc: https://pkg.go.dev/github.com/gookit/cliui/show
 
 ## Install
 
@@ -25,7 +26,11 @@ Please see https://pkg.go.dev/github.com/gookit/cliui/show
 go get github.com/gookit/cliui/show
 ```
 
-## Develop
+## Usage
+
+See package tests and exported APIs for usage examples.
+
+## Development
 
 Testing:
 
