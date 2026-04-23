@@ -7,6 +7,7 @@
 *.test
 *.out
 coverage.out
+.xenv.toml
 
 # IDE files
 .idea/

@@ -3,10 +3,10 @@ package title
 import (
 	"strings"
 
-	"github.com/gookit/color"
-	"github.com/gookit/cliui/gclicom"
+	"github.com/gookit/cliui/cutypes"
 	"github.com/gookit/cliui/show/showcom"
 	"github.com/gookit/cliui/show/symbols"
+	"github.com/gookit/color"
 	"github.com/gookit/goutil/comdef"
 	"github.com/gookit/goutil/strutil"
 )
@@ -16,7 +16,7 @@ type Title struct {
 	showcom.Base
 	Options
 	Prefix string
-	Title string
+	Title  string
 }
 
 // New Title instance
@@ -32,7 +32,7 @@ func New(title string, fns ...OptionFunc) *Title {
 			// Border
 			ShowBorder: false,
 			BorderChar: '-',
-			BorderPos:  gclicom.BorderPosBottom,
+			BorderPos:  cutypes.BorderPosBottom,
 			// Padding
 			PaddingLR: true,
 		},
@@ -111,11 +111,11 @@ func (t *Title) renderWithBorder(content string, width int) string {
 
 	// 根据边框位置添加边框
 	switch t.BorderPos {
-	case gclicom.BorderPosTop:
+	case cutypes.BorderPosTop:
 		return borderLine + "\n" + content
-	case gclicom.BorderPosBottom:
+	case cutypes.BorderPosBottom:
 		return content + "\n" + borderLine
-	case gclicom.BorderPosTB: // Top & Bottom
+	case cutypes.BorderPosTB: // Top & Bottom
 		return borderLine + "\n" + content + "\n" + borderLine
 	default:
 		return content

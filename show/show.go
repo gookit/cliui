@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"text/tabwriter"
 
-	"github.com/gookit/cliui/gclicom"
+	"github.com/gookit/cliui/cutypes"
 	"github.com/gookit/cliui/show/banner"
 	"github.com/gookit/cliui/show/lists"
 	"github.com/gookit/cliui/show/showcom"
@@ -46,7 +46,7 @@ func JSON(v any, prefixAndIndent ...string) int {
 		panic(err)
 	}
 
-	_, _ = fmt.Fprintln(gclicom.Output, string(bs))
+	_, _ = fmt.Fprintln(cutypes.Output, string(bs))
 	return OK
 }
 
@@ -110,7 +110,7 @@ func Banner(content any, fns ...banner.OptionFunc) {
 //	})
 //	w.Flush()
 func TabWriter(rows []string) *tabwriter.Writer {
-	w := tabwriter.NewWriter(gclicom.Output, 0, 4, 2, ' ', tabwriter.Debug)
+	w := tabwriter.NewWriter(cutypes.Output, 0, 4, 2, ' ', tabwriter.Debug)
 
 	for _, row := range rows {
 		if _, err := fmt.Fprintln(w, row); err != nil {

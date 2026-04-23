@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/gookit/cliui/cutypes"
 	"github.com/gookit/color"
-	"github.com/gookit/cliui/gclicom"
 	"github.com/gookit/goutil/strutil"
 )
 
@@ -121,7 +121,7 @@ func (b *Base) WriteTo(w io.Writer) (int64, error) {
 // Print formatted message
 func (b *Base) Print() {
 	if b.Out == nil {
-		b.Out = gclicom.Output
+		b.Out = cutypes.Output
 	}
 
 	// call format

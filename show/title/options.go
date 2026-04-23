@@ -1,7 +1,7 @@
 package title
 
 import (
-	"github.com/gookit/cliui/gclicom"
+	"github.com/gookit/cliui/cutypes"
 	"github.com/gookit/goutil/comdef"
 )
 
@@ -18,12 +18,12 @@ type Options struct {
 	ShowBorder bool
 	BorderChar rune
 	// BorderPos 边框位置 0: 无, 1: 上, 2: 下, 4: 上下
-	BorderPos gclicom.BorderPos
+	BorderPos cutypes.BorderPos
 
 	// 总的显示宽度
-	Width int
+	Width  int
 	Indent int
-	Align comdef.Align
+	Align  comdef.Align
 }
 
 // OptionFunc definition
@@ -33,7 +33,7 @@ type OptionFunc func(t *Title)
 func WithBorderTop() OptionFunc {
 	return func(t *Title) {
 		t.ShowBorder = true
-		t.BorderPos = gclicom.BorderPosTop
+		t.BorderPos = cutypes.BorderPosTop
 	}
 }
 
@@ -41,7 +41,7 @@ func WithBorderTop() OptionFunc {
 func WithBorderBottom() OptionFunc {
 	return func(t *Title) {
 		t.ShowBorder = true
-		t.BorderPos = gclicom.BorderPosBottom
+		t.BorderPos = cutypes.BorderPosBottom
 	}
 }
 
@@ -49,7 +49,7 @@ func WithBorderBottom() OptionFunc {
 func WithBorderBoth() OptionFunc {
 	return func(t *Title) {
 		t.ShowBorder = true
-		t.BorderPos = gclicom.BorderPosTB
+		t.BorderPos = cutypes.BorderPosTB
 	}
 }
 

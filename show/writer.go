@@ -3,7 +3,7 @@ package show
 import (
 	"io"
 
-	"github.com/gookit/cliui/gclicom"
+	"github.com/gookit/cliui/cutypes"
 )
 
 // Writer definition
@@ -15,7 +15,7 @@ type Writer struct {
 // NewWriter create a new writer
 func NewWriter(output io.Writer) *Writer {
 	if output == nil {
-		output = gclicom.Output
+		output = cutypes.Output
 	}
 
 	return &Writer{

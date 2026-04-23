@@ -3,7 +3,7 @@ package alert
 import (
 	"fmt"
 
-	"github.com/gookit/cliui/gclicom"
+	"github.com/gookit/cliui/cutypes"
 	"github.com/gookit/goutil/x/ccolor"
 )
 
@@ -32,13 +32,13 @@ var (
 // Error tips message print
 func Error(format string, v ...any) int {
 	prefix := ccolor.Red.Sprint("ERROR: ")
-	_, _ = fmt.Fprintf(gclicom.Output, prefix+format+"\n", v...)
+	_, _ = fmt.Fprintf(cutypes.Output, prefix+format+"\n", v...)
 	return 1
 }
 
 // Success tips message print
 func Success(format string, v ...any) int {
 	prefix := ccolor.Green.Sprint("SUCCESS: ")
-	_, _ = fmt.Fprintf(gclicom.Output, prefix+format+"\n", v...)
+	_, _ = fmt.Fprintf(cutypes.Output, prefix+format+"\n", v...)
 	return 0
 }
