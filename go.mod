@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	github.com/gookit/color v1.6.0
-	github.com/gookit/goutil v0.7.3
+	github.com/gookit/goutil v0.7.4
 	golang.org/x/crypto v0.33.0
 )
 
