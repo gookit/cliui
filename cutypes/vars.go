@@ -1,5 +1,5 @@
-// Package gclicom provides common types, definitions for gcli
-package gclicom
+// Package cutypes provides common types, definitions for cliui
+package cutypes
 
 import (
 	"io"

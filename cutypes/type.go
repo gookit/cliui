@@ -1,4 +1,4 @@
-package gclicom
+package cutypes
 
 type TextPos uint8
 
