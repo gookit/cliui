@@ -6,6 +6,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/gookit/cliui/interact/backend"
+	"github.com/gookit/cliui/interact/backend/fake"
 	"github.com/gookit/cliui/interact/backend/plain"
 	"github.com/gookit/goutil/testutil/assert"
 )
@@ -111,6 +113,23 @@ func TestConfirm_RunWithDefault(t *testing.T) {
 	is.True(got)
 }
 
+func TestConfirm_RunWithFakeEvents(t *testing.T) {
+	is := assert.New(t)
+
+	be := fake.New(
+		backend.Event{Type: backend.EventKey, Key: backend.KeyRight},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyEnter},
+	)
+
+	cfm := NewConfirm("Continue", true)
+	got, err := cfm.Run(context.Background(), be)
+	is.Nil(err)
+	is.False(got)
+
+	session := be.LastSession()
+	is.True(len(session.Views()) > 0)
+}
+
 func TestSelect_RunWithIO(t *testing.T) {
 	is := assert.New(t)
 
@@ -204,4 +223,44 @@ func TestMultiSelect_RunWithMinSelected(t *testing.T) {
 	is.Nil(err)
 	is.Len(got.Keys, 2)
 	is.Contains(out.String(), "select at least 2 option(s)")
+}
+
+func TestSelect_RunWithFakeEvents(t *testing.T) {
+	is := assert.New(t)
+
+	be := fake.New(
+		backend.Event{Type: backend.EventKey, Key: backend.KeyDown},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyEnter},
+	)
+
+	sel := NewSelect("Choose", []Item{
+		{Key: "a", Label: "Alpha", Value: "alpha"},
+		{Key: "b", Label: "Beta", Value: "beta"},
+	})
+
+	got, err := sel.Run(context.Background(), be)
+	is.Nil(err)
+	is.Eq("b", got.Key)
+}
+
+func TestMultiSelect_RunWithFakeEvents(t *testing.T) {
+	is := assert.New(t)
+
+	be := fake.New(
+		backend.Event{Type: backend.EventKey, Key: backend.KeySpace},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyDown},
+		backend.Event{Type: backend.EventKey, Key: backend.KeySpace},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyEnter},
+	)
+
+	sel := NewMultiSelect("Choose", []Item{
+		{Key: "a", Label: "Alpha", Value: "alpha"},
+		{Key: "b", Label: "Beta", Value: "beta"},
+		{Key: "c", Label: "Gamma", Value: "gamma"},
+	})
+
+	got, err := sel.Run(context.Background(), be)
+	is.Nil(err)
+	is.Len(got.Keys, 2)
+	is.Eq("a", got.Key)
 }

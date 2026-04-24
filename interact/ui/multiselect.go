@@ -36,8 +36,10 @@ func (c *MultiSelect) RunWithIO(ctx context.Context, be backend.Backend, in io.R
 			return nil, err
 		}
 
+		cursor := c.defaultIndex()
+		selected := c.defaultSelected()
 		for {
-			if err := session.Render(c.view("")); err != nil {
+			if err := session.Render(c.view(cursor, selected, "")); err != nil {
 				return nil, err
 			}
 
@@ -50,10 +52,51 @@ func (c *MultiSelect) RunWithIO(ctx context.Context, be backend.Backend, in io.R
 				return nil, ErrAborted
 			}
 
+			switch ev.Key {
+			case backend.KeyUp:
+				cursor = c.move(cursor, -1)
+				continue
+			case backend.KeyDown:
+				cursor = c.move(cursor, 1)
+				continue
+			case backend.KeySpace:
+				item := c.Items[cursor]
+				if item.Disabled {
+					if err := session.Render(c.view(cursor, selected, "selected option is disabled")); err != nil {
+						return nil, err
+					}
+					continue
+				}
+				if _, ok := selected[item.Key]; ok {
+					delete(selected, item.Key)
+				} else {
+					selected[item.Key] = item
+				}
+				continue
+			case backend.KeyEnter:
+				if strings.TrimSpace(ev.Text) == "" {
+					result := c.resultFromSelected(selected)
+					if len(result.Keys) == 0 {
+						if err := session.Render(c.view(cursor, selected, "at least one option is required")); err != nil {
+							return nil, err
+						}
+						continue
+					}
+					if len(result.Keys) < c.MinSelected {
+						msg := fmt.Sprintf("select at least %d option(s)", c.MinSelected)
+						if err := session.Render(c.view(cursor, selected, msg)); err != nil {
+							return nil, err
+						}
+						continue
+					}
+					return result, nil
+				}
+			}
+
 			raw := strings.TrimSpace(ev.Text)
 			keys := c.parseKeys(raw)
 			if len(keys) == 0 {
-				if err := session.Render(c.view("at least one option is required")); err != nil {
+				if err := session.Render(c.view(cursor, selected, "at least one option is required")); err != nil {
 					return nil, err
 				}
 				continue
@@ -61,7 +104,7 @@ func (c *MultiSelect) RunWithIO(ctx context.Context, be backend.Backend, in io.R
 
 			result, errMsg := c.resolve(keys)
 			if errMsg != "" {
-				if err := session.Render(c.view(errMsg)); err != nil {
+				if err := session.Render(c.view(cursor, selected, errMsg)); err != nil {
 					return nil, err
 				}
 				continue
@@ -69,7 +112,7 @@ func (c *MultiSelect) RunWithIO(ctx context.Context, be backend.Backend, in io.R
 
 			if len(result.Keys) < c.MinSelected {
 				msg := fmt.Sprintf("select at least %d option(s)", c.MinSelected)
-				if err := session.Render(c.view(msg)); err != nil {
+				if err := session.Render(c.view(cursor, selected, msg)); err != nil {
 					return nil, err
 				}
 				continue
@@ -159,10 +202,75 @@ func (c *MultiSelect) findItem(key string) (Item, bool) {
 	return Item{}, false
 }
 
-func (c *MultiSelect) view(errMsg string) backend.View {
-	lines := []string{c.Prompt}
+func (c *MultiSelect) defaultIndex() int {
+	for i, item := range c.Items {
+		if !item.Disabled {
+			return i
+		}
+	}
+	return 0
+}
+
+func (c *MultiSelect) defaultSelected() map[string]Item {
+	selected := make(map[string]Item, len(c.DefaultKeys))
+	for _, key := range c.DefaultKeys {
+		item, ok := c.findItem(key)
+		if ok && !item.Disabled {
+			selected[key] = item
+		}
+	}
+	return selected
+}
+
+func (c *MultiSelect) move(cursor, delta int) int {
+	if len(c.Items) == 0 {
+		return 0
+	}
+
+	next := cursor
+	for range c.Items {
+		next = (next + delta + len(c.Items)) % len(c.Items)
+		if !c.Items[next].Disabled {
+			return next
+		}
+	}
+
+	return cursor
+}
+
+func (c *MultiSelect) resultFromSelected(selected map[string]Item) *Result {
+	res := &Result{}
 	for _, item := range c.Items {
-		line := fmt.Sprintf("  %s) %s", item.Key, item.Label)
+		if _, ok := selected[item.Key]; !ok {
+			continue
+		}
+
+		res.Keys = append(res.Keys, item.Key)
+		res.Values = append(res.Values, item.Value)
+	}
+
+	if len(res.Keys) > 0 {
+		res.Key = res.Keys[0]
+		res.Value = res.Values[0]
+	}
+
+	return res
+}
+
+func (c *MultiSelect) view(cursor int, selected map[string]Item, errMsg string) backend.View {
+	lines := []string{c.Prompt}
+	for i, item := range c.Items {
+		cursorPrefix := " "
+		if i == cursor {
+			cursorPrefix = ">"
+		}
+
+		check := "[ ]"
+		if _, ok := selected[item.Key]; ok {
+			check = "[x]"
+		}
+
+		line := fmt.Sprintf("%s %s %s) %s", cursorPrefix, check, item.Key, item.Label)
 		if item.Disabled {
 			line += " [disabled]"
 		}

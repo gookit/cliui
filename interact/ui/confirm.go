@@ -32,8 +32,9 @@ func (c *Confirm) RunWithIO(ctx context.Context, be backend.Backend, in io.Reade
 			return false, err
 		}
 
+		current := c.Default
 		for {
-			if err := session.Render(c.view("")); err != nil {
+			if err := session.Render(c.view(current, "")); err != nil {
 				return false, err
 			}
 
@@ -46,16 +47,33 @@ func (c *Confirm) RunWithIO(ctx context.Context, be backend.Backend, in io.Reade
 				return false, ErrAborted
 			}
 
+			switch ev.Key {
+			case backend.KeyLeft:
+				current = true
+				continue
+			case backend.KeyRight:
+				current = false
+				continue
+			case backend.KeyY:
+				return true, nil
+			case backend.KeyN:
+				return false, nil
+			case backend.KeyEnter:
+				if strings.TrimSpace(ev.Text) == "" {
+					return current, nil
+				}
+			}
+
 			text := strings.ToLower(strings.TrimSpace(ev.Text))
 			switch text {
 			case "":
-				return c.Default, nil
+				return current, nil
 			case "y", "yes":
 				return true, nil
 			case "n", "no":
 				return false, nil
 			default:
-				if err := session.Render(c.view("please input yes or no")); err != nil {
+				if err := session.Render(c.view(current, "please input yes or no")); err != nil {
 					return false, err
 				}
 			}
@@ -74,14 +92,19 @@ func (c *Confirm) ValidateConfig() error {
 	return nil
 }
 
-func (c *Confirm) view(errMsg string) backend.View {
+func (c *Confirm) view(current bool, errMsg string) backend.View {
 	defVal := "no"
 	if c.Default {
 		defVal = "yes"
 	}
 
 	line := fmt.Sprintf("%s [yes/no] (default: %s):", c.Prompt, defVal)
-	view := backend.View{Lines: []string{line}}
+	curr := "Current: no"
+	if current {
+		curr = "Current: yes"
+	}
+
+	view := backend.View{Lines: []string{line, curr}}
 	if errMsg != "" {
 		view.Lines = append(view.Lines, "Error: "+errMsg)
 	}

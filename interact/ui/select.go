@@ -35,8 +35,9 @@ func (c *Select) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader
 			return nil, err
 		}
 
+		cursor := c.defaultIndex()
 		for {
-			if err := session.Render(c.view("")); err != nil {
+			if err := session.Render(c.view(cursor, "")); err != nil {
 				return nil, err
 			}
 
@@ -49,6 +50,26 @@ func (c *Select) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader
 				return nil, ErrAborted
 			}
 
+			switch ev.Key {
+			case backend.KeyUp:
+				cursor = c.move(cursor, -1)
+				continue
+			case backend.KeyDown:
+				cursor = c.move(cursor, 1)
+				continue
+			case backend.KeyEnter:
+				if strings.TrimSpace(ev.Text) == "" {
+					item := c.Items[cursor]
+					if item.Disabled {
+						if err := session.Render(c.view(cursor, "selected option is disabled")); err != nil {
+							return nil, err
+						}
+						continue
+					}
+					return singleResult(item), nil
+				}
+			}
+
 			key := strings.TrimSpace(ev.Text)
 			if key == "" {
 				key = c.DefaultKey
@@ -56,26 +77,19 @@ func (c *Select) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader
 
 			item, ok := c.findItem(key)
 			if !ok {
-				if err := session.Render(c.view("unknown option")); err != nil {
+				if err := session.Render(c.view(cursor, "unknown option")); err != nil {
 					return nil, err
 				}
 				continue
 			}
 			if item.Disabled {
-				if err := session.Render(c.view("selected option is disabled")); err != nil {
+				if err := session.Render(c.view(cursor, "selected option is disabled")); err != nil {
 					return nil, err
 				}
 				continue
 			}
 
-			return &Result{
-				Key:   item.Key,
-				Keys:  []string{item.Key},
-				Value: item.Value,
-				Values: []any{
-					item.Value,
-				},
-			}, nil
+			return singleResult(item), nil
 		}
 	})
 }
@@ -103,10 +117,49 @@ func (c *Select) findItem(key string) (Item, bool) {
 	return Item{}, false
 }
 
-func (c *Select) view(errMsg string) backend.View {
+func (c *Select) defaultIndex() int {
+	if c.DefaultKey != "" {
+		for i, item := range c.Items {
+			if item.Key == c.DefaultKey {
+				return i
+			}
+		}
+	}
+
+	for i, item := range c.Items {
+		if !item.Disabled {
+			return i
+		}
+	}
+
+	return 0
+}
+
+func (c *Select) move(cursor, delta int) int {
+	if len(c.Items) == 0 {
+		return 0
+	}
+
+	next := cursor
+	for range c.Items {
+		next = (next + delta + len(c.Items)) % len(c.Items)
+		if !c.Items[next].Disabled {
+			return next
+		}
+	}
+
+	return cursor
+}
+
+func (c *Select) view(cursor int, errMsg string) backend.View {
 	lines := []string{c.Prompt}
-	for _, item := range c.Items {
-		line := fmt.Sprintf("  %s) %s", item.Key, item.Label)
+	for i, item := range c.Items {
+		prefix := " "
+		if i == cursor {
+			prefix = ">"
+		}
+
+		line := fmt.Sprintf("%s %s) %s", prefix, item.Key, item.Label)
 		if item.Disabled {
 			line += " [disabled]"
 		}
@@ -125,4 +178,15 @@ func (c *Select) view(errMsg string) backend.View {
 	}
 
 	return backend.View{Lines: lines}
+}
+
+func singleResult(item Item) *Result {
+	return &Result{
+		Key:   item.Key,
+		Keys:  []string{item.Key},
+		Value: item.Value,
+		Values: []any{
+			item.Value,
+		},
+	}
 }
