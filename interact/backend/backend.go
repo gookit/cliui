@@ -54,6 +54,8 @@ const (
 	KeyBackspace Key = "backspace"
 	KeyDelete    Key = "delete"
 	KeyCtrlC     Key = "ctrl+c"
+	KeyCtrlA     Key = "ctrl+a"
+	KeyCtrlE     Key = "ctrl+e"
 	KeyY         Key = "y"
 	KeyN         Key = "n"
 )

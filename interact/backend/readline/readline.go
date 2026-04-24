@@ -121,8 +121,12 @@ func (s *Session) ReadEvent(ctx context.Context) (backend.Event, error) {
 	}
 
 	switch b {
+	case 1:
+		return backend.Event{Type: backend.EventKey, Key: backend.KeyCtrlA}, nil
 	case 3:
 		return backend.Event{Type: backend.EventInterrupt, Key: backend.KeyCtrlC}, nil
+	case 5:
+		return backend.Event{Type: backend.EventKey, Key: backend.KeyCtrlE}, nil
 	case 13:
 		return backend.Event{Type: backend.EventKey, Key: backend.KeyEnter}, nil
 	case 27:
