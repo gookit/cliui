@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -14,7 +15,15 @@ func newSession(be backend.Backend, in io.Reader, out io.Writer) (backend.Sessio
 		return nil, fmt.Errorf("%w: nil backend", ErrInvalidState)
 	}
 
-	return be.NewSession(in, out)
+	session, err := be.NewSession(in, out)
+	if err != nil {
+		if errors.Is(err, backend.ErrTTYRequired) {
+			return nil, fmt.Errorf("%w: %v", ErrNoTTY, err)
+		}
+		return nil, err
+	}
+
+	return session, nil
 }
 
 func runWithSession[T any](

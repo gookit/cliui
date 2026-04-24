@@ -10,26 +10,43 @@ import (
 	"strings"
 
 	"github.com/gookit/cliui/interact/backend"
+	"github.com/gookit/cliui/interact/backend/plain"
 	"golang.org/x/term"
 )
 
 // Backend creates raw-terminal sessions backed by golang.org/x/term.
-type Backend struct{}
+type Backend struct {
+	// Fallback is used when input is not a real terminal stream.
+	Fallback backend.Backend
+	// StrictTTY disables fallback and returns a TTY-related error instead.
+	StrictTTY bool
+}
 
 // New creates a readline backend.
 func New() *Backend {
-	return &Backend{}
+	return &Backend{Fallback: plain.New()}
+}
+
+// NewStrict creates a readline backend that fails when a TTY is unavailable.
+func NewStrict() *Backend {
+	return &Backend{StrictTTY: true}
 }
 
 // NewSession creates a new raw-terminal session.
 func (b *Backend) NewSession(in io.Reader, out io.Writer) (backend.Session, error) {
 	file, ok := in.(*os.File)
 	if !ok {
-		return nil, fmt.Errorf("readline backend requires *os.File input")
+		if !b.StrictTTY && b.Fallback != nil {
+			return b.Fallback.NewSession(in, out)
+		}
+		return nil, fmt.Errorf("%w: readline backend requires *os.File input", backend.ErrFileRequired)
 	}
 
 	if !term.IsTerminal(int(file.Fd())) {
-		return nil, fmt.Errorf("readline backend requires a terminal input")
+		if !b.StrictTTY && b.Fallback != nil {
+			return b.Fallback.NewSession(in, out)
+		}
+		return nil, fmt.Errorf("%w: readline backend requires a terminal input", backend.ErrTTYRequired)
 	}
 
 	state, err := term.MakeRaw(int(file.Fd()))

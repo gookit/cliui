@@ -3,7 +3,15 @@ package backend
 
 import (
 	"context"
+	"errors"
 	"io"
+)
+
+var (
+	// ErrFileRequired indicates the backend requires an *os.File input.
+	ErrFileRequired = errors.New("interact/backend: file input required")
+	// ErrTTYRequired indicates the backend requires a terminal input stream.
+	ErrTTYRequired = errors.New("interact/backend: tty required")
 )
 
 // Backend creates a terminal interaction session.
