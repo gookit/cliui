@@ -159,6 +159,14 @@ func main() {
 - `ErrAborted` is returned when the current interaction is canceled.
 - `Select` and `MultiSelect` support disabled items and default values.
 
+## Demo
+
+Run the interactive demo command:
+
+```bash
+go run ./examples/interact-ui-demo
+```
+
 ## Next Step
 
 The current abstraction is ready for richer event-driven backends and more advanced line editing behavior without changing the `ui` package surface.
