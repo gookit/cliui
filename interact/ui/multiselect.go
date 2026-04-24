@@ -277,6 +277,9 @@ func (c *MultiSelect) view(cursor int, selected map[string]Item, errMsg string) 
 		lines = append(lines, line)
 	}
 
+	hint := "Use Up/Down to move, Space to toggle, Enter to confirm"
+	lines = append(lines, hint)
+
 	prompt := "Your choices(comma separated)"
 	if len(c.DefaultKeys) > 0 {
 		prompt += fmt.Sprintf(" [default:%s]", strings.Join(c.DefaultKeys, ","))
@@ -288,5 +291,9 @@ func (c *MultiSelect) view(cursor int, selected map[string]Item, errMsg string) 
 		lines = append(lines, "Error: "+errMsg)
 	}
 
-	return backend.View{Lines: lines}
+	return backend.View{
+		Lines:        lines,
+		CursorRow:    len(c.Items) + 2,
+		CursorColumn: len(prompt),
+	}
 }

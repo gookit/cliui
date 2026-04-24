@@ -284,6 +284,11 @@ func TestSelect_RunWithFakeEvents(t *testing.T) {
 	got, err := sel.Run(context.Background(), be)
 	is.Nil(err)
 	is.Eq("b", got.Key)
+
+	session := be.LastSession()
+	views := session.Views()
+	is.True(len(views) > 0)
+	is.Contains(views[len(views)-1].Lines[len(views[len(views)-1].Lines)-2], "Use Up/Down")
 }
 
 func TestMultiSelect_RunWithFakeEvents(t *testing.T) {
@@ -306,4 +311,9 @@ func TestMultiSelect_RunWithFakeEvents(t *testing.T) {
 	is.Nil(err)
 	is.Len(got.Keys, 2)
 	is.Eq("a", got.Key)
+
+	session := be.LastSession()
+	views := session.Views()
+	is.True(len(views) > 0)
+	is.Contains(views[len(views)-1].Lines[len(views[len(views)-1].Lines)-2], "Space to toggle")
 }

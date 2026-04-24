@@ -166,6 +166,9 @@ func (c *Select) view(cursor int, errMsg string) backend.View {
 		lines = append(lines, line)
 	}
 
+	hint := "Use Up/Down to move, Enter to confirm, or input item key"
+	lines = append(lines, hint)
+
 	prompt := "Your choice"
 	if c.DefaultKey != "" {
 		prompt += fmt.Sprintf(" [default:%s]", c.DefaultKey)
@@ -177,7 +180,11 @@ func (c *Select) view(cursor int, errMsg string) backend.View {
 		lines = append(lines, "Error: "+errMsg)
 	}
 
-	return backend.View{Lines: lines}
+	return backend.View{
+		Lines:        lines,
+		CursorRow:    len(c.Items) + 2,
+		CursorColumn: len(prompt),
+	}
 }
 
 func singleResult(item Item) *Result {
