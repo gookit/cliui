@@ -75,6 +75,17 @@ func (s *Session) Render(view backend.View) error {
 		}
 	}
 
+	if view.CursorRow >= 0 && view.CursorRow < len(view.Lines) {
+		moveUp := len(view.Lines) - 1 - view.CursorRow
+		if moveUp > 0 {
+			fmt.Fprintf(s.out, "\x1B[%dA", moveUp)
+		}
+		fmt.Fprint(s.out, "\r")
+		if view.CursorColumn > 0 {
+			fmt.Fprintf(s.out, "\x1B[%dC", view.CursorColumn)
+		}
+	}
+
 	s.rendered = len(view.Lines)
 	return nil
 }

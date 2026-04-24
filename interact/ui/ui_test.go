@@ -107,6 +107,28 @@ func TestInput_RunWithFakeEvents(t *testing.T) {
 	is.True(len(session.Views()) > 0)
 }
 
+func TestInput_RunWithFakeCursorMove(t *testing.T) {
+	is := assert.New(t)
+
+	be := fake.New(
+		backend.Event{Type: backend.EventKey, Text: "a"},
+		backend.Event{Type: backend.EventKey, Text: "c"},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyLeft},
+		backend.Event{Type: backend.EventKey, Text: "b"},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyEnter},
+	)
+
+	ipt := NewInput("Your name")
+	got, err := ipt.Run(context.Background(), be)
+	is.Nil(err)
+	is.Eq("abc", got)
+
+	session := be.LastSession()
+	views := session.Views()
+	is.True(len(views) > 0)
+	is.Eq(1, views[len(views)-1].CursorRow)
+}
+
 func TestConfirm_RunWithIO(t *testing.T) {
 	is := assert.New(t)
 

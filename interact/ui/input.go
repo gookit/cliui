@@ -34,8 +34,9 @@ func (c *Input) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader,
 		}
 
 		buf := ""
+		cursor := 0
 		for {
-			if err := session.Render(c.view(buf, "")); err != nil {
+			if err := session.Render(c.view(buf, cursor, "")); err != nil {
 				return "", err
 			}
 
@@ -49,9 +50,20 @@ func (c *Input) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader,
 			}
 
 			switch ev.Key {
+			case backend.KeyLeft:
+				if cursor > 0 {
+					cursor--
+				}
+				continue
+			case backend.KeyRight:
+				if cursor < len(buf) {
+					cursor++
+				}
+				continue
 			case backend.KeyBackspace:
-				if len(buf) > 0 {
-					buf = buf[:len(buf)-1]
+				if cursor > 0 && len(buf) > 0 {
+					buf = buf[:cursor-1] + buf[cursor:]
+					cursor--
 				}
 				continue
 			case backend.KeyEnter:
@@ -66,7 +78,7 @@ func (c *Input) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader,
 
 				if c.Validate != nil {
 					if err := c.Validate(val); err != nil {
-						if renderErr := session.Render(c.view(buf, err.Error())); renderErr != nil {
+						if renderErr := session.Render(c.view(buf, cursor, err.Error())); renderErr != nil {
 							return "", renderErr
 						}
 						continue
@@ -77,7 +89,12 @@ func (c *Input) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader,
 			}
 
 			if ev.Text != "" {
-				buf += ev.Text
+				if cursor >= len(buf) {
+					buf += ev.Text
+				} else {
+					buf = buf[:cursor] + ev.Text + buf[cursor:]
+				}
+				cursor += len(ev.Text)
 				continue
 			}
 
@@ -88,7 +105,7 @@ func (c *Input) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader,
 
 			if c.Validate != nil {
 				if err := c.Validate(val); err != nil {
-					if renderErr := session.Render(c.view(buf, err.Error())); renderErr != nil {
+					if renderErr := session.Render(c.view(buf, cursor, err.Error())); renderErr != nil {
 						return "", renderErr
 					}
 					continue
@@ -111,7 +128,7 @@ func (c *Input) ValidateConfig() error {
 	return nil
 }
 
-func (c *Input) view(current string, errMsg string) backend.View {
+func (c *Input) view(current string, cursor int, errMsg string) backend.View {
 	line := c.Prompt
 	if c.Default != "" {
 		line += fmt.Sprintf(" [%s]", c.Default)
@@ -119,12 +136,14 @@ func (c *Input) view(current string, errMsg string) backend.View {
 	line += ":"
 
 	view := backend.View{Lines: []string{line}}
-	if current != "" {
-		view.Lines = append(view.Lines, "Current: "+current)
-	}
+	editLine := "Current: " + current
+	view.Lines = append(view.Lines, editLine)
 	if errMsg != "" {
 		view.Lines = append(view.Lines, "Error: "+errMsg)
 	}
+
+	view.CursorRow = 1
+	view.CursorColumn = len("Current: ") + cursor
 
 	return view
 }
