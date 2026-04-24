@@ -34,6 +34,15 @@ go get github.com/gookit/cliui/interact
 - `readline.New()` falls back to `plain` on non-TTY input
 - details: [ui/README.md](ui/README.md)
 
+Bridge helpers are also available from the `interact` package:
+
+- `NewUIInput`
+- `NewUIConfirm`
+- `NewUISelect`
+- `NewUIMultiSelect`
+- `NewUIPlainBackend`
+- `NewUIReadlineBackend`
+
 ## Quick Example
 
 Select and choice usage:
