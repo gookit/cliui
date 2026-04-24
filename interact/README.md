@@ -24,6 +24,14 @@ It includes common terminal interaction methods such as:
 go get github.com/gookit/cliui/interact
 ```
 
+## New UI Layer
+
+`interact/ui` is a new abstraction layer for backend-driven interaction components.
+
+- package: `github.com/gookit/cliui/interact/ui`
+- current backend: `github.com/gookit/cliui/interact/backend/plain`
+- details: [ui/README.md](ui/README.md)
+
 ## Quick Example
 
 Select and choice usage:
