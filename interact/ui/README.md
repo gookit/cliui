@@ -224,6 +224,14 @@ go run ./examples/interact-ui-demo
 
 If you run it in a non-TTY environment, `readline.New()` will fall back to the `plain` backend automatically.
 
+## Example Test
+
+Run the package examples, including the `readline` fallback example:
+
+```bash
+go test ./interact/ui -run Example -v
+```
+
 ## Next Step
 
 The current abstraction is ready for richer event-driven backends and more advanced line editing behavior without changing the `ui` package surface.
