@@ -209,7 +209,7 @@ func main() {
 
 For the current `readline` backend:
 
-- `Input`: type to insert, `Left/Right` to move, `Home/End` or `Ctrl+A/Ctrl+E` to jump, `Backspace/Delete` to edit, `Enter` to submit
+- `Input`: type to insert, `Left/Right` to move, `Home/End` or `Ctrl+A/Ctrl+E` to jump, `Backspace/Delete` to edit, `Ctrl+U/Ctrl+K` to clear around cursor, `Enter` to submit
 - `Confirm`: `Left/Right` to switch, `y/n` to choose, `Enter` to submit current value
 - `Select`: `Up/Down` to move, `Enter` to confirm, or type item key directly
 - `MultiSelect`: `Up/Down` to move, `Space` to toggle, `Enter` to confirm
