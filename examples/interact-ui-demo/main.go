@@ -11,6 +11,7 @@ import (
 
 func main() {
 	ctx := context.Background()
+	// readline.New() falls back to the plain backend when stdin is not a TTY.
 	be := readline.New()
 
 	nameInput := ui.NewInput("Your name")

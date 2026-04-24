@@ -154,6 +154,9 @@ func main() {
 
 Use `readline` backend when you want event-driven interaction on a real terminal.
 
+`readline.New()` will fall back to the `plain` backend automatically when stdin is not a TTY.
+If you want strict TTY-only behavior, use `readline.NewStrict()`.
+
 ```go
 package main
 
@@ -196,6 +199,7 @@ func main() {
 
 - `plain` backend uses line-based input and works with ordinary stdin/stdout streams.
 - `readline` backend uses raw terminal input and supports arrow keys, space, enter, esc and ctrl+c.
+- `readline.New()` falls back to `plain` when a real terminal is unavailable.
 - `Select` uses single-key selection by item key.
 - `MultiSelect` uses comma-separated item keys.
 - `ErrAborted` is returned when the current interaction is canceled.
@@ -217,6 +221,8 @@ Run the interactive demo command:
 ```bash
 go run ./examples/interact-ui-demo
 ```
+
+If you run it in a non-TTY environment, `readline.New()` will fall back to the `plain` backend automatically.
 
 ## Next Step
 
