@@ -126,18 +126,43 @@ func (s *Session) ReadEvent(ctx context.Context) (backend.Event, error) {
 	case 13:
 		return backend.Event{Type: backend.EventKey, Key: backend.KeyEnter}, nil
 	case 27:
-		next, err := s.in.Peek(2)
+		next, err := s.in.Peek(3)
 		if err == nil && len(next) >= 2 && next[0] == '[' {
-			_, _ = s.in.Discard(2)
+			// CSI sequences
 			switch next[1] {
 			case 'A':
+				_, _ = s.in.Discard(2)
 				return backend.Event{Type: backend.EventKey, Key: backend.KeyUp}, nil
 			case 'B':
+				_, _ = s.in.Discard(2)
 				return backend.Event{Type: backend.EventKey, Key: backend.KeyDown}, nil
 			case 'C':
+				_, _ = s.in.Discard(2)
 				return backend.Event{Type: backend.EventKey, Key: backend.KeyRight}, nil
 			case 'D':
+				_, _ = s.in.Discard(2)
 				return backend.Event{Type: backend.EventKey, Key: backend.KeyLeft}, nil
+			case 'H':
+				_, _ = s.in.Discard(2)
+				return backend.Event{Type: backend.EventKey, Key: backend.KeyHome}, nil
+			case 'F':
+				_, _ = s.in.Discard(2)
+				return backend.Event{Type: backend.EventKey, Key: backend.KeyEnd}, nil
+			case '3':
+				if len(next) >= 3 && next[2] == '~' {
+					_, _ = s.in.Discard(3)
+					return backend.Event{Type: backend.EventKey, Key: backend.KeyDelete}, nil
+				}
+			case '1':
+				if len(next) >= 3 && next[2] == '~' {
+					_, _ = s.in.Discard(3)
+					return backend.Event{Type: backend.EventKey, Key: backend.KeyHome}, nil
+				}
+			case '4':
+				if len(next) >= 3 && next[2] == '~' {
+					_, _ = s.in.Discard(3)
+					return backend.Event{Type: backend.EventKey, Key: backend.KeyEnd}, nil
+				}
 			}
 		}
 		return backend.Event{Type: backend.EventInterrupt, Key: backend.KeyEsc}, nil

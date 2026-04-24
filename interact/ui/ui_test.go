@@ -129,6 +129,29 @@ func TestInput_RunWithFakeCursorMove(t *testing.T) {
 	is.Eq(1, views[len(views)-1].CursorRow)
 }
 
+func TestInput_RunWithFakeHomeEndDelete(t *testing.T) {
+	is := assert.New(t)
+
+	be := fake.New(
+		backend.Event{Type: backend.EventKey, Text: "a"},
+		backend.Event{Type: backend.EventKey, Text: "b"},
+		backend.Event{Type: backend.EventKey, Text: "d"},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyLeft},
+		backend.Event{Type: backend.EventKey, Text: "c"},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyHome},
+		backend.Event{Type: backend.EventKey, Text: "X"},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyDelete},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyEnd},
+		backend.Event{Type: backend.EventKey, Text: "Z"},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyEnter},
+	)
+
+	ipt := NewInput("Edit")
+	got, err := ipt.Run(context.Background(), be)
+	is.Nil(err)
+	is.Eq("XbcdZ", got)
+}
+
 func TestConfirm_RunWithIO(t *testing.T) {
 	is := assert.New(t)
 

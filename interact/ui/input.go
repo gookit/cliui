@@ -60,10 +60,21 @@ func (c *Input) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader,
 					cursor++
 				}
 				continue
+			case backend.KeyHome:
+				cursor = 0
+				continue
+			case backend.KeyEnd:
+				cursor = len(buf)
+				continue
 			case backend.KeyBackspace:
 				if cursor > 0 && len(buf) > 0 {
 					buf = buf[:cursor-1] + buf[cursor:]
 					cursor--
+				}
+				continue
+			case backend.KeyDelete:
+				if cursor < len(buf) && len(buf) > 0 {
+					buf = buf[:cursor] + buf[cursor+1:]
 				}
 				continue
 			case backend.KeyEnter:
