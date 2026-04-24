@@ -86,6 +86,27 @@ func TestInput_RunWithDefault(t *testing.T) {
 	is.Eq("guest", got)
 }
 
+func TestInput_RunWithFakeEvents(t *testing.T) {
+	is := assert.New(t)
+
+	be := fake.New(
+		backend.Event{Type: backend.EventKey, Text: "t"},
+		backend.Event{Type: backend.EventKey, Text: "o"},
+		backend.Event{Type: backend.EventKey, Text: "m"},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyBackspace},
+		backend.Event{Type: backend.EventKey, Text: "n"},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyEnter},
+	)
+
+	ipt := NewInput("Your name")
+	got, err := ipt.Run(context.Background(), be)
+	is.Nil(err)
+	is.Eq("ton", got)
+
+	session := be.LastSession()
+	is.True(len(session.Views()) > 0)
+}
+
 func TestConfirm_RunWithIO(t *testing.T) {
 	is := assert.New(t)
 

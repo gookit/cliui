@@ -33,8 +33,9 @@ func (c *Input) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader,
 			return "", err
 		}
 
+		buf := ""
 		for {
-			if err := session.Render(c.view("")); err != nil {
+			if err := session.Render(c.view(buf, "")); err != nil {
 				return "", err
 			}
 
@@ -47,6 +48,39 @@ func (c *Input) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader,
 				return "", ErrAborted
 			}
 
+			switch ev.Key {
+			case backend.KeyBackspace:
+				if len(buf) > 0 {
+					buf = buf[:len(buf)-1]
+				}
+				continue
+			case backend.KeyEnter:
+				val := strings.TrimSpace(ev.Text)
+				// event-driven backend submits current buffer on enter.
+				if val == "" && buf != "" {
+					val = buf
+				}
+				if val == "" {
+					val = c.Default
+				}
+
+				if c.Validate != nil {
+					if err := c.Validate(val); err != nil {
+						if renderErr := session.Render(c.view(buf, err.Error())); renderErr != nil {
+							return "", renderErr
+						}
+						continue
+					}
+				}
+
+				return val, nil
+			}
+
+			if ev.Text != "" {
+				buf += ev.Text
+				continue
+			}
+
 			val := strings.TrimSpace(ev.Text)
 			if val == "" {
 				val = c.Default
@@ -54,7 +88,7 @@ func (c *Input) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader,
 
 			if c.Validate != nil {
 				if err := c.Validate(val); err != nil {
-					if renderErr := session.Render(c.view(err.Error())); renderErr != nil {
+					if renderErr := session.Render(c.view(buf, err.Error())); renderErr != nil {
 						return "", renderErr
 					}
 					continue
@@ -77,7 +111,7 @@ func (c *Input) ValidateConfig() error {
 	return nil
 }
 
-func (c *Input) view(errMsg string) backend.View {
+func (c *Input) view(current string, errMsg string) backend.View {
 	line := c.Prompt
 	if c.Default != "" {
 		line += fmt.Sprintf(" [%s]", c.Default)
@@ -85,6 +119,9 @@ func (c *Input) view(errMsg string) backend.View {
 	line += ":"
 
 	view := backend.View{Lines: []string{line}}
+	if current != "" {
+		view.Lines = append(view.Lines, "Current: "+current)
+	}
 	if errMsg != "" {
 		view.Lines = append(view.Lines, "Error: "+errMsg)
 	}
