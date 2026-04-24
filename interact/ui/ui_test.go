@@ -110,3 +110,98 @@ func TestConfirm_RunWithDefault(t *testing.T) {
 	is.Nil(err)
 	is.True(got)
 }
+
+func TestSelect_RunWithIO(t *testing.T) {
+	is := assert.New(t)
+
+	in := bytes.NewBufferString("b\n")
+	out := new(bytes.Buffer)
+	be := plain.New()
+
+	sel := NewSelect("Choose", []Item{
+		{Key: "a", Label: "Alpha", Value: "alpha"},
+		{Key: "b", Label: "Beta", Value: "beta"},
+	})
+
+	got, err := sel.RunWithIO(context.Background(), be, in, out)
+	is.Nil(err)
+	is.Eq("b", got.Key)
+	is.Eq("beta", got.Value)
+	is.Contains(out.String(), "Choose")
+}
+
+func TestSelect_RunWithDefault(t *testing.T) {
+	is := assert.New(t)
+
+	in := bytes.NewBufferString("\n")
+	out := new(bytes.Buffer)
+	be := plain.New()
+
+	sel := NewSelect("Choose", []Item{
+		{Key: "a", Label: "Alpha", Value: "alpha"},
+		{Key: "b", Label: "Beta", Value: "beta"},
+	})
+	sel.DefaultKey = "a"
+
+	got, err := sel.RunWithIO(context.Background(), be, in, out)
+	is.Nil(err)
+	is.Eq("a", got.Key)
+}
+
+func TestMultiSelect_RunWithIO(t *testing.T) {
+	is := assert.New(t)
+
+	in := bytes.NewBufferString("a,c\n")
+	out := new(bytes.Buffer)
+	be := plain.New()
+
+	sel := NewMultiSelect("Choose", []Item{
+		{Key: "a", Label: "Alpha", Value: "alpha"},
+		{Key: "b", Label: "Beta", Value: "beta"},
+		{Key: "c", Label: "Gamma", Value: "gamma"},
+	})
+
+	got, err := sel.RunWithIO(context.Background(), be, in, out)
+	is.Nil(err)
+	is.Len(got.Keys, 2)
+	is.Eq("a", got.Key)
+	is.Contains(out.String(), "comma separated")
+}
+
+func TestMultiSelect_RunWithDefault(t *testing.T) {
+	is := assert.New(t)
+
+	in := bytes.NewBufferString("\n")
+	out := new(bytes.Buffer)
+	be := plain.New()
+
+	sel := NewMultiSelect("Choose", []Item{
+		{Key: "a", Label: "Alpha", Value: "alpha"},
+		{Key: "b", Label: "Beta", Value: "beta"},
+	})
+	sel.DefaultKeys = []string{"b"}
+
+	got, err := sel.RunWithIO(context.Background(), be, in, out)
+	is.Nil(err)
+	is.Len(got.Keys, 1)
+	is.Eq("b", got.Key)
+}
+
+func TestMultiSelect_RunWithMinSelected(t *testing.T) {
+	is := assert.New(t)
+
+	in := bytes.NewBufferString("a\n" + "a,b\n")
+	out := new(bytes.Buffer)
+	be := plain.New()
+
+	sel := NewMultiSelect("Choose", []Item{
+		{Key: "a", Label: "Alpha", Value: "alpha"},
+		{Key: "b", Label: "Beta", Value: "beta"},
+	})
+	sel.MinSelected = 2
+
+	got, err := sel.RunWithIO(context.Background(), be, in, out)
+	is.Nil(err)
+	is.Len(got.Keys, 2)
+	is.Contains(out.String(), "select at least 2 option(s)")
+}

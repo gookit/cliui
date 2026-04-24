@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/gookit/cliui/interact/backend"
 )
@@ -30,12 +31,52 @@ func (c *Select) Run(ctx context.Context, be backend.Backend) (*Result, error) {
 // RunWithIO runs the component with explicit IO streams.
 func (c *Select) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader, out io.Writer) (*Result, error) {
 	return runWithSession(ctx, be, in, out, func(session backend.Session) (*Result, error) {
-		_ = session
 		if err := c.ValidateConfig(); err != nil {
 			return nil, err
 		}
 
-		return nil, ErrNotImplemented
+		for {
+			if err := session.Render(c.view("")); err != nil {
+				return nil, err
+			}
+
+			ev, err := session.ReadEvent(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			if ev.Type == backend.EventInterrupt || ev.Key == backend.KeyCtrlC || ev.Key == backend.KeyEsc {
+				return nil, ErrAborted
+			}
+
+			key := strings.TrimSpace(ev.Text)
+			if key == "" {
+				key = c.DefaultKey
+			}
+
+			item, ok := c.findItem(key)
+			if !ok {
+				if err := session.Render(c.view("unknown option")); err != nil {
+					return nil, err
+				}
+				continue
+			}
+			if item.Disabled {
+				if err := session.Render(c.view("selected option is disabled")); err != nil {
+					return nil, err
+				}
+				continue
+			}
+
+			return &Result{
+				Key:   item.Key,
+				Keys:  []string{item.Key},
+				Value: item.Value,
+				Values: []any{
+					item.Value,
+				},
+			}, nil
+		}
 	})
 }
 
@@ -51,4 +92,37 @@ func (c *Select) ValidateConfig() error {
 		return err
 	}
 	return nil
+}
+
+func (c *Select) findItem(key string) (Item, bool) {
+	for _, item := range c.Items {
+		if item.Key == key {
+			return item, true
+		}
+	}
+	return Item{}, false
+}
+
+func (c *Select) view(errMsg string) backend.View {
+	lines := []string{c.Prompt}
+	for _, item := range c.Items {
+		line := fmt.Sprintf("  %s) %s", item.Key, item.Label)
+		if item.Disabled {
+			line += " [disabled]"
+		}
+		lines = append(lines, line)
+	}
+
+	prompt := "Your choice"
+	if c.DefaultKey != "" {
+		prompt += fmt.Sprintf(" [default:%s]", c.DefaultKey)
+	}
+	prompt += ":"
+	lines = append(lines, prompt)
+
+	if errMsg != "" {
+		lines = append(lines, "Error: "+errMsg)
+	}
+
+	return backend.View{Lines: lines}
 }
