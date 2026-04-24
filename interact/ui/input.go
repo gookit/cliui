@@ -66,6 +66,17 @@ func (c *Input) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader,
 			case backend.KeyCtrlE, backend.KeyEnd:
 				cursor = len(buf)
 				continue
+			case backend.KeyCtrlK:
+				if cursor < len(buf) {
+					buf = buf[:cursor]
+				}
+				continue
+			case backend.KeyCtrlU:
+				if cursor > 0 {
+					buf = buf[cursor:]
+					cursor = 0
+				}
+				continue
 			case backend.KeyBackspace:
 				if cursor > 0 && len(buf) > 0 {
 					buf = buf[:cursor-1] + buf[cursor:]

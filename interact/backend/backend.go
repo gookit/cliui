@@ -56,6 +56,8 @@ const (
 	KeyCtrlC     Key = "ctrl+c"
 	KeyCtrlA     Key = "ctrl+a"
 	KeyCtrlE     Key = "ctrl+e"
+	KeyCtrlK     Key = "ctrl+k"
+	KeyCtrlU     Key = "ctrl+u"
 	KeyY         Key = "y"
 	KeyN         Key = "n"
 )
