@@ -13,14 +13,16 @@ Current status:
 
 - stable component models and result types
 - `plain` backend is available
+- minimal raw-terminal `readline` backend is available
 - existing `interact` package APIs remain unchanged
-- event-driven readline/raw terminal backend is not implemented yet
+- advanced line editing and filtering are not implemented yet
 
 ## Packages
 
 - `github.com/gookit/cliui/interact/ui`
 - `github.com/gookit/cliui/interact/backend`
 - `github.com/gookit/cliui/interact/backend/plain`
+- `github.com/gookit/cliui/interact/backend/readline`
 
 ## Install
 
@@ -151,6 +153,7 @@ func main() {
 ## Notes
 
 - `plain` backend uses line-based input and works with ordinary stdin/stdout streams.
+- `readline` backend uses raw terminal input and supports arrow keys, space, enter, esc and ctrl+c.
 - `Select` uses single-key selection by item key.
 - `MultiSelect` uses comma-separated item keys.
 - `ErrAborted` is returned when the current interaction is canceled.
@@ -158,4 +161,4 @@ func main() {
 
 ## Next Step
 
-The current abstraction is ready for a future event-driven backend such as readline/raw terminal mode, without changing the `ui` package surface.
+The current abstraction is ready for richer event-driven backends and more advanced line editing behavior without changing the `ui` package surface.
