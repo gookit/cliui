@@ -30,6 +30,7 @@ go get github.com/gookit/cliui/interact
 
 - package: `github.com/gookit/cliui/interact/ui`
 - current backend: `github.com/gookit/cliui/interact/backend/plain`
+- event-driven backend: `github.com/gookit/cliui/interact/backend/readline`
 - details: [ui/README.md](ui/README.md)
 
 ## Quick Example

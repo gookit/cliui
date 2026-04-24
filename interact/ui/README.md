@@ -150,6 +150,48 @@ func main() {
 }
 ```
 
+### Readline Backend
+
+Use `readline` backend when you want event-driven interaction on a real terminal.
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/gookit/cliui/interact/backend/readline"
+	"github.com/gookit/cliui/interact/ui"
+)
+
+func main() {
+	be := readline.New()
+
+	input := ui.NewInput("Your name")
+	input.Default = "guest"
+
+	name, err := input.Run(context.Background(), be)
+	if err != nil {
+		panic(err)
+	}
+
+	selectOne := ui.NewSelect("Choose env", []ui.Item{
+		{Key: "dev", Label: "Development", Value: "dev"},
+		{Key: "prod", Label: "Production", Value: "prod"},
+	})
+	selectOne.DefaultKey = "dev"
+
+	env, err := selectOne.Run(context.Background(), be)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("name:", name)
+	fmt.Println("env:", env.Key)
+}
+```
+
 ## Notes
 
 - `plain` backend uses line-based input and works with ordinary stdin/stdout streams.
@@ -158,6 +200,15 @@ func main() {
 - `MultiSelect` uses comma-separated item keys.
 - `ErrAborted` is returned when the current interaction is canceled.
 - `Select` and `MultiSelect` support disabled items and default values.
+
+## Key Bindings
+
+For the current `readline` backend:
+
+- `Input`: type to insert, `Left/Right` to move, `Backspace` to delete, `Enter` to submit
+- `Confirm`: `Left/Right` to switch, `y/n` to choose, `Enter` to submit current value
+- `Select`: `Up/Down` to move, `Enter` to confirm, or type item key directly
+- `MultiSelect`: `Up/Down` to move, `Space` to toggle, `Enter` to confirm
 
 ## Demo
 
