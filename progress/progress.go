@@ -63,6 +63,9 @@ type Progress struct {
 	// time consumption record
 	startedAt  time.Time
 	finishedAt time.Time
+	// managed by a multi progress renderer
+	manager *MultiProgress
+	index   int
 }
 
 /*************************************************************
@@ -152,11 +155,33 @@ func (p *Progress) Bound() any {
 
 // AddMessage to progress instance
 func (p *Progress) AddMessage(name, message string) {
-	p.Messages[name] = message
+	if p.manager != nil {
+		p.manager.update(func() {
+			p.addMessage(name, message)
+		})
+		return
+	}
+
+	p.addMessage(name, message)
 }
 
 // AddMessages to progress instance
 func (p *Progress) AddMessages(msgMap map[string]string) {
+	if p.manager != nil {
+		p.manager.update(func() {
+			p.addMessages(msgMap)
+		})
+		return
+	}
+
+	p.addMessages(msgMap)
+}
+
+func (p *Progress) addMessage(name, message string) {
+	p.Messages[name] = message
+}
+
+func (p *Progress) addMessages(msgMap map[string]string) {
 	if p.Messages == nil {
 		p.Messages = make(map[string]string)
 	}
@@ -168,26 +193,59 @@ func (p *Progress) AddMessages(msgMap map[string]string) {
 
 // AddWidget to progress instance
 func (p *Progress) AddWidget(name string, handler WidgetFunc) *Progress {
-	if _, ok := p.Widgets[name]; !ok {
-		p.Widgets[name] = handler
+	if p.manager != nil {
+		p.manager.update(func() {
+			p.addWidget(name, handler)
+		})
+		return p
 	}
+
+	p.addWidget(name, handler)
 	return p
 }
 
 // SetWidget to progress instance
 func (p *Progress) SetWidget(name string, handler WidgetFunc) *Progress {
-	p.Widgets[name] = handler
+	if p.manager != nil {
+		p.manager.update(func() {
+			p.setWidget(name, handler)
+		})
+		return p
+	}
+
+	p.setWidget(name, handler)
 	return p
 }
 
 // AddWidgets to progress instance
 func (p *Progress) AddWidgets(widgets map[string]WidgetFunc) {
+	if p.manager != nil {
+		p.manager.update(func() {
+			p.addWidgets(widgets)
+		})
+		return
+	}
+
+	p.addWidgets(widgets)
+}
+
+func (p *Progress) addWidget(name string, handler WidgetFunc) {
+	if _, ok := p.Widgets[name]; !ok {
+		p.Widgets[name] = handler
+	}
+}
+
+func (p *Progress) setWidget(name string, handler WidgetFunc) {
+	p.Widgets[name] = handler
+}
+
+func (p *Progress) addWidgets(widgets map[string]WidgetFunc) {
 	if p.Widgets == nil {
 		p.Widgets = make(map[string]WidgetFunc)
 	}
 
 	for name, handler := range widgets {
-		p.AddWidget(name, handler)
+		p.addWidget(name, handler)
 	}
 }
 
@@ -199,6 +257,11 @@ func (p *Progress) AddWidgets(widgets map[string]WidgetFunc) {
 func (p *Progress) Start(maxSteps ...int) {
 	if p.started {
 		panic("Progress bar already started")
+	}
+
+	if p.manager != nil {
+		p.manager.startProgress(p, maxSteps...)
+		return
 	}
 
 	// init
@@ -234,7 +297,7 @@ func (p *Progress) init(maxSteps ...int) {
 	}
 
 	// load default widgets
-	p.AddWidgets(builtinWidgets)
+	p.addWidgets(builtinWidgets)
 }
 
 // Advance specified step size. default is 1
@@ -253,6 +316,19 @@ func (p *Progress) Advance(steps ...uint) {
 func (p *Progress) AdvanceTo(step uint) {
 	p.checkStart()
 
+	if p.manager != nil {
+		p.manager.update(func() {
+			p.applyStep(step)
+		})
+		return
+	}
+
+	if p.applyStep(step) {
+		p.display()
+	}
+}
+
+func (p *Progress) applyStep(step uint) bool {
 	// check arg
 	if p.MaxSteps > 0 && step > p.MaxSteps {
 		p.MaxSteps = step
@@ -267,15 +343,21 @@ func (p *Progress) AdvanceTo(step uint) {
 		p.percent = float32(p.step) / float32(p.MaxSteps)
 	}
 
-	if prevPeriod != currPeriod || p.MaxSteps == step {
-		p.Display()
-	}
+	return prevPeriod != currPeriod || p.MaxSteps == step
 }
 
 // Finish the progress output.
 // if provide finish message, will delete progress bar then print the message.
 func (p *Progress) Finish(message ...string) {
 	p.checkStart()
+
+	if p.manager != nil {
+		p.manager.update(func() {
+			p.finishManaged(message...)
+		})
+		return
+	}
+
 	p.finishedAt = time.Now()
 
 	if p.MaxSteps == 0 {
@@ -298,6 +380,15 @@ func (p *Progress) Finish(message ...string) {
 
 // Display outputs the current progress string.
 func (p *Progress) Display() {
+	if p.manager != nil {
+		p.manager.Refresh()
+		return
+	}
+
+	p.display()
+}
+
+func (p *Progress) display() {
 	if p.Format == "" {
 		p.Format = DefFormat
 	}
@@ -346,6 +437,23 @@ func (p *Progress) checkStart() {
 	}
 }
 
+func (p *Progress) finishManaged(message ...string) {
+	p.finishedAt = time.Now()
+
+	if p.MaxSteps == 0 {
+		p.MaxSteps = p.step
+	}
+
+	p.step = p.MaxSteps
+	if p.MaxSteps > 0 {
+		p.percent = 1
+	}
+
+	if len(message) > 0 {
+		p.addMessage("message", message[0])
+	}
+}
+
 // build widgets form Format string.
 func (p *Progress) buildLine() string {
 	return widgetMatch.ReplaceAllStringFunc(p.Format, func(s string) string {
@@ -376,6 +484,16 @@ func (p *Progress) buildLine() string {
 		// fmt.Println("info:", arg, name, ", text:", text)
 		return text
 	})
+}
+
+// Line returns the current rendered progress line.
+func (p *Progress) Line() string {
+	p.checkStart()
+	if p.Format == "" {
+		p.Format = DefFormat
+	}
+
+	return p.buildLine()
 }
 
 // Handler get widget handler by widget name

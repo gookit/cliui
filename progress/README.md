@@ -50,6 +50,43 @@ func main() {
 
 See package tests and exported constructors for more usage patterns.
 
+## Multi Progress
+
+Use `MultiProgress` when you need to render several `Progress` instances in one terminal block.
+
+```go
+package main
+
+import (
+	"time"
+
+	"github.com/gookit/cliui/progress"
+)
+
+func main() {
+	mp := progress.NewMulti()
+
+	build := mp.New(100)
+	build.AddMessage("message", " build")
+
+	test := mp.New(80)
+	test.AddMessage("message", " test")
+
+	mp.Start()
+
+	for i := 0; i < 100; i++ {
+		time.Sleep(20 * time.Millisecond)
+		build.Advance()
+
+		if i < 80 {
+			test.Advance()
+		}
+	}
+
+	mp.Finish()
+}
+```
+
 ## Progress Bar
 
 ### Internal Widgets
@@ -130,6 +167,7 @@ func Full(maxSteps ...int) *Progress
 func LoadBar(chars []rune, maxSteps ...int) *Progress
 func LoadingBar(chars []rune, maxSteps ...int) *Progress
 func New(maxSteps ...int) *Progress
+func NewMulti() *MultiProgress
 func NewWithConfig(fn func(p *Progress), maxSteps ...int) *Progress
 func RoundTrip(char rune, charNumAndBoxWidth ...int) *Progress
 func RoundTripBar(char rune, charNumAndBoxWidth ...int) *Progress
