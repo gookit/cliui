@@ -1,6 +1,7 @@
 package progress
 
 import (
+	"bytes"
 	"fmt"
 	"testing"
 	"time"
@@ -65,4 +66,23 @@ func ExampleDynamicText() {
 	}
 
 	p.Finish()
+}
+
+func ExampleNewMulti() {
+	buf := new(bytes.Buffer)
+	mp := NewMulti()
+	mp.Writer = buf
+
+	build := mp.New(3)
+	build.AddMessage("message", " build")
+
+	test := mp.New(2)
+	test.AddMessage("message", " test")
+
+	mp.Start()
+	build.Advance()
+	test.Advance()
+	build.Finish()
+	test.Finish()
+	mp.Finish()
 }
