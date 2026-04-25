@@ -1,29 +1,9 @@
 package interact
 
 import (
-	"io"
-	"os"
-
+	"github.com/gookit/cliui/cutypes"
 	"github.com/gookit/color"
 )
-
-// the global input output stream
-var (
-	Input  io.Reader = os.Stdin
-	Output io.Writer = os.Stdout
-)
-
-// SetInput stream
-func SetInput(in io.Reader) { Input = in }
-
-// SetOutput stream
-func SetOutput(out io.Writer) { Output = out }
-
-// ResetIO stream
-func ResetIO() {
-	Input = os.Stdin
-	Output = os.Stdout
-}
 
 // Interactive definition
 type Interactive struct {
@@ -44,7 +24,7 @@ type Options struct {
 
 // Confirm a question, returns bool
 func Confirm(message string, defVal ...bool) bool {
-	color.Print(message)
+	color.Fprint(cutypes.Output, message)
 	return AnswerIsYes(defVal...)
 }
 

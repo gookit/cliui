@@ -21,3 +21,10 @@ const (
 	BorderPosLR // Left & Right
 	BorderPosAll
 )
+
+const (
+	// CodeOK success exit code
+	CodeOK = 0
+	// CodeERR default error exit code
+	CodeERR = 2
+)

@@ -59,8 +59,9 @@ type ShownFace interface {
 
 // Base formatter. NOTE: must config the FormatFn before use
 type Base struct {
-	// out  comdef.ByteStringWriter
 	// TODO lock sync.Mutex
+
+	// Out the output writer, default is cutypes.Output
 	Out io.Writer
 	// Buf store formatted string
 	Buf *bytes.Buffer

@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/gookit/cliui/cutypes"
 	"github.com/gookit/color"
 	"github.com/gookit/goutil/cliutil"
 	"github.com/gookit/goutil/envutil"
@@ -15,10 +16,10 @@ import (
 // ReadInput read user input form Stdin
 func ReadInput(question string) (string, error) {
 	if len(question) > 0 {
-		color.Fprint(Output, question)
+		color.Fprint(cutypes.Output, question)
 	}
 
-	scanner := bufio.NewScanner(Input)
+	scanner := bufio.NewScanner(cutypes.Input)
 	if !scanner.Scan() { // reading
 		return "", scanner.Err()
 	}
@@ -34,10 +35,10 @@ func ReadInput(question string) (string, error) {
 //	ans, _ := ReadLine("your name?")
 func ReadLine(question string) (string, error) {
 	if len(question) > 0 {
-		color.Fprint(Output, question)
+		color.Fprint(cutypes.Output, question)
 	}
 
-	reader := bufio.NewReader(Input)
+	reader := bufio.NewReader(cutypes.Input)
 	answer, _, err := reader.ReadLine()
 	return strings.TrimSpace(string(answer)), err
 }
@@ -91,7 +92,7 @@ func AnswerIsYes(defVal ...bool) bool {
 		return defVal[0]
 	}
 
-	_, _ = fmt.Fprint(Output, "Please try again")
+	_, _ = fmt.Fprint(cutypes.Output, "Please try again")
 	return AnswerIsYes()
 }
 

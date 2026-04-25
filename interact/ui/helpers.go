@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 
+	"github.com/gookit/cliui/cutypes"
 	"github.com/gookit/cliui/interact/backend"
 )
 
@@ -44,8 +44,8 @@ func runWithSession[T any](
 	return fn(session)
 }
 
-func defaultInput() io.Reader { return os.Stdin }
-func defaultOutput() io.Writer { return os.Stdout }
+func defaultInput() io.Reader  { return cutypes.Input }
+func defaultOutput() io.Writer { return cutypes.Output }
 
 func validateItems(items []Item) error {
 	if len(items) == 0 {

@@ -6,6 +6,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/gookit/cliui/cutypes"
 	"github.com/gookit/goutil/testutil/assert"
 )
 
@@ -42,6 +43,17 @@ func TestMultiProgress_Render(t *testing.T) {
 	is.Contains(out, " second")
 	is.Contains(out, "\x1B[2K")
 	is.True(strings.HasSuffix(out, "\n"))
+}
+
+func TestMultiProgress_WriterFallbackUsesGlobalOutput(t *testing.T) {
+	buf := new(bytes.Buffer)
+	cutypes.SetOutput(buf)
+	defer cutypes.ResetOutput()
+
+	mp := &MultiProgress{}
+	if mp.writer() != buf {
+		t.Fatalf("expected fallback writer to use cutypes.Output")
+	}
 }
 
 func TestMultiProgress_ConcurrentAdvance(t *testing.T) {

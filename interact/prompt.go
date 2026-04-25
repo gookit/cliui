@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 	"strings"
+
+	"github.com/gookit/cliui/cutypes"
 )
 
 type result struct {
@@ -20,11 +22,11 @@ type result struct {
 //
 // from package golang.org/x/tools/cmd/getgo
 func Prompt(ctx context.Context, query, defaultAnswer string) (string, error) {
-	_, _ = fmt.Fprintf(Output, "%s [%s]: ", query, defaultAnswer)
+	_, _ = fmt.Fprintf(cutypes.Output, "%s [%s]: ", query, defaultAnswer)
 
 	ch := make(chan result, 1)
 	go func() {
-		s := bufio.NewScanner(Input)
+		s := bufio.NewScanner(cutypes.Input)
 		if !s.Scan() { // reading
 			ch <- result{"", s.Err()}
 			return

@@ -3,9 +3,10 @@ package progress
 import (
 	"fmt"
 	"io"
-	"os"
 	"sync"
 	"time"
+
+	"github.com/gookit/cliui/cutypes"
 )
 
 // MultiProgress manages multiple Progress instances and renders them as one block.
@@ -27,7 +28,7 @@ type MultiProgress struct {
 func NewMulti() *MultiProgress {
 	return &MultiProgress{
 		Overwrite: true,
-		Writer:    os.Stdout,
+		Writer:    cutypes.Output,
 	}
 }
 
@@ -103,7 +104,7 @@ func (mp *MultiProgress) writer() io.Writer {
 	if mp.Writer != nil {
 		return mp.Writer
 	}
-	return os.Stdout
+	return cutypes.Output
 }
 
 func (mp *MultiProgress) update(fn func()) {
