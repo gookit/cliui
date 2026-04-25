@@ -177,7 +177,7 @@ func TestInput_RunWithFakeUnicodeEditing(t *testing.T) {
 	session := be.LastSession()
 	views := session.Views()
 	is.True(len(views) > 0)
-	is.Eq(len("Current: ")+3, views[len(views)-1].CursorColumn)
+	is.Eq(len("Current: ")+6, views[len(views)-1].CursorColumn)
 }
 
 func TestInput_RunWithFakeHomeEndDelete(t *testing.T) {

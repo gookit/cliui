@@ -11,11 +11,9 @@ import (
 
 // Select collects one selected item from the user.
 type Select struct {
-	Prompt       string
-	Items        []Item
-	DefaultKey   string
-	AllowAbort   bool
-	EnableFilter bool
+	Prompt     string
+	Items      []Item
+	DefaultKey string
 }
 
 // NewSelect creates a Select component.

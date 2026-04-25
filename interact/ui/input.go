@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/gookit/cliui/interact/backend"
+	"github.com/gookit/goutil/strutil"
 )
 
 // Input collects a text value from the user.
@@ -183,7 +184,7 @@ func (c *Input) view(current string, cursor int, errMsg string) backend.View {
 	}
 
 	view.CursorRow = 1
-	view.CursorColumn = len("Current: ") + cursor
+	view.CursorColumn = len("Current: ") + strutil.TextWidth(string([]rune(current)[:cursor]))
 
 	return view
 }

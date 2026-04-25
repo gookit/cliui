@@ -281,8 +281,6 @@ type Select struct {
 	Prompt       string
 	Items        []Item
 	DefaultKey   string
-	AllowAbort   bool
-	EnableFilter bool
 }
 
 func (c *Select) Run(ctx context.Context, be Backend) (*Result, error)
@@ -316,8 +314,6 @@ type MultiSelect struct {
 	Items        []Item
 	DefaultKeys  []string
 	MinSelected  int
-	AllowAbort   bool
-	EnableFilter bool
 }
 
 func (c *MultiSelect) Run(ctx context.Context, be Backend) (*Result, error)

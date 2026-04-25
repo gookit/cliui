@@ -11,12 +11,10 @@ import (
 
 // MultiSelect collects multiple selected items from the user.
 type MultiSelect struct {
-	Prompt       string
-	Items        []Item
-	DefaultKeys  []string
-	MinSelected  int
-	AllowAbort   bool
-	EnableFilter bool
+	Prompt      string
+	Items       []Item
+	DefaultKeys []string
+	MinSelected int
 }
 
 // NewMultiSelect creates a MultiSelect component.
