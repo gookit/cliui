@@ -33,8 +33,9 @@ func (c *Confirm) RunWithIO(ctx context.Context, be backend.Backend, in io.Reade
 		}
 
 		current := c.Default
+		errMsg := ""
 		for {
-			if err := session.Render(c.view(current, "")); err != nil {
+			if err := session.Render(c.view(current, errMsg)); err != nil {
 				return false, err
 			}
 
@@ -47,6 +48,7 @@ func (c *Confirm) RunWithIO(ctx context.Context, be backend.Backend, in io.Reade
 				return false, ErrAborted
 			}
 
+			errMsg = ""
 			switch ev.Key {
 			case backend.KeyLeft:
 				current = true
@@ -73,9 +75,7 @@ func (c *Confirm) RunWithIO(ctx context.Context, be backend.Backend, in io.Reade
 			case "n", "no":
 				return false, nil
 			default:
-				if err := session.Render(c.view(current, "please input yes or no")); err != nil {
-					return false, err
-				}
+				errMsg = "please input yes or no"
 			}
 		}
 	})

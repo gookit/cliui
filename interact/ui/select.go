@@ -36,8 +36,9 @@ func (c *Select) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader
 		}
 
 		cursor := c.defaultIndex()
+		errMsg := ""
 		for {
-			if err := session.Render(c.view(cursor, "")); err != nil {
+			if err := session.Render(c.view(cursor, errMsg)); err != nil {
 				return nil, err
 			}
 
@@ -50,6 +51,7 @@ func (c *Select) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader
 				return nil, ErrAborted
 			}
 
+			errMsg = ""
 			switch ev.Key {
 			case backend.KeyUp:
 				cursor = c.move(cursor, -1)
@@ -61,9 +63,7 @@ func (c *Select) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader
 				if strings.TrimSpace(ev.Text) == "" {
 					item := c.Items[cursor]
 					if item.Disabled {
-						if err := session.Render(c.view(cursor, "selected option is disabled")); err != nil {
-							return nil, err
-						}
+						errMsg = "selected option is disabled"
 						continue
 					}
 					return singleResult(item), nil
@@ -77,15 +77,11 @@ func (c *Select) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader
 
 			item, ok := c.findItem(key)
 			if !ok {
-				if err := session.Render(c.view(cursor, "unknown option")); err != nil {
-					return nil, err
-				}
+				errMsg = "unknown option"
 				continue
 			}
 			if item.Disabled {
-				if err := session.Render(c.view(cursor, "selected option is disabled")); err != nil {
-					return nil, err
-				}
+				errMsg = "selected option is disabled"
 				continue
 			}
 

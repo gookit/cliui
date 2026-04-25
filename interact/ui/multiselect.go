@@ -38,8 +38,9 @@ func (c *MultiSelect) RunWithIO(ctx context.Context, be backend.Backend, in io.R
 
 		cursor := c.defaultIndex()
 		selected := c.defaultSelected()
+		errMsg := ""
 		for {
-			if err := session.Render(c.view(cursor, selected, "")); err != nil {
+			if err := session.Render(c.view(cursor, selected, errMsg)); err != nil {
 				return nil, err
 			}
 
@@ -52,6 +53,7 @@ func (c *MultiSelect) RunWithIO(ctx context.Context, be backend.Backend, in io.R
 				return nil, ErrAborted
 			}
 
+			errMsg = ""
 			switch ev.Key {
 			case backend.KeyUp:
 				cursor = c.move(cursor, -1)
@@ -62,9 +64,7 @@ func (c *MultiSelect) RunWithIO(ctx context.Context, be backend.Backend, in io.R
 			case backend.KeySpace:
 				item := c.Items[cursor]
 				if item.Disabled {
-					if err := session.Render(c.view(cursor, selected, "selected option is disabled")); err != nil {
-						return nil, err
-					}
+					errMsg = "selected option is disabled"
 					continue
 				}
 				if _, ok := selected[item.Key]; ok {
@@ -77,16 +77,11 @@ func (c *MultiSelect) RunWithIO(ctx context.Context, be backend.Backend, in io.R
 				if strings.TrimSpace(ev.Text) == "" {
 					result := c.resultFromSelected(selected)
 					if len(result.Keys) == 0 {
-						if err := session.Render(c.view(cursor, selected, "at least one option is required")); err != nil {
-							return nil, err
-						}
+						errMsg = "at least one option is required"
 						continue
 					}
 					if len(result.Keys) < c.MinSelected {
-						msg := fmt.Sprintf("select at least %d option(s)", c.MinSelected)
-						if err := session.Render(c.view(cursor, selected, msg)); err != nil {
-							return nil, err
-						}
+						errMsg = fmt.Sprintf("select at least %d option(s)", c.MinSelected)
 						continue
 					}
 					return result, nil
@@ -96,25 +91,18 @@ func (c *MultiSelect) RunWithIO(ctx context.Context, be backend.Backend, in io.R
 			raw := strings.TrimSpace(ev.Text)
 			keys := c.parseKeys(raw)
 			if len(keys) == 0 {
-				if err := session.Render(c.view(cursor, selected, "at least one option is required")); err != nil {
-					return nil, err
-				}
+				errMsg = "at least one option is required"
 				continue
 			}
 
-			result, errMsg := c.resolve(keys)
-			if errMsg != "" {
-				if err := session.Render(c.view(cursor, selected, errMsg)); err != nil {
-					return nil, err
-				}
+			result, resolveErr := c.resolve(keys)
+			if resolveErr != "" {
+				errMsg = resolveErr
 				continue
 			}
 
 			if len(result.Keys) < c.MinSelected {
-				msg := fmt.Sprintf("select at least %d option(s)", c.MinSelected)
-				if err := session.Render(c.view(cursor, selected, msg)); err != nil {
-					return nil, err
-				}
+				errMsg = fmt.Sprintf("select at least %d option(s)", c.MinSelected)
 				continue
 			}
 

@@ -35,9 +35,10 @@ func (c *Input) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader,
 
 		buf := []rune{}
 		cursor := 0
+		errMsg := ""
 		for {
 			current := string(buf)
-			if err := session.Render(c.view(current, cursor, "")); err != nil {
+			if err := session.Render(c.view(current, cursor, errMsg)); err != nil {
 				return "", err
 			}
 
@@ -50,6 +51,7 @@ func (c *Input) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader,
 				return "", ErrAborted
 			}
 
+			errMsg = ""
 			switch ev.Key {
 			case backend.KeyLeft:
 				if cursor > 0 {
@@ -119,9 +121,7 @@ func (c *Input) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader,
 
 				if c.Validate != nil {
 					if err := c.Validate(val); err != nil {
-						if renderErr := session.Render(c.view(string(buf), cursor, err.Error())); renderErr != nil {
-							return "", renderErr
-						}
+						errMsg = err.Error()
 						continue
 					}
 				}
@@ -147,9 +147,7 @@ func (c *Input) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader,
 
 			if c.Validate != nil {
 				if err := c.Validate(val); err != nil {
-					if renderErr := session.Render(c.view(string(buf), cursor, err.Error())); renderErr != nil {
-						return "", renderErr
-					}
+					errMsg = err.Error()
 					continue
 				}
 			}

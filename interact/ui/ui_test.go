@@ -107,6 +107,31 @@ func TestInput_RunWithFakeEvents(t *testing.T) {
 	is.True(len(session.Views()) > 0)
 }
 
+func TestInput_KeepsValidationErrorUntilNextInput(t *testing.T) {
+	is := assert.New(t)
+
+	be := fake.New(
+		backend.Event{Type: backend.EventKey, Text: "x"},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyEnter},
+		backend.Event{Type: backend.EventKey, Text: "y"},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyEnter},
+	)
+
+	ipt := NewInput("Name")
+	ipt.Validate = func(v string) error {
+		if v == "x" {
+			return errors.New("too short")
+		}
+		return nil
+	}
+
+	got, err := ipt.Run(context.Background(), be)
+	is.Nil(err)
+	is.Eq("xy", got)
+
+	assertErrorDoesNotFlash(t, be.LastSession().Views(), "Error: too short", "Current: x")
+}
+
 func TestInput_RunWithFakeCursorMove(t *testing.T) {
 	is := assert.New(t)
 
@@ -296,6 +321,22 @@ func TestConfirm_RunWithFakeEvents(t *testing.T) {
 	is.True(len(session.Views()) > 0)
 }
 
+func TestConfirm_KeepsInvalidInputErrorUntilNextInput(t *testing.T) {
+	is := assert.New(t)
+
+	be := fake.New(
+		backend.Event{Type: backend.EventKey, Text: "maybe"},
+		backend.Event{Type: backend.EventKey, Text: "y"},
+	)
+
+	cfm := NewConfirm("Continue", false)
+	got, err := cfm.Run(context.Background(), be)
+	is.Nil(err)
+	is.True(got)
+
+	assertErrorDoesNotFlash(t, be.LastSession().Views(), "Error: please input yes or no", "Current: no")
+}
+
 func TestSelect_RunWithIO(t *testing.T) {
 	is := assert.New(t)
 
@@ -416,6 +457,27 @@ func TestSelect_RunWithFakeEvents(t *testing.T) {
 	is.Contains(last.Lines[len(last.Lines)-2], "Use Up/Down")
 }
 
+func TestSelect_KeepsUnknownOptionErrorUntilNextInput(t *testing.T) {
+	is := assert.New(t)
+
+	be := fake.New(
+		backend.Event{Type: backend.EventKey, Text: "x"},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyDown},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyEnter},
+	)
+
+	sel := NewSelect("Choose", []Item{
+		{Key: "a", Label: "Alpha", Value: "alpha"},
+		{Key: "b", Label: "Beta", Value: "beta"},
+	})
+
+	got, err := sel.Run(context.Background(), be)
+	is.Nil(err)
+	is.Eq("b", got.Key)
+
+	assertErrorDoesNotFlash(t, be.LastSession().Views(), "Error: unknown option", "Current: Alpha (a)")
+}
+
 func TestMultiSelect_RunWithFakeEvents(t *testing.T) {
 	is := assert.New(t)
 
@@ -444,4 +506,52 @@ func TestMultiSelect_RunWithFakeEvents(t *testing.T) {
 	is.Contains(last.Lines[len(last.Lines)-4], "Current: Beta")
 	is.Contains(last.Lines[len(last.Lines)-3], "Selected(2): a, b")
 	is.Contains(last.Lines[len(last.Lines)-2], "Space to toggle")
+}
+
+func TestMultiSelect_KeepsMinSelectedErrorUntilNextInput(t *testing.T) {
+	is := assert.New(t)
+
+	be := fake.New(
+		backend.Event{Type: backend.EventKey, Key: backend.KeyEnter},
+		backend.Event{Type: backend.EventKey, Key: backend.KeySpace},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyEnter},
+	)
+
+	sel := NewMultiSelect("Choose", []Item{
+		{Key: "a", Label: "Alpha", Value: "alpha"},
+		{Key: "b", Label: "Beta", Value: "beta"},
+	})
+
+	got, err := sel.Run(context.Background(), be)
+	is.Nil(err)
+	is.Len(got.Keys, 1)
+	is.Eq("a", got.Key)
+
+	assertErrorDoesNotFlash(t, be.LastSession().Views(), "Error: at least one option is required", "Selected(0): none")
+}
+
+func assertErrorDoesNotFlash(t *testing.T, views []backend.View, errLine, stateLine string) {
+	t.Helper()
+
+	for i, view := range views {
+		if !viewContainsLine(view, errLine) {
+			continue
+		}
+
+		if i+1 < len(views) && viewContainsLine(views[i+1], stateLine) && !viewContainsLine(views[i+1], errLine) {
+			t.Fatalf("error line %q was cleared before state changed", errLine)
+		}
+		return
+	}
+
+	t.Fatalf("missing error line %q", errLine)
+}
+
+func viewContainsLine(view backend.View, line string) bool {
+	for _, got := range view.Lines {
+		if got == line {
+			return true
+		}
+	}
+	return false
 }
