@@ -32,6 +32,9 @@ go get github.com/gookit/cliui/interact
 - current backend: `github.com/gookit/cliui/interact/backend/plain`
 - event-driven backend: `github.com/gookit/cliui/interact/backend/readline`
 - `readline.New()` falls back to `plain` on non-TTY input
+- `readline.NewStrict()` returns an error instead of falling back when a TTY is unavailable
+- `Input` supports UTF-8 line editing and common shortcuts
+- `Select` and `MultiSelect` support disabled items, defaults, navigation keys and visible selection status
 - details: [ui/README.md](ui/README.md)
 
 Bridge helpers are also available from the `interact` package:
@@ -42,6 +45,13 @@ Bridge helpers are also available from the `interact` package:
 - `NewUIMultiSelect`
 - `NewUIPlainBackend`
 - `NewUIReadlineBackend`
+
+Use the root package helpers from `github.com/gookit/cliui` when tests or applications need to replace the default streams shared by `interact`, `interact/ui`, `show` and `progress`:
+
+```go
+cliui.CustomIO(in, out)
+defer cliui.ResetIO()
+```
 
 ## Quick Example
 

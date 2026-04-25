@@ -7,14 +7,11 @@ It is designed for rendering readable terminal content such as:
 - banner
 - title
 - table
-- panel
-- section
-- padding
 - list
 - multi list
-- alert block
-- markdown
+- alert message
 - JSON
+- generic data
 
 ## Documentation
 
@@ -28,7 +25,43 @@ go get github.com/gookit/cliui/show
 
 ## Usage
 
-See package tests and exported APIs for usage examples.
+### Any Data
+
+`show.AnyData()` renders structured data as a list and falls back to pretty JSON for scalar values.
+
+```go
+show.AnyData("user", map[string]any{
+	"name": "tom",
+	"age":  18,
+})
+```
+
+### Banner
+
+```go
+show.Banner("Update available")
+```
+
+For more control, use `show/banner` directly.
+
+### Alert
+
+`show/alert` renders alert messages using the banner component:
+
+```go
+alert.Info("ready")
+alert.Warning("check config")
+alert.Success("created %s", "user")
+alert.Error("failed: %s", "network")
+```
+
+### JSON
+
+```go
+show.JSON(map[string]any{"name": "tom"})
+```
+
+See package tests and exported APIs for more usage examples.
 
 ## Development
 

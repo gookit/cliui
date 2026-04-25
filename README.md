@@ -8,6 +8,15 @@ It focuses on three core areas for CLI applications:
 - `interact`: interactive input helpers
 - `progress`: progress and loading display helpers
 
+The root package also provides shared input/output helpers used by the subpackages:
+
+- `SetInput(in io.Reader)`
+- `SetOutput(out io.Writer)`
+- `CustomIO(in io.Reader, out io.Writer)`
+- `ResetInput()`
+- `ResetOutput()`
+- `ResetIO()`
+
 ## Install
 
 ```bash
@@ -26,7 +35,7 @@ go get github.com/gookit/cliui/interact
 
 ### `show`
 
-Provides structured terminal output helpers for displaying formatted content in CLI applications. It includes components such as table, title, banner, list, alert and JSON output.
+Provides structured terminal output helpers for displaying formatted content in CLI applications. It includes table, title, banner, list, multi-list, banner-based alert messages and JSON output helpers.
 
 Import:
 
@@ -40,6 +49,13 @@ Details: [show/README.md](show/README.md)
 
 Provides interactive input helpers for CLI programs. It supports prompt, confirm, question, select, multi-select, password input and other common terminal interaction patterns.
 
+It also includes a newer `interact/ui` layer for backend-driven components:
+
+- `plain` backend for line-based input, tests and redirected stdin
+- `readline` backend for raw terminal interaction
+- `Input`, `Confirm`, `Select` and `MultiSelect` components
+- UTF-8 input editing, common navigation keys and persistent validation errors
+
 Import:
 
 ```go
@@ -50,7 +66,7 @@ Details: [interact/README.md](interact/README.md)
 
 ### `progress`
 
-Provides progress and loading display helpers for long-running tasks. It includes progress bars, text bars, spinner/loading indicators, counters and dynamic text output.
+Provides progress and loading display helpers for long-running tasks. It includes progress bars, text bars, spinner/loading indicators, counters, dynamic text output and `MultiProgress` for rendering multiple bars in one terminal block.
 
 Import:
 

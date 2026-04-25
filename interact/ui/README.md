@@ -269,4 +269,4 @@ go test ./interact/ui -run Example -v
 
 ## Next Step
 
-The current abstraction is ready for richer event-driven backends and more advanced line editing behavior without changing the `ui` package surface.
+The current abstraction is ready for richer event-driven backends, resize handling and future selection filtering without changing the `ui` package surface.

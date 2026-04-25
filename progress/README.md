@@ -9,6 +9,7 @@ It supports progress output patterns such as `Txt`, `Bar`, `Loading`, `RoundTrip
 - pending/loading progress bar
 - counter
 - dynamic text
+- multi progress rendering
 
 ## Documentation
 
@@ -54,6 +55,8 @@ See package tests and exported constructors for more usage patterns.
 
 Use `MultiProgress` when you need to render several `Progress` instances in one terminal block.
 
+`NewMulti()` uses the shared `cutypes.Output` writer by default. You can override the output by setting `mp.Writer`.
+
 ```go
 package main
 
@@ -65,6 +68,7 @@ import (
 
 func main() {
 	mp := progress.NewMulti()
+	// mp.Writer = customWriter
 
 	build := mp.New(100)
 	build.AddMessage("message", " build")
@@ -175,6 +179,8 @@ func SpinnerBar(chars []rune, maxSteps ...int) *Progress
 func Tape(maxSteps ...int) *Progress
 func Txt(maxSteps ...int) *Progress
 ```
+
+`Progress.Line()` returns the current rendered line for managed rendering. It is mainly used by `MultiProgress`, but can also be useful when embedding progress output in another renderer.
 
 ## Spinner Bar
 
