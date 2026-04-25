@@ -129,6 +129,32 @@ func TestInput_RunWithFakeCursorMove(t *testing.T) {
 	is.Eq(1, views[len(views)-1].CursorRow)
 }
 
+func TestInput_RunWithFakeUnicodeEditing(t *testing.T) {
+	is := assert.New(t)
+
+	be := fake.New(
+		backend.Event{Type: backend.EventKey, Text: "你"},
+		backend.Event{Type: backend.EventKey, Text: "好"},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyLeft},
+		backend.Event{Type: backend.EventKey, Text: "很"},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyBackspace},
+		backend.Event{Type: backend.EventKey, Text: "真"},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyDelete},
+		backend.Event{Type: backend.EventKey, Text: "棒"},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyEnter},
+	)
+
+	ipt := NewInput("Edit")
+	got, err := ipt.Run(context.Background(), be)
+	is.Nil(err)
+	is.Eq("你真棒", got)
+
+	session := be.LastSession()
+	views := session.Views()
+	is.True(len(views) > 0)
+	is.Eq(len("Current: ")+3, views[len(views)-1].CursorColumn)
+}
+
 func TestInput_RunWithFakeHomeEndDelete(t *testing.T) {
 	is := assert.New(t)
 

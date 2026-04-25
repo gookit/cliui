@@ -33,10 +33,11 @@ func (c *Input) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader,
 			return "", err
 		}
 
-		buf := ""
+		buf := []rune{}
 		cursor := 0
 		for {
-			if err := session.Render(c.view(buf, cursor, "")); err != nil {
+			current := string(buf)
+			if err := session.Render(c.view(current, cursor, "")); err != nil {
 				return "", err
 			}
 
@@ -92,25 +93,25 @@ func (c *Input) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader,
 					start--
 				}
 
-				buf = buf[:start] + buf[cursor:]
+				buf = append(buf[:start], buf[cursor:]...)
 				cursor = start
 				continue
 			case backend.KeyBackspace:
 				if cursor > 0 && len(buf) > 0 {
-					buf = buf[:cursor-1] + buf[cursor:]
+					buf = append(buf[:cursor-1], buf[cursor:]...)
 					cursor--
 				}
 				continue
 			case backend.KeyDelete:
 				if cursor < len(buf) && len(buf) > 0 {
-					buf = buf[:cursor] + buf[cursor+1:]
+					buf = append(buf[:cursor], buf[cursor+1:]...)
 				}
 				continue
 			case backend.KeyEnter:
 				val := strings.TrimSpace(ev.Text)
 				// event-driven backend submits current buffer on enter.
-				if val == "" && buf != "" {
-					val = buf
+				if val == "" && len(buf) > 0 {
+					val = string(buf)
 				}
 				if val == "" {
 					val = c.Default
@@ -118,7 +119,7 @@ func (c *Input) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader,
 
 				if c.Validate != nil {
 					if err := c.Validate(val); err != nil {
-						if renderErr := session.Render(c.view(buf, cursor, err.Error())); renderErr != nil {
+						if renderErr := session.Render(c.view(string(buf), cursor, err.Error())); renderErr != nil {
 							return "", renderErr
 						}
 						continue
@@ -129,12 +130,13 @@ func (c *Input) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader,
 			}
 
 			if ev.Text != "" {
+				text := []rune(ev.Text)
 				if cursor >= len(buf) {
-					buf += ev.Text
+					buf = append(buf, text...)
 				} else {
-					buf = buf[:cursor] + ev.Text + buf[cursor:]
+					buf = append(buf[:cursor], append(text, buf[cursor:]...)...)
 				}
-				cursor += len(ev.Text)
+				cursor += len(text)
 				continue
 			}
 
@@ -145,7 +147,7 @@ func (c *Input) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader,
 
 			if c.Validate != nil {
 				if err := c.Validate(val); err != nil {
-					if renderErr := session.Render(c.view(buf, cursor, err.Error())); renderErr != nil {
+					if renderErr := session.Render(c.view(string(buf), cursor, err.Error())); renderErr != nil {
 						return "", renderErr
 					}
 					continue
