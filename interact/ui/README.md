@@ -13,9 +13,11 @@ Current status:
 
 - stable component models and result types
 - `plain` backend is available
-- minimal raw-terminal `readline` backend is available
+- raw-terminal `readline` backend is available
 - existing `interact` package APIs remain unchanged
-- advanced line editing and filtering are not implemented yet
+- `Input` supports UTF-8 text editing and common line-editing shortcuts
+- selection components keep validation errors visible until the next user input
+- filtering, resize events, tab navigation and page navigation are not implemented yet
 
 ## Packages
 
@@ -198,14 +200,19 @@ func main() {
 ## Notes
 
 - `plain` backend uses line-based input and works with ordinary stdin/stdout streams.
-- `readline` backend uses raw terminal input and supports arrow keys, space, enter, esc and ctrl+c.
+- `plain` backend does not provide per-key navigation; select components accept item keys, and multi-select accepts comma-separated item keys.
+- `readline` backend uses raw terminal input and supports UTF-8 text, arrow keys, Home/End, Delete, Backspace, Space, Enter, Esc and Ctrl+C.
 - `readline.New()` falls back to `plain` when a real terminal is unavailable.
+- `readline.NewStrict()` returns an error when stdin is not a real terminal.
 - `Select` uses single-key selection by item key.
 - `MultiSelect` uses comma-separated item keys.
 - `ErrAborted` is returned when the current interaction is canceled.
 - `Select` and `MultiSelect` support disabled items and default values.
 - `Select` shows the current highlighted item in a dedicated status line.
 - `MultiSelect` shows both the current highlighted item and the selected key summary.
+- Validation and selection errors stay visible until the next input event changes the component state.
+- `Input` cursor placement accounts for display width, so CJK text is handled correctly in supported terminals.
+- Terminal resize events are defined in the backend model but are not emitted by the current backends.
 
 ## Key Bindings
 
@@ -215,6 +222,33 @@ For the current `readline` backend:
 - `Confirm`: `Left/Right` to switch, `y/n` to choose, `Enter` to submit current value
 - `Select`: `Up/Down` to move, `Enter` to confirm, or type item key directly; the view also shows the current item summary
 - `MultiSelect`: `Up/Down` to move, `Space` to toggle, `Enter` to confirm; the view also shows current item and selected key summary
+
+## Backend Behavior
+
+### plain
+
+`plain` is intended for non-TTY input, tests, redirected stdin and simple command-line flows. It reads one line at a time:
+
+- `Input` reads the submitted line as the value.
+- `Confirm` accepts `yes/no`, `y/n`, or an empty line for the default.
+- `Select` accepts an item key, or the default key on an empty line.
+- `MultiSelect` accepts comma-separated item keys, or default keys on an empty line.
+
+### readline
+
+`readline` is intended for real terminal interaction. It normalizes terminal events for the UI components:
+
+- UTF-8 input is read as runes instead of raw bytes.
+- Common CSI and SS3 escape sequences are mapped for arrows, Home/End and Delete.
+- `Esc` and `Ctrl+C` cancel the current component with `ErrAborted`.
+- `readline.New()` falls back to `plain` automatically outside a TTY; use `readline.NewStrict()` for TTY-only behavior.
+
+## Current Limits
+
+- Filtering/search inside `Select` and `MultiSelect` is not implemented.
+- `Tab`, `Shift+Tab`, `PageUp` and `PageDown` are not currently mapped.
+- Resize events are modeled but not emitted by current backends.
+- Very delayed escape sequences may be treated as a standalone `Esc`; common terminal key sequences are handled when available in the input buffer.
 
 ## Demo
 
