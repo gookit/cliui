@@ -277,6 +277,25 @@ func (c *MultiSelect) view(cursor int, selected map[string]Item, errMsg string) 
 		lines = append(lines, line)
 	}
 
+	current := c.Items[cursor]
+	currentLine := fmt.Sprintf("Current: %s (%s)", current.Label, current.Key)
+	if current.Disabled {
+		currentLine += " [disabled]"
+	}
+	lines = append(lines, currentLine)
+
+	var selectedKeys []string
+	for _, item := range c.Items {
+		if _, ok := selected[item.Key]; ok {
+			selectedKeys = append(selectedKeys, item.Key)
+		}
+	}
+	selectedLine := fmt.Sprintf("Selected(%d): %s", len(selectedKeys), strings.Join(selectedKeys, ", "))
+	if len(selectedKeys) == 0 {
+		selectedLine = "Selected(0): none"
+	}
+	lines = append(lines, selectedLine)
+
 	hint := "Use Up/Down to move, Space to toggle, Enter to confirm"
 	lines = append(lines, hint)
 
@@ -293,7 +312,7 @@ func (c *MultiSelect) view(cursor int, selected map[string]Item, errMsg string) 
 
 	return backend.View{
 		Lines:        lines,
-		CursorRow:    len(c.Items) + 2,
+		CursorRow:    len(c.Items) + 4,
 		CursorColumn: len(prompt),
 	}
 }

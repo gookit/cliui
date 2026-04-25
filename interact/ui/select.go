@@ -166,6 +166,13 @@ func (c *Select) view(cursor int, errMsg string) backend.View {
 		lines = append(lines, line)
 	}
 
+	current := c.Items[cursor]
+	currentLine := fmt.Sprintf("Current: %s (%s)", current.Label, current.Key)
+	if current.Disabled {
+		currentLine += " [disabled]"
+	}
+	lines = append(lines, currentLine)
+
 	hint := "Use Up/Down to move, Enter to confirm, or input item key"
 	lines = append(lines, hint)
 
@@ -182,7 +189,7 @@ func (c *Select) view(cursor int, errMsg string) backend.View {
 
 	return backend.View{
 		Lines:        lines,
-		CursorRow:    len(c.Items) + 2,
+		CursorRow:    len(c.Items) + 3,
 		CursorColumn: len(prompt),
 	}
 }

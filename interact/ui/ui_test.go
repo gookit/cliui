@@ -385,7 +385,9 @@ func TestSelect_RunWithFakeEvents(t *testing.T) {
 	session := be.LastSession()
 	views := session.Views()
 	is.True(len(views) > 0)
-	is.Contains(views[len(views)-1].Lines[len(views[len(views)-1].Lines)-2], "Use Up/Down")
+	last := views[len(views)-1]
+	is.Contains(last.Lines[len(last.Lines)-3], "Current: Beta")
+	is.Contains(last.Lines[len(last.Lines)-2], "Use Up/Down")
 }
 
 func TestMultiSelect_RunWithFakeEvents(t *testing.T) {
@@ -412,5 +414,8 @@ func TestMultiSelect_RunWithFakeEvents(t *testing.T) {
 	session := be.LastSession()
 	views := session.Views()
 	is.True(len(views) > 0)
-	is.Contains(views[len(views)-1].Lines[len(views[len(views)-1].Lines)-2], "Space to toggle")
+	last := views[len(views)-1]
+	is.Contains(last.Lines[len(last.Lines)-4], "Current: Beta")
+	is.Contains(last.Lines[len(last.Lines)-3], "Selected(2): a, b")
+	is.Contains(last.Lines[len(last.Lines)-2], "Space to toggle")
 }
