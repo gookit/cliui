@@ -1,9 +1,11 @@
 package show_test
 
 import (
+	"bytes"
 	"fmt"
 	"testing"
 
+	"github.com/gookit/cliui/cutypes"
 	"github.com/gookit/cliui/show"
 	"github.com/gookit/cliui/show/lists"
 	"github.com/gookit/goutil/testutil/assert"
@@ -81,4 +83,57 @@ func TestSome(t *testing.T) {
 	fmt.Printf("|%8s|\n", "text")
 	fmt.Printf("|%-8s|\n", "text")
 	fmt.Printf("|%8s|\n", "text")
+}
+
+func TestAnyData(t *testing.T) {
+	is := assert.New(t)
+
+	cases := []struct {
+		name string
+		run  func()
+	}{
+		{
+			name: "map",
+			run: func() {
+				show.AnyData("user", map[string]any{
+					"name": "tom",
+					"age":  18,
+				})
+			},
+		},
+		{
+			name: "struct",
+			run: func() {
+				show.AnyData("user", struct {
+					Name string `json:"name"`
+					Age  int    `json:"age"`
+				}{
+					Name: "tom",
+					Age:  18,
+				})
+			},
+		},
+		{
+			name: "scalar",
+			run: func() {
+				show.AnyData("answer", 42)
+			},
+		},
+		{
+			name: "nil",
+			run: func() {
+				show.AnyData("empty", nil)
+			},
+		},
+	}
+
+	for _, cs := range cases {
+		t.Run(cs.name, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			cutypes.SetOutput(buf)
+			defer cutypes.ResetOutput()
+
+			is.NotPanics(cs.run)
+		})
+	}
 }

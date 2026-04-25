@@ -7,7 +7,7 @@ type PrettyJSON struct {
 	showcom.Base
 }
 
-// NewPrettyJSON instance
+// NewPrettyJSON create an instance.
 func NewPrettyJSON() *PrettyJSON {
 	return &PrettyJSON{}
 }

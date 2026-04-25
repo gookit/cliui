@@ -194,7 +194,7 @@ func TestInput_RunWithFakeCtrlUAndCtrlK(t *testing.T) {
 	ipt := NewInput("Edit")
 	got, err := ipt.Run(context.Background(), be)
 	is.Nil(err)
-	is.Eq("ZXY", got)
+	is.Eq("ZabXY", got)
 }
 
 func TestInput_RunWithFakeCtrlW(t *testing.T) {

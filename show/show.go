@@ -4,6 +4,7 @@ package show
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"text/tabwriter"
 
 	"github.com/gookit/cliui/cutypes"
@@ -27,6 +28,30 @@ type FormatterFace = showcom.Formatter
 
 // ShownFace shown interface. for compatible
 type ShownFace = showcom.ShownFace
+
+// AnyData format and render any type data.
+func AnyData(title string, v any) {
+	if v == nil {
+		JSON(v)
+		return
+	}
+
+	rv := reflect.ValueOf(v)
+	for rv.Kind() == reflect.Ptr || rv.Kind() == reflect.Interface {
+		if rv.IsNil() {
+			JSON(nil)
+			return
+		}
+		rv = rv.Elem()
+	}
+
+	switch rv.Kind() {
+	case reflect.Map, reflect.Struct, reflect.Slice, reflect.Array:
+		AList(title, rv.Interface())
+	default:
+		JSON(v)
+	}
+}
 
 // JSON print pretty JSON data
 func JSON(v any, prefixAndIndent ...string) int {
