@@ -98,19 +98,18 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gookit/cliui/interact/backend/readline"
-	"github.com/gookit/cliui/interact/ui"
+	"github.com/gookit/cliui/interact"
 )
 
 func main() {
-	be := readline.New()
+	be := interact.NewUIReadlineBackend()
 
-	name, err := ui.NewInput("Your name").Run(context.Background(), be)
+	name, err := interact.NewUIInput("Your name").Run(context.Background(), be)
 	if err != nil {
 		panic(err)
 	}
 
-	env, err := ui.NewSelect("Choose env", []ui.Item{
+	env, err := interact.NewUISelect("Choose env", []interact.UIItem{
 		{Key: "dev", Label: "Development", Value: "dev"},
 		{Key: "prod", Label: "Production", Value: "prod"},
 	}).Run(context.Background(), be)
