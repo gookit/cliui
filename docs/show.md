@@ -25,6 +25,12 @@ go get github.com/gookit/cliui/show
 
 ## Usage
 
+### Title
+
+```go
+show.ATitle("Deploy")
+```
+
 ### Any Data
 
 `show.AnyData()` renders structured data as a list and falls back to pretty JSON for scalar values.
@@ -44,6 +50,11 @@ show.Banner("Update available")
 
 For more control, use `show/banner` directly.
 
+```go
+b := banner.New("Update available", banner.WithBannerCenter())
+fmt.Print(b.Render())
+```
+
 ### Alert
 
 `show/alert` renders alert messages using the banner component:
@@ -55,10 +66,54 @@ alert.Success("created %s", "user")
 alert.Error("failed: %s", "network")
 ```
 
+Build a reusable alert message:
+
+```go
+msg := alert.New("INFO", "ready", 0)
+msg.Println()
+```
+
+### List
+
+```go
+show.AList("User", map[string]any{
+	"name": "tom",
+	"role": "admin",
+})
+```
+
+### Multi List
+
+```go
+show.MList(map[string]any{
+	"App": map[string]string{"name": "cliui"},
+	"Env": []string{"dev", "test"},
+})
+```
+
+### Table
+
+Use `show/table` when you need a tabular layout:
+
+```go
+tb := table.New("Users")
+tb.SetHeads("ID", "Name")
+tb.AddRow(1, "Tom")
+tb.AddRow(2, "Jane")
+tb.Println()
+```
+
 ### JSON
 
 ```go
 show.JSON(map[string]any{"name": "tom"})
+```
+
+### Tab Writer
+
+```go
+w := show.TabWriter([]string{"Name\tRole", "Tom\tAdmin"})
+w.Flush()
 ```
 
 See package tests and exported APIs for more usage examples.

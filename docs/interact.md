@@ -13,6 +13,7 @@ It includes common terminal interaction methods such as:
 - `Select/Choice`
 - `MultiSelect/Checkbox`
 - `ReadPassword`
+- `Collector` and `cparam`
 
 ## Documentation
 
@@ -45,6 +46,8 @@ Bridge helpers are also available from the `interact` package:
 - `NewUIMultiSelect`
 - `NewUIPlainBackend`
 - `NewUIReadlineBackend`
+- `NewUIStrictReadlineBackend`
+- `NewUIFakeBackend`
 
 Use the root package helpers from `github.com/gookit/cliui` when tests or applications need to replace the default streams shared by `interact`, `interact/ui`, `show` and `progress`:
 
@@ -53,9 +56,118 @@ cliui.CustomIO(in, out)
 defer cliui.ResetIO()
 ```
 
-## Quick Example
+## Quick Examples
 
-Select and choice usage:
+### Read Input
+
+```go
+name, err := interact.ReadInput("Your name: ")
+if err != nil {
+	panic(err)
+}
+fmt.Println("name:", name)
+```
+
+### Prompt
+
+```go
+answer, err := interact.Prompt(context.Background(), "Environment", "dev")
+if err != nil {
+	panic(err)
+}
+fmt.Println("env:", answer)
+```
+
+### Confirm
+
+```go
+if interact.Confirm("Continue? ", true) {
+	fmt.Println("confirmed")
+}
+```
+
+### Question
+
+```go
+name := interact.Ask("Your name?", "guest", nil)
+fmt.Println("name:", name)
+```
+
+Use `NewQuestion` when you need to configure or reuse a question:
+
+```go
+value := interact.NewQuestion("Your name?", "guest").Run()
+fmt.Println(value.String())
+```
+
+### Select
+
+```go
+city := interact.SelectOne(
+	"Your city?",
+	[]string{"chengdu", "beijing", "shanghai"},
+	"",
+)
+fmt.Println("city:", city)
+```
+
+### Multi Select
+
+```go
+services := interact.MultiSelect(
+	"Choose services",
+	[]string{"api", "worker", "web"},
+	[]string{"api"},
+)
+fmt.Println("services:", services)
+```
+
+Use `NewSelect` directly when you need the selected key and value:
+
+```go
+s := interact.NewSelect("Choose env", []string{"dev", "prod"})
+result := s.Run()
+fmt.Println(result.KeyString(), result.String())
+```
+
+### Password
+
+```go
+password := interact.ReadPassword("Password: ")
+fmt.Println("password length:", len(password))
+```
+
+### Collector
+
+`Collector` groups several input parameters and runs them in order:
+
+```go
+c := interact.NewCollector()
+err := c.AddParams(
+	cparam.NewStringParam("name", "Your name"),
+	cparam.NewChoiceParam("env", "Choose env").WithChoices([]string{"dev", "prod"}),
+)
+if err != nil {
+	panic(err)
+}
+```
+
+### UI Bridge
+
+Use the bridge helpers when you want the new `interact/ui` components without importing subpackages directly:
+
+```go
+be := interact.NewUIReadlineBackend()
+
+name, err := interact.NewUIInput("Your name").Run(context.Background(), be)
+if err != nil {
+	panic(err)
+}
+
+fmt.Println("name:", name)
+```
+
+### Full Select Example
 
 ```go
 package main

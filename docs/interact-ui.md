@@ -25,6 +25,7 @@ Current status:
 - `github.com/gookit/cliui/interact/backend`
 - `github.com/gookit/cliui/interact/backend/plain`
 - `github.com/gookit/cliui/interact/backend/readline`
+- `github.com/gookit/cliui/interact/backend/fake`
 
 ## Install
 
@@ -62,6 +63,13 @@ func main() {
 }
 ```
 
+Minimal form:
+
+```go
+be := plain.New()
+name, err := ui.NewInput("Your name").Run(context.Background(), be)
+```
+
 ### Confirm
 
 ```go
@@ -86,6 +94,13 @@ func main() {
 
 	fmt.Println("confirmed:", ok)
 }
+```
+
+Minimal form:
+
+```go
+be := plain.New()
+ok, err := ui.NewConfirm("Continue", true).Run(context.Background(), be)
 ```
 
 ### Select
@@ -119,6 +134,16 @@ func main() {
 }
 ```
 
+Minimal form:
+
+```go
+be := plain.New()
+result, err := ui.NewSelect("Choose env", []ui.Item{
+	{Key: "dev", Label: "Development", Value: "dev"},
+	{Key: "prod", Label: "Production", Value: "prod"},
+}).Run(context.Background(), be)
+```
+
 ### MultiSelect
 
 ```go
@@ -150,6 +175,16 @@ func main() {
 
 	fmt.Println("selected keys:", result.Keys)
 }
+```
+
+Minimal form:
+
+```go
+be := plain.New()
+result, err := ui.NewMultiSelect("Choose services", []ui.Item{
+	{Key: "api", Label: "API", Value: "api"},
+	{Key: "web", Label: "Web", Value: "web"},
+}).Run(context.Background(), be)
 ```
 
 ### Readline Backend
@@ -197,6 +232,19 @@ func main() {
 }
 ```
 
+### Fake Backend
+
+Use `fake` backend in tests to feed normalized events without a real terminal:
+
+```go
+be := fake.New(
+	backend.Event{Type: backend.EventKey, Text: "tom"},
+	backend.Event{Type: backend.EventKey, Key: backend.KeyEnter},
+)
+
+name, err := ui.NewInput("Your name").Run(context.Background(), be)
+```
+
 ## Notes
 
 - `plain` backend uses line-based input and works with ordinary stdin/stdout streams.
@@ -204,6 +252,7 @@ func main() {
 - `readline` backend uses raw terminal input and supports UTF-8 text, arrow keys, Home/End, Delete, Backspace, Tab, Shift+Tab, PageUp/PageDown, Space, Enter, Esc and Ctrl+C.
 - `readline.New()` falls back to `plain` when a real terminal is unavailable.
 - `readline.NewStrict()` returns an error when stdin is not a real terminal.
+- `fake` backend is intended for deterministic component tests.
 - `Select` uses single-key selection by item key.
 - `MultiSelect` uses comma-separated item keys.
 - `ErrAborted` is returned when the current interaction is canceled.

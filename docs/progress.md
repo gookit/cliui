@@ -23,7 +23,7 @@ go get github.com/gookit/cliui/progress
 
 ## Quick Example
 
-Basic usage:
+### Bar
 
 ```go
 package main
@@ -47,6 +47,102 @@ func main() {
 
 	p.Finish()
 }
+```
+
+### Full
+
+```go
+p := progress.Full(100)
+p.Start()
+p.AdvanceTo(100)
+p.Finish()
+```
+
+### Text Progress
+
+```go
+p := progress.Txt(100)
+p.Start()
+p.AdvanceTo(50)
+p.Finish()
+```
+
+### Counter
+
+```go
+p := progress.Counter(3)
+p.Start()
+p.Advance()
+p.Advance()
+p.Advance()
+p.Finish()
+```
+
+### Dynamic Text
+
+```go
+p := progress.DynamicText(map[int]string{
+	10: " prepare",
+	50: " build",
+	90: " finish",
+}, 100)
+p.Start()
+p.AdvanceTo(100)
+p.Finish()
+```
+
+### Loading Bar
+
+```go
+p := progress.LoadingBar([]rune{'-', '\\', '|', '/'}, 20)
+p.Start()
+p.AdvanceTo(20)
+p.Finish()
+```
+
+### Round Trip
+
+```go
+p := progress.RoundTrip('=', 10, 30)
+p.Start()
+p.AdvanceTo(100)
+p.Finish()
+```
+
+### Tape
+
+```go
+p := progress.Tape(100)
+p.Start()
+p.AdvanceTo(100)
+p.Finish()
+```
+
+### Custom Bar
+
+```go
+p := progress.CustomBar(40, progress.RandomBarStyle(), 100)
+p.Start()
+p.AdvanceTo(100)
+p.Finish()
+```
+
+### Spinner
+
+```go
+sp := progress.LoadingSpinner([]rune{'-', '\\', '|', '/'}, 100*time.Millisecond)
+sp.Start("loading")
+time.Sleep(time.Second)
+sp.Stop("done")
+```
+
+### Round Trip Spinner
+
+```go
+sp := progress.RoundTripSpinner('=', 100*time.Millisecond, 10, 30)
+sp.Start("loading")
+time.Sleep(time.Second)
+sp.Stop("done")
 ```
 
 See package tests and exported constructors for more usage patterns.
