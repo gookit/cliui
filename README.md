@@ -43,7 +43,7 @@ Import:
 github.com/gookit/cliui/show
 ```
 
-Details: [show/README.md](show/README.md)
+Details: [docs/show.md](docs/show.md)
 
 ### `interact`
 
@@ -62,7 +62,7 @@ Import:
 github.com/gookit/cliui/interact
 ```
 
-Details: [interact/README.md](interact/README.md)
+Details: [docs/interact.md](docs/interact.md)
 
 ### `progress`
 
@@ -74,7 +74,7 @@ Import:
 github.com/gookit/cliui/progress
 ```
 
-Details: [progress/README.md](progress/README.md)
+Details: [docs/progress.md](docs/progress.md)
 
 ## Migration
 

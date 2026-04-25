@@ -35,7 +35,7 @@ go get github.com/gookit/cliui/interact
 - `readline.NewStrict()` returns an error instead of falling back when a TTY is unavailable
 - `Input` supports UTF-8 line editing and common shortcuts
 - `Select` and `MultiSelect` support disabled items, defaults, navigation keys and visible selection status
-- details: [ui/README.md](ui/README.md)
+- details: [interact-ui.md](interact-ui.md)
 
 Bridge helpers are also available from the `interact` package:
 
@@ -105,7 +105,7 @@ func main() {
 
 Preview:
 
-![](images/select.png)
+![](../examples/images/select.png)
 
 ## Related
 
