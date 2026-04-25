@@ -136,52 +136,22 @@ func (s *Session) ReadEvent(ctx context.Context) (backend.Event, error) {
 	case 23:
 		return backend.Event{Type: backend.EventKey, Key: backend.KeyCtrlW}, nil
 	case 27:
-		next, err := s.in.Peek(3)
-		if err == nil && len(next) >= 2 && next[0] == '[' {
-			// CSI sequences
-			switch next[1] {
-			case 'A':
-				_, _ = s.in.Discard(2)
-				return backend.Event{Type: backend.EventKey, Key: backend.KeyUp}, nil
-			case 'B':
-				_, _ = s.in.Discard(2)
-				return backend.Event{Type: backend.EventKey, Key: backend.KeyDown}, nil
-			case 'C':
-				_, _ = s.in.Discard(2)
-				return backend.Event{Type: backend.EventKey, Key: backend.KeyRight}, nil
-			case 'D':
-				_, _ = s.in.Discard(2)
-				return backend.Event{Type: backend.EventKey, Key: backend.KeyLeft}, nil
-			case 'H':
-				_, _ = s.in.Discard(2)
-				return backend.Event{Type: backend.EventKey, Key: backend.KeyHome}, nil
-			case 'F':
-				_, _ = s.in.Discard(2)
-				return backend.Event{Type: backend.EventKey, Key: backend.KeyEnd}, nil
-			case '3':
-				if len(next) >= 3 && next[2] == '~' {
-					_, _ = s.in.Discard(3)
-					return backend.Event{Type: backend.EventKey, Key: backend.KeyDelete}, nil
-				}
-			case '1':
-				if len(next) >= 3 && next[2] == '~' {
-					_, _ = s.in.Discard(3)
-					return backend.Event{Type: backend.EventKey, Key: backend.KeyHome}, nil
-				}
-			case '4':
-				if len(next) >= 3 && next[2] == '~' {
-					_, _ = s.in.Discard(3)
-					return backend.Event{Type: backend.EventKey, Key: backend.KeyEnd}, nil
-				}
-			}
-		}
-		return backend.Event{Type: backend.EventInterrupt, Key: backend.KeyEsc}, nil
+		return s.readEscapeEvent()
 	case 32:
 		return backend.Event{Type: backend.EventKey, Key: backend.KeySpace}, nil
 	case 127, 8:
 		return backend.Event{Type: backend.EventKey, Key: backend.KeyBackspace}, nil
 	default:
-		text := strings.TrimSpace(string([]byte{b}))
+		if err := s.in.UnreadByte(); err != nil {
+			return backend.Event{}, err
+		}
+
+		r, _, err := s.in.ReadRune()
+		if err != nil {
+			return backend.Event{}, err
+		}
+
+		text := strings.TrimSpace(string(r))
 		key := backend.KeyUnknown
 		switch strings.ToLower(text) {
 		case "y":
@@ -191,6 +161,95 @@ func (s *Session) ReadEvent(ctx context.Context) (backend.Event, error) {
 		}
 
 		return backend.Event{Type: backend.EventKey, Key: key, Text: text}, nil
+	}
+}
+
+func (s *Session) readEscapeEvent() (backend.Event, error) {
+	if s.in.Buffered() == 0 {
+		return backend.Event{Type: backend.EventInterrupt, Key: backend.KeyEsc}, nil
+	}
+
+	prefix, err := s.in.ReadByte()
+	if err != nil {
+		return backend.Event{Type: backend.EventInterrupt, Key: backend.KeyEsc}, nil
+	}
+
+	switch prefix {
+	case '[':
+		return s.readCSIEvent()
+	case 'O':
+		return s.readSS3Event()
+	default:
+		return backend.Event{Type: backend.EventInterrupt, Key: backend.KeyEsc}, nil
+	}
+}
+
+func (s *Session) readCSIEvent() (backend.Event, error) {
+	if s.in.Buffered() == 0 {
+		return backend.Event{Type: backend.EventInterrupt, Key: backend.KeyEsc}, nil
+	}
+
+	b, err := s.in.ReadByte()
+	if err != nil {
+		return backend.Event{Type: backend.EventInterrupt, Key: backend.KeyEsc}, nil
+	}
+
+	switch b {
+	case 'A':
+		return backend.Event{Type: backend.EventKey, Key: backend.KeyUp}, nil
+	case 'B':
+		return backend.Event{Type: backend.EventKey, Key: backend.KeyDown}, nil
+	case 'C':
+		return backend.Event{Type: backend.EventKey, Key: backend.KeyRight}, nil
+	case 'D':
+		return backend.Event{Type: backend.EventKey, Key: backend.KeyLeft}, nil
+	case 'H':
+		return backend.Event{Type: backend.EventKey, Key: backend.KeyHome}, nil
+	case 'F':
+		return backend.Event{Type: backend.EventKey, Key: backend.KeyEnd}, nil
+	}
+
+	seq := []byte{b}
+	for s.in.Buffered() > 0 {
+		next, err := s.in.ReadByte()
+		if err != nil {
+			return backend.Event{Type: backend.EventInterrupt, Key: backend.KeyEsc}, nil
+		}
+		seq = append(seq, next)
+		if next == '~' {
+			break
+		}
+	}
+
+	switch string(seq) {
+	case "1~", "7~":
+		return backend.Event{Type: backend.EventKey, Key: backend.KeyHome}, nil
+	case "4~", "8~":
+		return backend.Event{Type: backend.EventKey, Key: backend.KeyEnd}, nil
+	case "3~":
+		return backend.Event{Type: backend.EventKey, Key: backend.KeyDelete}, nil
+	default:
+		return backend.Event{Type: backend.EventInterrupt, Key: backend.KeyEsc}, nil
+	}
+}
+
+func (s *Session) readSS3Event() (backend.Event, error) {
+	if s.in.Buffered() == 0 {
+		return backend.Event{Type: backend.EventInterrupt, Key: backend.KeyEsc}, nil
+	}
+
+	b, err := s.in.ReadByte()
+	if err != nil {
+		return backend.Event{Type: backend.EventInterrupt, Key: backend.KeyEsc}, nil
+	}
+
+	switch b {
+	case 'H':
+		return backend.Event{Type: backend.EventKey, Key: backend.KeyHome}, nil
+	case 'F':
+		return backend.Event{Type: backend.EventKey, Key: backend.KeyEnd}, nil
+	default:
+		return backend.Event{Type: backend.EventInterrupt, Key: backend.KeyEsc}, nil
 	}
 }
 
