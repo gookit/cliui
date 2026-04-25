@@ -121,6 +121,8 @@ func (s *Session) ReadEvent(ctx context.Context) (backend.Event, error) {
 	}
 
 	switch b {
+	case 9:
+		return backend.Event{Type: backend.EventKey, Key: backend.KeyTab}, nil
 	case 1:
 		return backend.Event{Type: backend.EventKey, Key: backend.KeyCtrlA}, nil
 	case 3:
@@ -207,6 +209,8 @@ func (s *Session) readCSIEvent() (backend.Event, error) {
 		return backend.Event{Type: backend.EventKey, Key: backend.KeyHome}, nil
 	case 'F':
 		return backend.Event{Type: backend.EventKey, Key: backend.KeyEnd}, nil
+	case 'Z':
+		return backend.Event{Type: backend.EventKey, Key: backend.KeyShiftTab}, nil
 	}
 
 	seq := []byte{b}
@@ -226,6 +230,10 @@ func (s *Session) readCSIEvent() (backend.Event, error) {
 		return backend.Event{Type: backend.EventKey, Key: backend.KeyHome}, nil
 	case "4~", "8~":
 		return backend.Event{Type: backend.EventKey, Key: backend.KeyEnd}, nil
+	case "5~":
+		return backend.Event{Type: backend.EventKey, Key: backend.KeyPageUp}, nil
+	case "6~":
+		return backend.Event{Type: backend.EventKey, Key: backend.KeyPageDown}, nil
 	case "3~":
 		return backend.Event{Type: backend.EventKey, Key: backend.KeyDelete}, nil
 	default:

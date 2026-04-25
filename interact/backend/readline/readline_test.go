@@ -61,6 +61,7 @@ func TestSession_ReadEventEscapeSequences(t *testing.T) {
 		{name: "down", in: "\x1B[B", key: backend.KeyDown},
 		{name: "right", in: "\x1B[C", key: backend.KeyRight},
 		{name: "left", in: "\x1B[D", key: backend.KeyLeft},
+		{name: "shift tab", in: "\x1B[Z", key: backend.KeyShiftTab},
 		{name: "home csi", in: "\x1B[H", key: backend.KeyHome},
 		{name: "end csi", in: "\x1B[F", key: backend.KeyEnd},
 		{name: "home ss3", in: "\x1BOH", key: backend.KeyHome},
@@ -69,6 +70,8 @@ func TestSession_ReadEventEscapeSequences(t *testing.T) {
 		{name: "end tilde", in: "\x1B[4~", key: backend.KeyEnd},
 		{name: "home seven tilde", in: "\x1B[7~", key: backend.KeyHome},
 		{name: "end eight tilde", in: "\x1B[8~", key: backend.KeyEnd},
+		{name: "page up", in: "\x1B[5~", key: backend.KeyPageUp},
+		{name: "page down", in: "\x1B[6~", key: backend.KeyPageDown},
 		{name: "delete", in: "\x1B[3~", key: backend.KeyDelete},
 		{name: "esc", in: "\x1B", key: backend.KeyEsc},
 	}
@@ -84,6 +87,16 @@ func TestSession_ReadEventEscapeSequences(t *testing.T) {
 			is.Eq(tt.key, ev.Key)
 		})
 	}
+}
+
+func TestSession_ReadEventTab(t *testing.T) {
+	is := assert.New(t)
+
+	s := &Session{in: bufio.NewReader(bytes.NewBufferString("\t"))}
+	ev, err := s.ReadEvent(context.Background())
+
+	is.Nil(err)
+	is.Eq(backend.KeyTab, ev.Key)
 }
 
 func TestSession_SizeWithoutFile(t *testing.T) {

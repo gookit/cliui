@@ -457,6 +457,29 @@ func TestSelect_RunWithFakeEvents(t *testing.T) {
 	is.Contains(last.Lines[len(last.Lines)-2], "Use Up/Down")
 }
 
+func TestSelect_RunWithFakePagingKeys(t *testing.T) {
+	is := assert.New(t)
+
+	be := fake.New(
+		backend.Event{Type: backend.EventKey, Key: backend.KeyPageDown},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyShiftTab},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyTab},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyPageUp},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyTab},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyEnter},
+	)
+
+	sel := NewSelect("Choose", []Item{
+		{Key: "a", Label: "Alpha", Value: "alpha"},
+		{Key: "b", Label: "Beta", Value: "beta"},
+		{Key: "c", Label: "Gamma", Value: "gamma"},
+	})
+
+	got, err := sel.Run(context.Background(), be)
+	is.Nil(err)
+	is.Eq("b", got.Key)
+}
+
 func TestSelect_KeepsUnknownOptionErrorUntilNextInput(t *testing.T) {
 	is := assert.New(t)
 
@@ -506,6 +529,30 @@ func TestMultiSelect_RunWithFakeEvents(t *testing.T) {
 	is.Contains(last.Lines[len(last.Lines)-4], "Current: Beta")
 	is.Contains(last.Lines[len(last.Lines)-3], "Selected(2): a, b")
 	is.Contains(last.Lines[len(last.Lines)-2], "Space to toggle")
+}
+
+func TestMultiSelect_RunWithFakePagingKeys(t *testing.T) {
+	is := assert.New(t)
+
+	be := fake.New(
+		backend.Event{Type: backend.EventKey, Key: backend.KeyPageDown},
+		backend.Event{Type: backend.EventKey, Key: backend.KeySpace},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyPageUp},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyTab},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyShiftTab},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyEnter},
+	)
+
+	sel := NewMultiSelect("Choose", []Item{
+		{Key: "a", Label: "Alpha", Value: "alpha"},
+		{Key: "b", Label: "Beta", Value: "beta"},
+		{Key: "c", Label: "Gamma", Value: "gamma"},
+	})
+
+	got, err := sel.Run(context.Background(), be)
+	is.Nil(err)
+	is.Len(got.Keys, 1)
+	is.Eq("c", got.Key)
 }
 
 func TestMultiSelect_KeepsMinSelectedErrorUntilNextInput(t *testing.T) {

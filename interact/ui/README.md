@@ -17,7 +17,7 @@ Current status:
 - existing `interact` package APIs remain unchanged
 - `Input` supports UTF-8 text editing and common line-editing shortcuts
 - selection components keep validation errors visible until the next user input
-- filtering, resize events, tab navigation and page navigation are not implemented yet
+- filtering and resize events are not implemented yet
 
 ## Packages
 
@@ -201,7 +201,7 @@ func main() {
 
 - `plain` backend uses line-based input and works with ordinary stdin/stdout streams.
 - `plain` backend does not provide per-key navigation; select components accept item keys, and multi-select accepts comma-separated item keys.
-- `readline` backend uses raw terminal input and supports UTF-8 text, arrow keys, Home/End, Delete, Backspace, Space, Enter, Esc and Ctrl+C.
+- `readline` backend uses raw terminal input and supports UTF-8 text, arrow keys, Home/End, Delete, Backspace, Tab, Shift+Tab, PageUp/PageDown, Space, Enter, Esc and Ctrl+C.
 - `readline.New()` falls back to `plain` when a real terminal is unavailable.
 - `readline.NewStrict()` returns an error when stdin is not a real terminal.
 - `Select` uses single-key selection by item key.
@@ -220,8 +220,8 @@ For the current `readline` backend:
 
 - `Input`: type to insert, `Left/Right` to move, `Home/End` or `Ctrl+A/Ctrl+E` to jump, `Backspace/Delete` to edit, `Ctrl+U` to delete before cursor, `Ctrl+K` to delete after cursor, `Ctrl+W` to delete previous word, `Enter` to submit
 - `Confirm`: `Left/Right` to switch, `y/n` to choose, `Enter` to submit current value
-- `Select`: `Up/Down` to move, `Enter` to confirm, or type item key directly; the view also shows the current item summary
-- `MultiSelect`: `Up/Down` to move, `Space` to toggle, `Enter` to confirm; the view also shows current item and selected key summary
+- `Select`: `Up/Down` or `Tab/Shift+Tab` to move, `PageUp/PageDown` to jump, `Enter` to confirm, or type item key directly; the view also shows the current item summary
+- `MultiSelect`: `Up/Down` or `Tab/Shift+Tab` to move, `PageUp/PageDown` to jump, `Space` to toggle, `Enter` to confirm; the view also shows current item and selected key summary
 
 ## Backend Behavior
 
@@ -239,14 +239,13 @@ For the current `readline` backend:
 `readline` is intended for real terminal interaction. It normalizes terminal events for the UI components:
 
 - UTF-8 input is read as runes instead of raw bytes.
-- Common CSI and SS3 escape sequences are mapped for arrows, Home/End and Delete.
+- Common CSI and SS3 escape sequences are mapped for arrows, Home/End, Delete, Shift+Tab and PageUp/PageDown.
 - `Esc` and `Ctrl+C` cancel the current component with `ErrAborted`.
 - `readline.New()` falls back to `plain` automatically outside a TTY; use `readline.NewStrict()` for TTY-only behavior.
 
 ## Current Limits
 
 - Filtering/search inside `Select` and `MultiSelect` is not implemented.
-- `Tab`, `Shift+Tab`, `PageUp` and `PageDown` are not currently mapped.
 - Resize events are modeled but not emitted by current backends.
 - Very delayed escape sequences may be treated as a standalone `Esc`; common terminal key sequences are handled when available in the input buffer.
 

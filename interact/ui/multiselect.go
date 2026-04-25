@@ -53,11 +53,17 @@ func (c *MultiSelect) RunWithIO(ctx context.Context, be backend.Backend, in io.R
 
 			errMsg = ""
 			switch ev.Key {
-			case backend.KeyUp:
+			case backend.KeyUp, backend.KeyShiftTab:
 				cursor = c.move(cursor, -1)
 				continue
-			case backend.KeyDown:
+			case backend.KeyDown, backend.KeyTab:
 				cursor = c.move(cursor, 1)
+				continue
+			case backend.KeyPageUp:
+				cursor = c.firstEnabledIndex()
+				continue
+			case backend.KeyPageDown:
+				cursor = c.lastEnabledIndex()
 				continue
 			case backend.KeySpace:
 				item := c.Items[cursor]
@@ -189,8 +195,21 @@ func (c *MultiSelect) findItem(key string) (Item, bool) {
 }
 
 func (c *MultiSelect) defaultIndex() int {
+	return c.firstEnabledIndex()
+}
+
+func (c *MultiSelect) firstEnabledIndex() int {
 	for i, item := range c.Items {
 		if !item.Disabled {
+			return i
+		}
+	}
+	return 0
+}
+
+func (c *MultiSelect) lastEnabledIndex() int {
+	for i := len(c.Items) - 1; i >= 0; i-- {
+		if !c.Items[i].Disabled {
 			return i
 		}
 	}
