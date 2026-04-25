@@ -100,6 +100,14 @@ func TestBanner_WithNewOptions(t *testing.T) {
 		assert.NotEmpty(t, result)
 		fmt.Println(result)
 	})
+
+	t.Run("TextColor", func(t *testing.T) {
+		b := banner.New("Colored Text", banner.WithTextColor("green"))
+		result := b.Render()
+		assert.NotEmpty(t, result)
+		assert.StrContains(t, result, "Colored Text")
+		fmt.Println(result)
+	})
 }
 
 // go test -v -run ^TestBanner_MarginOption$ ./show/banner/...

@@ -85,6 +85,13 @@ func WithAlignment(alignment comdef.Align) OptionFunc {
 	}
 }
 
+// WithTextColor sets the content text color tag.
+func WithTextColor(color string) OptionFunc {
+	return func(b *Options) {
+		b.TextColor = color
+	}
+}
+
 // WithWidth 设置横幅宽度
 func WithWidth(width int) OptionFunc {
 	return func(b *Options) {
@@ -126,8 +133,8 @@ type BorderStyle struct {
 	TopRight    rune
 	BottomLeft  rune
 	BottomRight rune
-	Horizontal rune // top, bottom
-	Vertical   rune // left, right
+	Horizontal  rune // top, bottom
+	Vertical    rune // left, right
 	// Color 边框颜色 tag
 	Color string
 }
@@ -141,7 +148,7 @@ var (
 		 | hi  |
 		 +-----+
 	*/
-	SimpleBorderStyle  = BorderStyle{TopLeft: '+', TopRight: '+', BottomLeft: '+', BottomRight: '+', Horizontal: '-', Vertical: '|'}
+	SimpleBorderStyle = BorderStyle{TopLeft: '+', TopRight: '+', BottomLeft: '+', BottomRight: '+', Horizontal: '-', Vertical: '|'}
 	/*
 		RoundedBorderStyle example
 		 ╭─────╮
@@ -155,7 +162,7 @@ var (
 		 │  hi │
 		 └─────┘
 	*/
-	SharpBorderStyle   = BorderStyle{TopLeft: '┌', TopRight: '┐', BottomLeft: '└', BottomRight: '┘', Horizontal: '─', Vertical: '│'}
+	SharpBorderStyle = BorderStyle{TopLeft: '┌', TopRight: '┐', BottomLeft: '└', BottomRight: '┘', Horizontal: '─', Vertical: '│'}
 	/*
 		DoubleBorderStyle example:
 		 ╔═════╗

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/gookit/cliui/show/showcom"
+	"github.com/gookit/color"
 	"github.com/gookit/goutil/comdef"
 	"github.com/gookit/goutil/strutil"
 	"github.com/gookit/goutil/x/termenv"
@@ -257,6 +258,9 @@ func (b *Banner) renderBody() {
 
 		b.Buf.WriteRune(b.BorderStyle.Vertical)
 		b.Buf.WriteString(leftPad)
+		if b.TextColor != "" {
+			lineText = color.WrapTag(lineText, b.TextColor)
+		}
 		b.Buf.WriteString(lineText)
 		b.Buf.WriteString(rightPad)
 		b.Buf.WriteRune(b.BorderStyle.Vertical)
