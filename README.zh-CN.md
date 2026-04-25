@@ -6,16 +6,15 @@
 
 > [English](./README.md) | [简体中文](./README.zh-CN.md)
 
+`gookit/cliui` 是一个终端 UI 辅助模块，为 CLI 应用提供常用的展示和交互组件。
 
-`gookit/cliui` is a terminal UI helper module, provides some commonly used display and interactive functional components for CLI.
+它主要聚焦 CLI 应用中的三个核心场景：
 
-It focuses on three core areas for CLI applications:
+- `show`：结构化终端内容展示
+- `interact`：交互式输入
+- `progress`：进度条和加载状态展示
 
-- `show`: structured terminal output helpers
-- `interact`: interactive input helpers
-- `progress`: progress and loading display helpers
-
-The root package also provides shared input/output helpers used by the subpackages:
+根包还提供了一组共享输入/输出辅助方法，供各子包统一使用：
 
 - `SetInput(in io.Reader)`
 - `SetOutput(out io.Writer)`
@@ -24,13 +23,13 @@ The root package also provides shared input/output helpers used by the subpackag
 - `ResetOutput()`
 - `ResetIO()`
 
-## Install
+## 安装
 
 ```bash
 go get github.com/gookit/cliui
 ```
 
-Or install a sub package directly:
+也可以只安装某个子包：
 
 ```bash
 go get github.com/gookit/cliui/show
@@ -38,22 +37,22 @@ go get github.com/gookit/cliui/progress
 go get github.com/gookit/cliui/interact
 ```
 
-## Package Overview
+## 包概览
 
 ### `show`
 
-Provides structured terminal output helpers for displaying formatted content in CLI applications. It includes `table`, `title`, `banner`, `list`, `multi-list`, `alert` messages and `JSON` output helpers.
+`show` 为 CLI 应用提供结构化终端输出能力，用于展示格式化内容。它包含 `table`、`title`、`banner`、`list`、`multi-list`、`alert` 消息和 `JSON` 输出等辅助组件。
 
-Import:
+导入：
 
 ```go
 github.com/gookit/cliui/show
 ```
 
 > [!NOTE]
-> More Details: [docs/show.md](docs/show.md)
+> 更多详情：[docs/zh-CN/show.md](docs/zh-CN/show.md)
 
-**Quick Usage**:
+**快速使用**：
 
 ```go
 package main
@@ -72,25 +71,25 @@ func main() {
 
 ### `interact`
 
-Provides interactive input helpers for CLI programs. It supports `prompt`, `confirm`, `question`, `select`, `multi-select`, `password` input and other common terminal interaction patterns.
+`interact` 为 CLI 程序提供交互式输入能力。它支持 `prompt`、`confirm`、`question`、`select`、`multi-select`、`password` 输入以及其它常见终端交互模式。
 
-It also includes a newer `interact/ui` layer for backend-driven components:
+它还包含新版 `interact/ui` 抽象层，用于基于 backend 驱动交互组件：
 
-- `plain` backend for line-based input, tests and redirected stdin
-- `readline` backend for raw terminal interaction
-- `Input`, `Confirm`, `Select` and `MultiSelect` components
-- UTF-8 input editing, common navigation keys and persistent validation errors
+- `plain` backend：适用于行输入、测试和重定向 stdin
+- `readline` backend：适用于真实终端中的 raw 模式交互
+- `Input`、`Confirm`、`Select` 和 `MultiSelect` 组件
+- 支持 UTF-8 输入编辑、常用导航按键和持续显示的校验错误
 
-Import:
+导入：
 
 ```go
 github.com/gookit/cliui/interact
 ```
 
 > [!NOTE]
-> More Details: [docs/interact.md](docs/interact.md)
+> 更多详情：[docs/zh-CN/interact.md](docs/zh-CN/interact.md)
 
-**Quick Usage**:
+**快速使用**：
 
 ```go
 package main
@@ -125,18 +124,18 @@ func main() {
 
 ### `progress`
 
-Provides progress and loading display helpers for long-running tasks. It includes `progress bars`, `text bars`, `spinner/loading` indicators, `counters`, `dynamic text` output and `MultiProgress` for rendering multiple bars in one terminal block.
+`progress` 为长时间运行的任务提供进度和加载状态展示能力。它包含 `progress bars`、`text bars`、`spinner/loading` 指示器、`counters`、`dynamic text` 输出，以及用于在一个终端区域中渲染多个进度条的 `MultiProgress`。
 
-Import:
+导入：
 
 ```go
 github.com/gookit/cliui/progress
 ```
 
 > [!NOTE]
-> More Details: [docs/progress.md](docs/progress.md)
+> 更多详情：[docs/zh-CN/progress.md](docs/zh-CN/progress.md)
 
-**Quick Usage**:
+**快速使用**：
 
 ```go
 package main
@@ -160,15 +159,15 @@ func main() {
 }
 ```
 
-## Migration
+## 迁移
 
-If you are migrating from `gookit/gcli/v3`, the corresponding package paths are:
+如果你正在从 `gookit/gcli/v3` 迁移，对应的包路径如下：
 
 - `github.com/gookit/gcli/v3/show` -> `github.com/gookit/cliui/show`
 - `github.com/gookit/gcli/v3/interact` -> `github.com/gookit/cliui/interact`
 - `github.com/gookit/gcli/v3/progress` -> `github.com/gookit/cliui/progress`
 
-## Development
+## 开发
 
 ```bash
 go test ./...
