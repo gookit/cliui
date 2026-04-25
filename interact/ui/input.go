@@ -77,6 +77,24 @@ func (c *Input) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader,
 					cursor = 0
 				}
 				continue
+			case backend.KeyCtrlW:
+				if cursor == 0 || len(buf) == 0 {
+					continue
+				}
+
+				start := cursor
+				// trim spaces before the current word
+				for start > 0 && buf[start-1] == ' ' {
+					start--
+				}
+				// remove the previous word
+				for start > 0 && buf[start-1] != ' ' {
+					start--
+				}
+
+				buf = buf[:start] + buf[cursor:]
+				cursor = start
+				continue
 			case backend.KeyBackspace:
 				if cursor > 0 && len(buf) > 0 {
 					buf = buf[:cursor-1] + buf[cursor:]

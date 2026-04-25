@@ -133,6 +133,8 @@ func (s *Session) ReadEvent(ctx context.Context) (backend.Event, error) {
 		return backend.Event{Type: backend.EventKey, Key: backend.KeyEnter}, nil
 	case 21:
 		return backend.Event{Type: backend.EventKey, Key: backend.KeyCtrlU}, nil
+	case 23:
+		return backend.Event{Type: backend.EventKey, Key: backend.KeyCtrlW}, nil
 	case 27:
 		next, err := s.in.Peek(3)
 		if err == nil && len(next) >= 2 && next[0] == '[' {

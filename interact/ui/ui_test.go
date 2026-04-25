@@ -197,6 +197,35 @@ func TestInput_RunWithFakeCtrlUAndCtrlK(t *testing.T) {
 	is.Eq("ZXY", got)
 }
 
+func TestInput_RunWithFakeCtrlW(t *testing.T) {
+	is := assert.New(t)
+
+	be := fake.New(
+		backend.Event{Type: backend.EventKey, Text: "a"},
+		backend.Event{Type: backend.EventKey, Text: "l"},
+		backend.Event{Type: backend.EventKey, Text: "p"},
+		backend.Event{Type: backend.EventKey, Text: "h"},
+		backend.Event{Type: backend.EventKey, Text: "a"},
+		backend.Event{Type: backend.EventKey, Text: " "},
+		backend.Event{Type: backend.EventKey, Text: "b"},
+		backend.Event{Type: backend.EventKey, Text: "e"},
+		backend.Event{Type: backend.EventKey, Text: "t"},
+		backend.Event{Type: backend.EventKey, Text: "a"},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyCtrlW},
+		backend.Event{Type: backend.EventKey, Text: "g"},
+		backend.Event{Type: backend.EventKey, Text: "a"},
+		backend.Event{Type: backend.EventKey, Text: "m"},
+		backend.Event{Type: backend.EventKey, Text: "m"},
+		backend.Event{Type: backend.EventKey, Text: "a"},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyEnter},
+	)
+
+	ipt := NewInput("Edit")
+	got, err := ipt.Run(context.Background(), be)
+	is.Nil(err)
+	is.Eq("alpha gamma", got)
+}
+
 func TestConfirm_RunWithIO(t *testing.T) {
 	is := assert.New(t)
 
