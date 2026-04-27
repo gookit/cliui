@@ -40,12 +40,41 @@ func Spinner(speed time.Duration) *SpinnerFactory {
 	}
 }
 
-// RoundTripLoading create
+// RoundTripOptions for create Round-Trip Spinner
+type RoundTripOptions struct {
+	Char  rune
+	Speed time.Duration
+	CharN int // char number
+	BoxW  int // box width
+}
+
+func defaultRoundTripOptions() *RoundTripOptions {
+	return &RoundTripOptions{
+		Char:  '=',
+		Speed: 100 * time.Millisecond,
+		CharN: 4,
+		BoxW:  12,
+	}
+}
+
+// SpinnerRoundTrip quickly create a Round-Trip Spinner instance.
+func SpinnerRoundTrip(optFns ...func(opts *RoundTripOptions)) *SpinnerFactory {
+	opts := defaultRoundTripOptions()
+	if len(optFns) > 0 {
+		for _, optFn := range optFns {
+			optFn(opts)
+		}
+	}
+
+	return Spinner(opts.Speed).WithBuilder(roundTripTextBuilder(opts.Char, opts.CharN, opts.BoxW))
+}
+
+// RoundTripLoading create. alias of RoundTripSpinner
 func RoundTripLoading(char rune, speed time.Duration, charNumAndBoxWidth ...int) *SpinnerFactory {
 	return RoundTripSpinner(char, speed, charNumAndBoxWidth...)
 }
 
-// RoundTripSpinner instance create
+// RoundTripSpinner instance create. eg: [ =   ] - 字符在盒子里来回移动
 func RoundTripSpinner(char rune, speed time.Duration, charNumAndBoxWidth ...int) *SpinnerFactory {
 	charNum := 4
 	boxWidth := 12
@@ -59,7 +88,7 @@ func RoundTripSpinner(char rune, speed time.Duration, charNumAndBoxWidth ...int)
 	return Spinner(speed).WithBuilder(roundTripTextBuilder(char, charNum, boxWidth))
 }
 
-// LoadingSpinner instance create
+// LoadingSpinner instance create. 多个字符不停的变化，显示出旋转的效果
 func LoadingSpinner(chars []rune, speed time.Duration) *SpinnerFactory {
 	return Spinner(speed).WithBuilder(loadingCharBuilder(chars))
 }

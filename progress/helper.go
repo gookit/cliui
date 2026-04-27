@@ -1,15 +1,13 @@
 package progress
 
 import (
-	"math/rand"
-	"time"
+	"math/rand/v2"
 )
 
 func repeatRune(char rune, length int) (chars []rune) {
-	for i := 0; i < length; i++ {
+	for range length {
 		chars = append(chars, char)
 	}
-
 	return
 }
 
@@ -32,8 +30,7 @@ func GetCharTheme(index int) rune {
 
 // RandomCharTheme get
 func RandomCharTheme() rune {
-	rand.Seed(time.Now().UnixNano())
-	return CharThemes[rand.Intn(len(CharThemes)-1)]
+	return CharThemes[rand.IntN(len(CharThemes)-1)]
 }
 
 // CharsThemes collection. can use for LoadingBar, LoadingSpinner
@@ -76,6 +73,5 @@ func GetCharsTheme(index int) []rune {
 
 // RandomCharsTheme get
 func RandomCharsTheme() []rune {
-	rand.Seed(time.Now().UnixNano())
-	return CharsThemes[rand.Intn(len(CharsThemes)-1)]
+	return CharsThemes[rand.IntN(len(CharsThemes)-1)]
 }

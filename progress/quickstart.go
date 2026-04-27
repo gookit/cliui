@@ -1,7 +1,7 @@
 package progress
 
 import (
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 
@@ -101,9 +101,10 @@ var BarStyles = []BarChars{
 
 // Bar create a default progress bar.
 // Preview:
-// 		1 [->--------------------------]
-// 		3 [■■■>------------------------]
-// 	25/50 [==============>-------------]  50%
+//
+//		1 [->--------------------------]
+//		3 [■■■>------------------------]
+//	25/50 [==============>-------------]  50%
 func Bar(maxSteps ...int) *Progress {
 	return CustomBar(BarWidth, BarStyles[0], maxSteps...)
 }
@@ -124,8 +125,7 @@ func CustomBar(width int, cs BarChars, maxSteps ...int) *Progress {
 
 // RandomBarStyle get random bar style
 func RandomBarStyle() BarChars {
-	rand.Seed(time.Now().UnixNano())
-	return BarStyles[rand.Intn(len(BarStyles)-1)]
+	return BarStyles[rand.IntN(len(BarStyles)-1)]
 }
 
 /*************************************************************
@@ -140,11 +140,12 @@ func RoundTripBar(char rune, charNumAndBoxWidth ...int) *Progress {
 // RoundTrip create a RoundTrip progress bar.
 //
 // Usage:
-// 	p := RoundTrip(CharEqual)
-// 	// p := RoundTrip('*') // custom char
-// 	p.Start()
-// 	....
-// 	p.Finish()
+//
+//	p := RoundTrip(CharEqual)
+//	// p := RoundTrip('*') // custom char
+//	p.Start()
+//	....
+//	p.Finish()
 func RoundTrip(char rune, charNumAndBoxWidth ...int) *Progress {
 	charNum := 4
 	boxWidth := 12
@@ -182,4 +183,17 @@ func LoadBar(chars []rune, maxSteps ...int) *Progress {
 		p.Format = "{@loading} ({@current}/{@max}){@message}"
 		p.AddWidget("loading", LoadingWidget(chars))
 	})
+}
+
+/*************************************************************
+ * spinner quick
+ *************************************************************/
+
+// SpinnerLoading quickly create a loading spinner instance.
+func SpinnerLoading(speed ...time.Duration) *SpinnerFactory {
+	speedVal := 100 * time.Millisecond
+	if len(speed) > 0 && speed[0] > 0 {
+		speedVal = speed[0]
+	}
+	return LoadingSpinner(RandomCharsTheme(), speedVal)
 }
