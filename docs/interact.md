@@ -60,6 +60,8 @@ defer cliui.ResetIO()
 
 ### Read Input
 
+`ReadInput` reads one plain text line. It is suitable for simple values such as names, paths, and short parameters.
+
 ```go
 name, err := interact.ReadInput("Your name: ")
 if err != nil {
@@ -68,7 +70,16 @@ if err != nil {
 fmt.Println("name:", name)
 ```
 
+Output preview:
+
+```txt
+Your name: tom
+name: tom
+```
+
 ### Prompt
+
+`Prompt` supports context control and a default value, making it useful when input needs cancellation, timeout, or shared context handling.
 
 ```go
 answer, err := interact.Prompt(context.Background(), "Environment", "dev")
@@ -78,7 +89,16 @@ if err != nil {
 fmt.Println("env:", answer)
 ```
 
+Output preview:
+
+```txt
+Environment [dev]: prod
+env: prod
+```
+
 ### Confirm
+
+`Confirm` asks a yes/no question and returns a boolean. It is useful before delete, overwrite, deploy, and other confirmation-sensitive actions.
 
 ```go
 if interact.Confirm("Continue? ", true) {
@@ -86,7 +106,16 @@ if interact.Confirm("Continue? ", true) {
 }
 ```
 
+Output preview:
+
+```txt
+Continue? [Y/n] y
+confirmed
+```
+
 ### Question
+
+`Question`/`Ask` handles a single question with a default value and optional validation.
 
 ```go
 name := interact.Ask("Your name?", "guest", nil)
@@ -100,7 +129,16 @@ value := interact.NewQuestion("Your name?", "guest").Run()
 fmt.Println(value.String())
 ```
 
+Output preview:
+
+```txt
+Your name? [guest]: tom
+tom
+```
+
 ### Select
+
+`Select` chooses one value from a list. It is useful for environments, regions, templates, and operation types.
 
 ```go
 city := interact.SelectOne(
@@ -111,7 +149,20 @@ city := interact.SelectOne(
 fmt.Println("city:", city)
 ```
 
+Output preview:
+
+```txt
+Your city?
+  1) chengdu
+  2) beijing
+  3) shanghai
+Please select: 1
+city: chengdu
+```
+
 ### Multi Select
+
+`Multi Select` chooses multiple values. It is useful for enabling modules, selecting services, or choosing tags.
 
 ```go
 services := interact.MultiSelect(
@@ -120,6 +171,17 @@ services := interact.MultiSelect(
 	[]string{"api"},
 )
 fmt.Println("services:", services)
+```
+
+Output preview:
+
+```txt
+Choose services
+  1) api
+  2) worker
+  3) web
+Please select: 1,3
+services: [api web]
 ```
 
 Use `NewSelect` directly when you need the selected key and value:
@@ -132,9 +194,18 @@ fmt.Println(result.KeyString(), result.String())
 
 ### Password
 
+`ReadPassword` reads sensitive input without echoing the actual value in the terminal.
+
 ```go
 password := interact.ReadPassword("Password: ")
 fmt.Println("password length:", len(password))
+```
+
+Output preview:
+
+```txt
+Password:
+password length: 8
 ```
 
 ### Collector
@@ -152,6 +223,16 @@ if err != nil {
 }
 ```
 
+Output preview:
+
+```txt
+Your name: tom
+Choose env
+  1) dev
+  2) prod
+Please select: 2
+```
+
 ### UI Bridge
 
 Use the bridge helpers when you want the new `interact/ui` components without importing subpackages directly:
@@ -165,6 +246,13 @@ if err != nil {
 }
 
 fmt.Println("name:", name)
+```
+
+Output preview:
+
+```txt
+Your name: tom
+name: tom
 ```
 
 ### Full Select Example

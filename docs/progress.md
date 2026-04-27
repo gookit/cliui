@@ -25,6 +25,8 @@ go get github.com/gookit/cliui/progress
 
 ### Bar
 
+`Bar` is the default progress bar component for tasks with a known total, such as downloads, builds, or batch processing.
+
 ```go
 package main
 
@@ -49,7 +51,16 @@ func main() {
 }
 ```
 
+Output preview:
+
+```txt
+[==============>-------------]  50%(55/110)
+[============================] 100%(110/110)
+```
+
 ### Full
+
+`Full` shows a richer progress line with current progress, elapsed time, estimated time, and memory usage.
 
 ```go
 p := progress.Full(100)
@@ -58,7 +69,15 @@ p.AdvanceTo(100)
 p.Finish()
 ```
 
+Output preview:
+
+```txt
+100%(100/100)  2.1s/ 2.1s  8.3MB
+```
+
 ### Text Progress
+
+`Txt` displays progress as text without a bar. It is useful for narrow terminals or log-heavy output.
 
 ```go
 p := progress.Txt(100)
@@ -67,7 +86,16 @@ p.AdvanceTo(50)
 p.Finish()
 ```
 
+Output preview:
+
+```txt
+ 50%(50/100)
+100%(100/100)
+```
+
 ### Counter
+
+`Counter` displays only the current count. It is useful when the total is small or the completed count matters more than a bar.
 
 ```go
 p := progress.Counter(3)
@@ -78,7 +106,17 @@ p.Advance()
 p.Finish()
 ```
 
+Output preview:
+
+```txt
+1
+2
+3
+```
+
 ### Dynamic Text
+
+`DynamicText` changes the message when progress reaches configured points. It is useful for showing task phases.
 
 ```go
 p := progress.DynamicText(map[int]string{
@@ -91,7 +129,17 @@ p.AdvanceTo(100)
 p.Finish()
 ```
 
+Output preview:
+
+```txt
+ 10%(10/100) prepare
+ 50%(50/100) build
+ 90%(90/100) finish
+```
+
 ### Loading Bar
+
+`LoadingBar` cycles through a set of characters to show activity when exact progress is not available.
 
 ```go
 p := progress.LoadingBar([]rune{'-', '\\', '|', '/'}, 20)
@@ -100,7 +148,18 @@ p.AdvanceTo(20)
 p.Finish()
 ```
 
+Output preview:
+
+```txt
+[-]
+[\]
+[|]
+[/]
+```
+
 ### Round Trip
+
+`RoundTrip` moves the given character back and forth inside a fixed-width area. It is useful for indeterminate activity states.
 
 ```go
 p := progress.RoundTrip('=', 10, 30)
@@ -109,7 +168,17 @@ p.AdvanceTo(100)
 p.Finish()
 ```
 
+Output preview:
+
+```txt
+[==========                    ]
+[     ==========               ]
+[                    ==========]
+```
+
 ### Tape
+
+`Tape` uses a rolling tape-like bar effect to show progress with lightweight animation.
 
 ```go
 p := progress.Tape(100)
@@ -118,7 +187,17 @@ p.AdvanceTo(100)
 p.Finish()
 ```
 
+Output preview:
+
+```txt
+[====>                         ]  20%(20/100)
+[===============>              ]  60%(60/100)
+[==============================] 100%(100/100)
+```
+
 ### Custom Bar
+
+`CustomBar` lets you choose the width and character style. Use it when terminal output should match your application's visual style.
 
 ```go
 p := progress.CustomBar(40, progress.RandomBarStyle(), 100)
@@ -127,7 +206,9 @@ p.AdvanceTo(100)
 p.Finish()
 ```
 
-### Spinner
+## Spinner
+
+### Loading Spinner
 
 ```go
 sp := progress.LoadingSpinner([]rune{'-', '\\', '|', '/'}, 100*time.Millisecond)
@@ -136,13 +217,34 @@ time.Sleep(time.Second)
 sp.Stop("done")
 ```
 
+Output preview:
+
+```txt
+- loading
+\ loading
+| loading
+/ loading
+done
+```
+
 ### Round Trip Spinner
+
+`RoundTripSpinner` shows a moving character group inside a box until `Stop` is called.
 
 ```go
 sp := progress.RoundTripSpinner('=', 100*time.Millisecond, 10, 30)
 sp.Start("loading")
 time.Sleep(time.Second)
 sp.Stop("done")
+```
+
+Output preview:
+
+```txt
+[===       ] loading
+[   ===    ] loading
+[       ===] loading
+done
 ```
 
 See package tests and exported constructors for more usage patterns.
@@ -152,6 +254,8 @@ See package tests and exported constructors for more usage patterns.
 Use `MultiProgress` when you need to render several `Progress` instances in one terminal block.
 
 `NewMulti()` uses the shared `cutypes.Output` writer by default. You can override the output by setting `mp.Writer`.
+
+The output is refreshed in a fixed terminal block, while every task keeps its own progress state.
 
 ```go
 package main
@@ -185,6 +289,13 @@ func main() {
 
 	mp.Finish()
 }
+```
+
+Output preview:
+
+```txt
+[==============>-------------]  50%(50/100) build
+[=================>----------]  62%(50/80)  test
 ```
 
 ## Progress Bar

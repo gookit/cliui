@@ -37,6 +37,8 @@ go get github.com/gookit/cliui/interact/ui
 
 ### Input
 
+`Input` reads one text line. With the `readline` backend it supports cursor movement, deletion, UTF-8 editing, and other real-terminal editing behavior; with the `plain` backend it reads one submitted line.
+
 ```go
 package main
 
@@ -70,7 +72,16 @@ be := plain.New()
 name, err := ui.NewInput("Your name").Run(context.Background(), be)
 ```
 
+Output preview:
+
+```txt
+Your name [guest]: tom
+name: tom
+```
+
 ### Confirm
+
+`Confirm` handles a yes/no choice. It shows the default option, accepts `y/n`, and can be toggled with arrow keys when using the `readline` backend.
 
 ```go
 package main
@@ -103,7 +114,16 @@ be := plain.New()
 ok, err := ui.NewConfirm("Continue", true).Run(context.Background(), be)
 ```
 
+Output preview:
+
+```txt
+Continue [Y/n]: y
+confirmed: true
+```
+
 ### Select
+
+`Select` chooses one result from an `Item` list. Each item can provide a stable `Key`, display `Label`, and application-facing `Value`.
 
 ```go
 package main
@@ -144,7 +164,18 @@ result, err := ui.NewSelect("Choose env", []ui.Item{
 }).Run(context.Background(), be)
 ```
 
+Output preview:
+
+```txt
+Choose env
+> dev   Development
+  prod  Production
+selected: dev dev
+```
+
 ### MultiSelect
+
+`MultiSelect` chooses multiple results from an `Item` list. It supports defaults, minimum selection count, and disabled items.
 
 ```go
 package main
@@ -185,6 +216,16 @@ result, err := ui.NewMultiSelect("Choose services", []ui.Item{
 	{Key: "api", Label: "API", Value: "api"},
 	{Key: "web", Label: "Web", Value: "web"},
 }).Run(context.Background(), be)
+```
+
+Output preview:
+
+```txt
+Choose services
+> [x] api  API
+  [ ] job  Job Worker
+  [x] web  Web
+selected keys: [api web]
 ```
 
 ### Readline Backend
@@ -228,8 +269,19 @@ func main() {
 	}
 
 	fmt.Println("name:", name)
-	fmt.Println("env:", env.Key)
+fmt.Println("env:", env.Key)
 }
+```
+
+Output preview:
+
+```txt
+Your name [guest]: tom
+Choose env
+> dev   Development
+  prod  Production
+name: tom
+env: dev
 ```
 
 ### Fake Backend
@@ -243,6 +295,12 @@ be := fake.New(
 )
 
 name, err := ui.NewInput("Your name").Run(context.Background(), be)
+```
+
+Output preview:
+
+```txt
+Your name: tom
 ```
 
 ## Notes

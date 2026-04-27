@@ -37,6 +37,8 @@ go get github.com/gookit/cliui/interact/ui
 
 ### Input
 
+`Input` 用于读取一行文本。配合 `readline` backend 时支持光标移动、删除、UTF-8 文本编辑等真实终端体验；配合 `plain` backend 时按行读取输入。
+
 ```go
 package main
 
@@ -70,7 +72,16 @@ be := plain.New()
 name, err := ui.NewInput("Your name").Run(context.Background(), be)
 ```
 
+效果示例：
+
+```txt
+Your name [guest]: tom
+name: tom
+```
+
 ### Confirm
+
+`Confirm` 用于二选一确认。它会显示默认选项，用户可以输入 `y/n`，也可以在 `readline` backend 中用方向键切换。
 
 ```go
 package main
@@ -103,7 +114,16 @@ be := plain.New()
 ok, err := ui.NewConfirm("Continue", true).Run(context.Background(), be)
 ```
 
+效果示例：
+
+```txt
+Continue [Y/n]: y
+confirmed: true
+```
+
 ### Select
+
+`Select` 用于从 `Item` 列表中选择一个结果。每个选项都可以包含稳定的 `Key`、展示用 `Label` 和业务侧使用的 `Value`。
 
 ```go
 package main
@@ -144,7 +164,18 @@ result, err := ui.NewSelect("Choose env", []ui.Item{
 }).Run(context.Background(), be)
 ```
 
+效果示例：
+
+```txt
+Choose env
+> dev   Development
+  prod  Production
+selected: dev dev
+```
+
 ### MultiSelect
+
+`MultiSelect` 用于从 `Item` 列表中选择多个结果。它支持默认选中项、最少选择数量和禁用项，适合模块、服务、标签等多选配置。
 
 ```go
 package main
@@ -185,6 +216,16 @@ result, err := ui.NewMultiSelect("Choose services", []ui.Item{
 	{Key: "api", Label: "API", Value: "api"},
 	{Key: "web", Label: "Web", Value: "web"},
 }).Run(context.Background(), be)
+```
+
+效果示例：
+
+```txt
+Choose services
+> [x] api  API
+  [ ] job  Job Worker
+  [x] web  Web
+selected keys: [api web]
 ```
 
 ### Readline Backend
@@ -228,8 +269,19 @@ func main() {
 	}
 
 	fmt.Println("name:", name)
-	fmt.Println("env:", env.Key)
+fmt.Println("env:", env.Key)
 }
+```
+
+效果示例：
+
+```txt
+Your name [guest]: tom
+Choose env
+> dev   Development
+  prod  Production
+name: tom
+env: dev
 ```
 
 ### Fake Backend
@@ -243,6 +295,12 @@ be := fake.New(
 )
 
 name, err := ui.NewInput("Your name").Run(context.Background(), be)
+```
+
+效果示例：
+
+```txt
+Your name: tom
 ```
 
 ## 说明

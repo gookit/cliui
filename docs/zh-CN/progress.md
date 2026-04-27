@@ -7,8 +7,9 @@
 - progress bar
 - text progress bar
 - pending/loading progress bar
-- counter
-- dynamic text
+- counter 计数
+- dynamic text 动态文本
+- spinner: loading, round-trip
 - multi progress rendering
 
 ## 文档
@@ -24,6 +25,8 @@ go get github.com/gookit/cliui/progress
 ## 快速示例
 
 ### Bar
+
+`Bar` 是默认的进度条组件，用于展示一个有明确总步数的任务进度，例如下载、构建、批量处理等。
 
 ```go
 package main
@@ -49,7 +52,16 @@ func main() {
 }
 ```
 
+效果示例：
+
+```txt
+[==============>-------------]  50%(55/110)
+[============================] 100%(110/110)
+```
+
 ### Full
+
+`Full` 会在进度条旁显示更完整的运行信息，包括当前进度、耗时、预计耗时和内存占用。
 
 ```go
 p := progress.Full(100)
@@ -58,7 +70,15 @@ p.AdvanceTo(100)
 p.Finish()
 ```
 
+效果示例：
+
+```txt
+100%(100/100)  2.1s/ 2.1s  8.3MB
+```
+
 ### Text Progress
+
+`Txt` 使用纯文本百分比展示进度，不渲染条形图，适合日志密集或窄终端环境。
 
 ```go
 p := progress.Txt(100)
@@ -67,7 +87,16 @@ p.AdvanceTo(50)
 p.Finish()
 ```
 
+效果示例：
+
+```txt
+ 50%(50/100)
+100%(100/100)
+```
+
 ### Counter
+
+`Counter` 只展示当前计数，适合总量较小或只关心完成数量的任务。
 
 ```go
 p := progress.Counter(3)
@@ -78,7 +107,17 @@ p.Advance()
 p.Finish()
 ```
 
+效果示例：
+
+```txt
+1
+2
+3 Files
+```
+
 ### Dynamic Text
+
+`DynamicText` 会在进度到达指定节点时切换提示文本，适合展示任务阶段。
 
 ```go
 p := progress.DynamicText(map[int]string{
@@ -91,7 +130,17 @@ p.AdvanceTo(100)
 p.Finish()
 ```
 
+效果示例：
+
+```txt
+ 10%(10/100) prepare
+ 50%(50/100) build
+ 90%(90/100) finish
+```
+
 ### Loading Bar
+
+`LoadingBar` 使用一组字符循环显示等待状态，适合总进度未知但仍需要持续反馈的任务。
 
 ```go
 p := progress.LoadingBar([]rune{'-', '\\', '|', '/'}, 20)
@@ -100,7 +149,18 @@ p.AdvanceTo(20)
 p.Finish()
 ```
 
+效果示例：
+
+```txt
+[-]
+[\]
+[|]
+[/]
+```
+
 ### Round Trip
+
+`RoundTrip` 会让指定字符在固定宽度区域内往返移动，适合展示未确定结束时间的活动状态。
 
 ```go
 p := progress.RoundTrip('=', 10, 30)
@@ -109,7 +169,17 @@ p.AdvanceTo(100)
 p.Finish()
 ```
 
+效果示例：
+
+```txt
+[==========                    ]
+[     ==========               ]
+[                    ==========]
+```
+
 ### Tape
+
+`Tape` 使用类似连续滚动的条带效果展示进度，适合希望输出更轻量动画感的场景。
 
 ```go
 p := progress.Tape(100)
@@ -118,7 +188,17 @@ p.AdvanceTo(100)
 p.Finish()
 ```
 
+效果示例：
+
+```txt
+[====>                         ]  20%(20/100)
+[===============>              ]  60%(60/100)
+[==============================] 100%(100/100)
+```
+
 ### Custom Bar
+
+`CustomBar` 允许指定宽度和字符样式，适合需要和应用视觉风格保持一致的终端输出。
 
 ```go
 p := progress.CustomBar(40, progress.RandomBarStyle(), 100)
@@ -127,22 +207,57 @@ p.AdvanceTo(100)
 p.Finish()
 ```
 
-### Spinner
+效果示例：
+
+```txt
+	1 [->--------------------------]
+	3 [■■■>------------------------]
+25/50 [==============>-------------]  50%
+```
+
+## Spinner
+
+spinner 简单快速的显示一个加载动画。与 progress 不同的是，它不需要在中途更新进度，而是直接启动直到调用 Stop。
+
+### Loading Spinner
+
+让设置的多个字符不停的变化，显示出旋转的效果。
 
 ```go
 sp := progress.LoadingSpinner([]rune{'-', '\\', '|', '/'}, 100*time.Millisecond)
 sp.Start("loading")
-time.Sleep(time.Second)
+time.Sleep(time.Second) // do someting ...
 sp.Stop("done")
+```
+
+效果示例：
+
+```txt
+- loading
+\ loading
+| loading
+/ loading
+done
 ```
 
 ### Round Trip Spinner
 
+设置的字符在盒子里来回移动。 eg: `[ =  ]`
+
 ```go
 sp := progress.RoundTripSpinner('=', 100*time.Millisecond, 10, 30)
 sp.Start("loading")
-time.Sleep(time.Second)
+time.Sleep(time.Second) // do someting ...
 sp.Stop("done")
+```
+
+效果示例：
+
+```txt
+[===       ] loading
+[   ===    ] loading
+[       ===] loading
+done
 ```
 
 更多用法可以参考包测试和导出的构造函数。
@@ -152,6 +267,8 @@ sp.Stop("done")
 当需要在一个终端区域中渲染多个 `Progress` 实例时，可以使用 `MultiProgress`。
 
 `NewMulti()` 默认使用共享的 `cutypes.Output` writer。你可以通过设置 `mp.Writer` 覆盖输出目标。
+
+输出效果会固定在一个终端区域内刷新多行，每个任务保留自己的进度状态。
 
 ```go
 package main
@@ -185,6 +302,13 @@ func main() {
 
 	mp.Finish()
 }
+```
+
+效果示例：
+
+```txt
+[==============>-------------]  50%(50/100) build
+[=================>----------]  62%(50/80)  test
 ```
 
 ## Progress Bar

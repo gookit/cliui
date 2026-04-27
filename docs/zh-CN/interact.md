@@ -60,6 +60,8 @@ defer cliui.ResetIO()
 
 ### Read Input
 
+`ReadInput` 用于读取一行普通文本输入，适合简单参数、名称、路径等一次性输入。
+
 ```go
 name, err := interact.ReadInput("Your name: ")
 if err != nil {
@@ -68,7 +70,16 @@ if err != nil {
 fmt.Println("name:", name)
 ```
 
+效果示例：
+
+```txt
+Your name: tom
+name: tom
+```
+
 ### Prompt
+
+`Prompt` 支持上下文控制和默认值，适合需要可取消、可超时或统一管理上下文的输入流程。
 
 ```go
 answer, err := interact.Prompt(context.Background(), "Environment", "dev")
@@ -78,7 +89,16 @@ if err != nil {
 fmt.Println("env:", answer)
 ```
 
+效果示例：
+
+```txt
+Environment [dev]: prod
+env: prod
+```
+
 ### Confirm
+
+`Confirm` 用于确认类问题，返回布尔值，适合删除、覆盖、部署等需要用户确认的操作。
 
 ```go
 if interact.Confirm("Continue? ", true) {
@@ -86,7 +106,16 @@ if interact.Confirm("Continue? ", true) {
 }
 ```
 
+效果示例：
+
+```txt
+Continue? [Y/n] y
+confirmed
+```
+
 ### Question
+
+`Question`/`Ask` 用于带默认值和可选校验的问题输入，适合声明式地组织单个问题。
 
 ```go
 name := interact.Ask("Your name?", "guest", nil)
@@ -100,7 +129,16 @@ value := interact.NewQuestion("Your name?", "guest").Run()
 fmt.Println(value.String())
 ```
 
+效果示例：
+
+```txt
+Your name? [guest]: tom
+tom
+```
+
 ### Select
+
+`Select` 用于从多个候选项中选择一个值，适合环境、区域、模板、操作类型等单选场景。
 
 ```go
 city := interact.SelectOne(
@@ -111,7 +149,20 @@ city := interact.SelectOne(
 fmt.Println("city:", city)
 ```
 
+效果示例：
+
+```txt
+Your city?
+  1) chengdu
+  2) beijing
+  3) shanghai
+Please select: 1
+city: chengdu
+```
+
 ### Multi Select
+
+`Multi Select` 用于选择多个值，适合批量启用模块、选择服务、选择标签等多选场景。
 
 ```go
 services := interact.MultiSelect(
@@ -120,6 +171,17 @@ services := interact.MultiSelect(
 	[]string{"api"},
 )
 fmt.Println("services:", services)
+```
+
+效果示例：
+
+```txt
+Choose services
+  1) api
+  2) worker
+  3) web
+Please select: 1,3
+services: [api web]
 ```
 
 需要同时获取选中项的 key 和 value 时，可以直接使用 `NewSelect`：
@@ -132,9 +194,18 @@ fmt.Println(result.KeyString(), result.String())
 
 ### Password
 
+`ReadPassword` 用于读取敏感输入，终端中不会回显实际内容。
+
 ```go
 password := interact.ReadPassword("Password: ")
 fmt.Println("password length:", len(password))
+```
+
+效果示例：
+
+```txt
+Password:
+password length: 8
 ```
 
 ### Collector
@@ -152,6 +223,16 @@ if err != nil {
 }
 ```
 
+效果示例：
+
+```txt
+Your name: tom
+Choose env
+  1) dev
+  2) prod
+Please select: 2
+```
+
 ### UI Bridge
 
 如果希望使用新的 `interact/ui` 组件，但不直接引入子包，可以使用 bridge helper：
@@ -165,6 +246,13 @@ if err != nil {
 }
 
 fmt.Println("name:", name)
+```
+
+效果示例：
+
+```txt
+Your name: tom
+name: tom
 ```
 
 ### 完整 Select 示例
@@ -217,7 +305,7 @@ func main() {
 
 预览：
 
-![](../../examples/images/select.png)
+![select](../../examples/images/select.png)
 
 ## 相关项目
 
