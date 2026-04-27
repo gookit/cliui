@@ -143,9 +143,11 @@ func main() {
 		{Key: "dev", Label: "Development", Value: "dev"},
 		{Key: "prod", Label: "Production", Value: "prod"},
 	})
-	selectOne.DefaultKey = "dev"
+selectOne.DefaultKey = "dev"
+selectOne.Filterable = true
+selectOne.PageSize = 10
 
-	result, err := selectOne.Run(context.Background(), be)
+result, err := selectOne.Run(context.Background(), be)
 	if err != nil {
 		panic(err)
 	}
@@ -163,6 +165,8 @@ result, err := ui.NewSelect("Choose env", []ui.Item{
 	{Key: "prod", Label: "Production", Value: "prod"},
 }).Run(context.Background(), be)
 ```
+
+启用过滤后，在 `readline` backend 中可以直接输入关键字缩小候选项，`Backspace` 删除过滤字符，`Ctrl+U` 清空过滤条件。
 
 效果示例：
 
@@ -196,10 +200,12 @@ func main() {
 		{Key: "job", Label: "Job Worker", Value: "job"},
 		{Key: "web", Label: "Web", Value: "web"},
 	})
-	selectMany.DefaultKeys = []string{"api", "web"}
-	selectMany.MinSelected = 1
+selectMany.DefaultKeys = []string{"api", "web"}
+selectMany.MinSelected = 1
+selectMany.Filterable = true
+selectMany.PageSize = 10
 
-	result, err := selectMany.Run(context.Background(), be)
+result, err := selectMany.Run(context.Background(), be)
 	if err != nil {
 		panic(err)
 	}
@@ -217,6 +223,8 @@ result, err := ui.NewMultiSelect("Choose services", []ui.Item{
 	{Key: "web", Label: "Web", Value: "web"},
 }).Run(context.Background(), be)
 ```
+
+启用过滤后，只会收缩当前可见候选项；已经选中的 item 不会因为过滤条件变化而丢失。
 
 效果示例：
 
@@ -269,7 +277,7 @@ func main() {
 	}
 
 	fmt.Println("name:", name)
-fmt.Println("env:", env.Key)
+	fmt.Println("env:", env.Key)
 }
 ```
 
@@ -315,11 +323,13 @@ Your name: tom
 - `MultiSelect` 使用逗号分隔的 item key。
 - 当前交互被取消时会返回 `ErrAborted`。
 - `Select` 和 `MultiSelect` 支持禁用项和默认值。
+- `Select` 和 `MultiSelect` 可通过 `Filterable` 启用逐键过滤。
+- `PageSize` 可限制选择列表每次渲染的可见条数；为 `0` 时会根据终端高度自动计算。
 - `Select` 会在专门的状态行显示当前高亮项。
 - `MultiSelect` 会显示当前高亮项和已选 key 摘要。
 - 校验和选择错误会持续显示，直到下一次输入事件改变组件状态。
 - `Input` 的光标位置会考虑显示宽度，因此在支持的终端中可以正确处理 CJK 文本。
-- backend 模型中定义了终端 resize 事件，但当前 backend 尚未发出该事件。
+- `readline` backend 会在检测到终端尺寸变化时发出 resize 事件，组件会重新计算可见列表并保持当前过滤和选择状态。
 
 ## 按键绑定
 
@@ -327,8 +337,8 @@ Your name: tom
 
 - `Input`：输入文本进行插入，`Left/Right` 移动，`Home/End` 或 `Ctrl+A/Ctrl+E` 跳转，`Backspace/Delete` 编辑，`Ctrl+U` 删除光标前内容，`Ctrl+K` 删除光标后内容，`Ctrl+W` 删除前一个单词，`Enter` 提交
 - `Confirm`：`Left/Right` 切换，`y/n` 选择，`Enter` 提交当前值
-- `Select`：`Up/Down` 或 `Tab/Shift+Tab` 移动，`PageUp/PageDown` 跳转，`Enter` 确认，也可以直接输入 item key；视图中也会显示当前 item 摘要
-- `MultiSelect`：`Up/Down` 或 `Tab/Shift+Tab` 移动，`PageUp/PageDown` 跳转，`Space` 切换，`Enter` 确认；视图中也会显示当前 item 和已选 key 摘要
+- `Select`：`Up/Down` 或 `Tab/Shift+Tab` 移动，`PageUp/PageDown` 跳转，`Enter` 确认；启用过滤后，普通字符会追加到过滤条件，`Backspace` 删除过滤字符，`Ctrl+U` 清空过滤条件
+- `MultiSelect`：`Up/Down` 或 `Tab/Shift+Tab` 移动，`PageUp/PageDown` 跳转，`Space` 切换，`Enter` 确认；启用过滤后，普通字符会追加到过滤条件，`Backspace` 删除过滤字符，`Ctrl+U` 清空过滤条件
 
 ## Backend 行为
 
@@ -340,6 +350,7 @@ Your name: tom
 - `Confirm` 接收 `yes/no`、`y/n`，或空行表示默认值。
 - `Select` 接收 item key，空行表示使用默认 key。
 - `MultiSelect` 接收逗号分隔的 item key，空行表示使用默认 key 列表。
+- `plain` backend 不提供逐键过滤；即使组件设置了 `Filterable`，仍按整行输入解析。
 
 ### readline
 
@@ -348,12 +359,13 @@ Your name: tom
 - UTF-8 输入按 rune 读取，而不是按原始字节读取。
 - 常见 CSI 和 SS3 转义序列会映射为方向键、Home/End、Delete、Shift+Tab 和 PageUp/PageDown。
 - `Esc` 和 `Ctrl+C` 会用 `ErrAborted` 取消当前组件。
+- 启用过滤的 `Select` 和 `MultiSelect` 会逐键更新过滤条件。
+- resize 事件会触发重绘，组件保留当前过滤条件、当前高亮项和多选已选项。
 - `readline.New()` 在非 TTY 环境中会自动回退到 `plain`；如需严格 TTY 行为，使用 `readline.NewStrict()`。
 
 ## 当前限制
 
-- `Select` 和 `MultiSelect` 暂未实现过滤/搜索。
-- resize 事件已建模，但当前 backend 尚未发出。
+- `plain` backend 不支持实时过滤和 resize 事件。
 - 延迟过长的转义序列可能会被视为单独的 `Esc`；常见终端按键序列会在输入缓冲可用时处理。
 
 ## Demo

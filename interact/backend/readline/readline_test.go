@@ -40,6 +40,51 @@ func TestSession_CloseWithoutState(t *testing.T) {
 	is.Contains(buf.String(), "\x1B[1B")
 }
 
+func TestSession_RenderTogglesCursorVisibility(t *testing.T) {
+	is := assert.New(t)
+
+	buf := new(bytes.Buffer)
+	s := &Session{out: buf}
+
+	err := s.Render(backend.View{Lines: []string{"Choose"}, HideCursor: true})
+	is.Nil(err)
+	is.Contains(buf.String(), "\x1B[?25l")
+
+	err = s.Render(backend.View{Lines: []string{"Choose"}, HideCursor: false})
+	is.Nil(err)
+	is.Contains(buf.String(), "\x1B[?25h")
+}
+
+func TestSession_CloseRestoresHiddenCursor(t *testing.T) {
+	is := assert.New(t)
+
+	buf := new(bytes.Buffer)
+	s := &Session{out: buf}
+
+	err := s.Render(backend.View{Lines: []string{"Choose"}, HideCursor: true})
+	is.Nil(err)
+	err = s.Close()
+	is.Nil(err)
+	is.Contains(buf.String(), "\x1B[?25h")
+}
+
+func TestSession_DetectResize(t *testing.T) {
+	is := assert.New(t)
+
+	s := &Session{}
+	_, ok := s.detectResize(80, 24)
+	is.False(ok)
+
+	ev, ok := s.detectResize(100, 30)
+	is.True(ok)
+	is.Eq(backend.EventResize, ev.Type)
+	is.Eq(100, ev.Width)
+	is.Eq(30, ev.Height)
+
+	_, ok = s.detectResize(100, 30)
+	is.False(ok)
+}
+
 func TestSession_ReadEventUnicodeText(t *testing.T) {
 	is := assert.New(t)
 

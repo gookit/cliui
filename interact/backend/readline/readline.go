@@ -69,12 +69,24 @@ type Session struct {
 	out      io.Writer
 	state    *term.State
 	rendered int
+	hidden   bool
+	lastW    int
+	lastH    int
 }
 
 // Render redraws the current interaction block.
 func (s *Session) Render(view backend.View) error {
 	if len(view.Lines) == 0 {
 		return nil
+	}
+
+	if view.HideCursor != s.hidden {
+		if view.HideCursor {
+			fmt.Fprint(s.out, "\x1B[?25l")
+		} else {
+			fmt.Fprint(s.out, "\x1B[?25h")
+		}
+		s.hidden = view.HideCursor
 	}
 
 	if s.rendered > 0 {
@@ -113,6 +125,10 @@ func (s *Session) ReadEvent(ctx context.Context) (backend.Event, error) {
 	case <-ctx.Done():
 		return backend.Event{}, ctx.Err()
 	default:
+	}
+
+	if ev, ok := s.detectResizeFromSize(); ok {
+		return ev, nil
 	}
 
 	b, err := s.in.ReadByte()
@@ -164,6 +180,29 @@ func (s *Session) ReadEvent(ctx context.Context) (backend.Event, error) {
 
 		return backend.Event{Type: backend.EventKey, Key: key, Text: text}, nil
 	}
+}
+
+func (s *Session) detectResizeFromSize() (backend.Event, bool) {
+	width, height := s.Size()
+	return s.detectResize(width, height)
+}
+
+func (s *Session) detectResize(width, height int) (backend.Event, bool) {
+	if width <= 0 || height <= 0 {
+		return backend.Event{}, false
+	}
+	if s.lastW == 0 || s.lastH == 0 {
+		s.lastW = width
+		s.lastH = height
+		return backend.Event{}, false
+	}
+	if width == s.lastW && height == s.lastH {
+		return backend.Event{}, false
+	}
+
+	s.lastW = width
+	s.lastH = height
+	return backend.Event{Type: backend.EventResize, Width: width, Height: height}, true
 }
 
 func (s *Session) readEscapeEvent() (backend.Event, error) {
@@ -263,6 +302,10 @@ func (s *Session) readSS3Event() (backend.Event, error) {
 
 // Size returns the current terminal size.
 func (s *Session) Size() (width, height int) {
+	if s.inFile == nil {
+		return 0, 0
+	}
+
 	w, h, err := term.GetSize(int(s.inFile.Fd()))
 	if err != nil {
 		return 0, 0
@@ -278,6 +321,10 @@ func (s *Session) Close() error {
 			fmt.Fprintf(s.out, "\x1B[%dB", s.rendered-1)
 		}
 		fmt.Fprintln(s.out)
+	}
+	if s.hidden {
+		fmt.Fprint(s.out, "\x1B[?25h")
+		s.hidden = false
 	}
 
 	if s.state != nil {

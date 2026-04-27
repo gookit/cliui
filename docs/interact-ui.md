@@ -143,9 +143,11 @@ func main() {
 		{Key: "dev", Label: "Development", Value: "dev"},
 		{Key: "prod", Label: "Production", Value: "prod"},
 	})
-	selectOne.DefaultKey = "dev"
+selectOne.DefaultKey = "dev"
+selectOne.Filterable = true
+selectOne.PageSize = 10
 
-	result, err := selectOne.Run(context.Background(), be)
+result, err := selectOne.Run(context.Background(), be)
 	if err != nil {
 		panic(err)
 	}
@@ -163,6 +165,8 @@ result, err := ui.NewSelect("Choose env", []ui.Item{
 	{Key: "prod", Label: "Production", Value: "prod"},
 }).Run(context.Background(), be)
 ```
+
+When filtering is enabled with the `readline` backend, type to narrow the options, use `Backspace` to delete filter text, and use `Ctrl+U` to clear the filter.
 
 Output preview:
 
@@ -196,10 +200,12 @@ func main() {
 		{Key: "job", Label: "Job Worker", Value: "job"},
 		{Key: "web", Label: "Web", Value: "web"},
 	})
-	selectMany.DefaultKeys = []string{"api", "web"}
-	selectMany.MinSelected = 1
+selectMany.DefaultKeys = []string{"api", "web"}
+selectMany.MinSelected = 1
+selectMany.Filterable = true
+selectMany.PageSize = 10
 
-	result, err := selectMany.Run(context.Background(), be)
+result, err := selectMany.Run(context.Background(), be)
 	if err != nil {
 		panic(err)
 	}
@@ -217,6 +223,8 @@ result, err := ui.NewMultiSelect("Choose services", []ui.Item{
 	{Key: "web", Label: "Web", Value: "web"},
 }).Run(context.Background(), be)
 ```
+
+Filtering only changes which options are visible. Already selected items are preserved when the filter changes.
 
 Output preview:
 
@@ -315,11 +323,13 @@ Your name: tom
 - `MultiSelect` uses comma-separated item keys.
 - `ErrAborted` is returned when the current interaction is canceled.
 - `Select` and `MultiSelect` support disabled items and default values.
+- `Select` and `MultiSelect` can enable per-key filtering with `Filterable`.
+- `PageSize` limits the number of visible option rows; when it is `0`, components calculate it from terminal height.
 - `Select` shows the current highlighted item in a dedicated status line.
 - `MultiSelect` shows both the current highlighted item and the selected key summary.
 - Validation and selection errors stay visible until the next input event changes the component state.
 - `Input` cursor placement accounts for display width, so CJK text is handled correctly in supported terminals.
-- Terminal resize events are defined in the backend model but are not emitted by the current backends.
+- The `readline` backend emits resize events when terminal size changes. Components recalculate visible rows while preserving the current filter and selection state.
 
 ## Key Bindings
 
@@ -327,8 +337,8 @@ For the current `readline` backend:
 
 - `Input`: type to insert, `Left/Right` to move, `Home/End` or `Ctrl+A/Ctrl+E` to jump, `Backspace/Delete` to edit, `Ctrl+U` to delete before cursor, `Ctrl+K` to delete after cursor, `Ctrl+W` to delete previous word, `Enter` to submit
 - `Confirm`: `Left/Right` to switch, `y/n` to choose, `Enter` to submit current value
-- `Select`: `Up/Down` or `Tab/Shift+Tab` to move, `PageUp/PageDown` to jump, `Enter` to confirm, or type item key directly; the view also shows the current item summary
-- `MultiSelect`: `Up/Down` or `Tab/Shift+Tab` to move, `PageUp/PageDown` to jump, `Space` to toggle, `Enter` to confirm; the view also shows current item and selected key summary
+- `Select`: `Up/Down` or `Tab/Shift+Tab` to move, `PageUp/PageDown` to jump, `Enter` to confirm; when filtering is enabled, normal text appends to the filter, `Backspace` deletes filter text, and `Ctrl+U` clears the filter
+- `MultiSelect`: `Up/Down` or `Tab/Shift+Tab` to move, `PageUp/PageDown` to jump, `Space` to toggle, `Enter` to confirm; when filtering is enabled, normal text appends to the filter, `Backspace` deletes filter text, and `Ctrl+U` clears the filter
 
 ## Backend Behavior
 
@@ -340,6 +350,7 @@ For the current `readline` backend:
 - `Confirm` accepts `yes/no`, `y/n`, or an empty line for the default.
 - `Select` accepts an item key, or the default key on an empty line.
 - `MultiSelect` accepts comma-separated item keys, or default keys on an empty line.
+- `plain` does not provide per-key filtering. Even when `Filterable` is set, input is still parsed as a submitted line.
 
 ### readline
 
@@ -348,12 +359,13 @@ For the current `readline` backend:
 - UTF-8 input is read as runes instead of raw bytes.
 - Common CSI and SS3 escape sequences are mapped for arrows, Home/End, Delete, Shift+Tab and PageUp/PageDown.
 - `Esc` and `Ctrl+C` cancel the current component with `ErrAborted`.
+- Filterable `Select` and `MultiSelect` update the filter on each text key event.
+- Resize events trigger a redraw while keeping the current filter, highlighted item, and selected multi-select items.
 - `readline.New()` falls back to `plain` automatically outside a TTY; use `readline.NewStrict()` for TTY-only behavior.
 
 ## Current Limits
 
-- Filtering/search inside `Select` and `MultiSelect` is not implemented.
-- Resize events are modeled but not emitted by current backends.
+- The `plain` backend does not support live filtering or resize events.
 - Very delayed escape sequences may be treated as a standalone `Esc`; common terminal key sequences are handled when available in the input buffer.
 
 ## Demo

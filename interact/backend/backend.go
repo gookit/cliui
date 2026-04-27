@@ -69,9 +69,11 @@ const (
 
 // Event is a normalized terminal input event.
 type Event struct {
-	Type EventType
-	Key  Key
-	Text string
+	Type   EventType
+	Key    Key
+	Text   string
+	Width  int
+	Height int
 }
 
 // View is a minimal renderable terminal frame.
@@ -79,4 +81,7 @@ type View struct {
 	Lines        []string
 	CursorRow    int
 	CursorColumn int
+	Width        int
+	Height       int
+	HideCursor   bool
 }

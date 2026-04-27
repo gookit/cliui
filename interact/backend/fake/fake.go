@@ -12,14 +12,37 @@ import (
 // Backend is an in-memory backend for tests and event-flow verification.
 type Backend struct {
 	Events []backend.Event
+	width  int
+	height int
 
 	mu       sync.Mutex
 	sessions []*Session
 }
 
+// Option configures a fake backend.
+type Option func(*Backend)
+
+// WithSize sets the fake terminal size returned by created sessions.
+func WithSize(width, height int) Option {
+	return func(b *Backend) {
+		b.width = width
+		b.height = height
+	}
+}
+
 // New creates a fake backend with preset events.
 func New(events ...backend.Event) *Backend {
 	return &Backend{Events: events}
+}
+
+// NewWithOptions creates a fake backend with preset events and options.
+func NewWithOptions(events []backend.Event, options ...Option) *Backend {
+	b := &Backend{}
+	b.Events = append(b.Events, events...)
+	for _, option := range options {
+		option(b)
+	}
+	return b
 }
 
 // NewSession creates a new fake session.
@@ -29,6 +52,8 @@ func (b *Backend) NewSession(_ io.Reader, _ io.Writer) (backend.Session, error) 
 
 	s := &Session{
 		events: append([]backend.Event(nil), b.Events...),
+		width:  b.width,
+		height: b.height,
 	}
 	b.sessions = append(b.sessions, s)
 	return s, nil
@@ -50,6 +75,8 @@ type Session struct {
 	mu     sync.Mutex
 	events []backend.Event
 	views  []backend.View
+	width  int
+	height int
 }
 
 // Render stores the rendered view.
@@ -78,12 +105,26 @@ func (s *Session) ReadEvent(ctx context.Context) (backend.Event, error) {
 
 	ev := s.events[0]
 	s.events = s.events[1:]
+	if ev.Type == backend.EventResize {
+		if ev.Width > 0 {
+			s.width = ev.Width
+		}
+		if ev.Height > 0 {
+			s.height = ev.Height
+		}
+	}
 	return ev, nil
 }
 
 // Size returns a fixed fake terminal size.
 func (s *Session) Size() (width, height int) {
-	return 80, 24
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.width <= 0 && s.height <= 0 {
+		return 80, 24
+	}
+	return s.width, s.height
 }
 
 // Close closes the session.

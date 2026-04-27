@@ -11,9 +11,12 @@ import (
 
 // Select collects one selected item from the user.
 type Select struct {
-	Prompt     string
-	Items      []Item
-	DefaultKey string
+	Prompt       string
+	Items        []Item
+	DefaultKey   string
+	Filterable   bool
+	FilterPrompt string
+	PageSize     int
 }
 
 // NewSelect creates a Select component.
@@ -33,10 +36,14 @@ func (c *Select) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader
 			return nil, err
 		}
 
+		size := initialTerminalSize(session)
+		filter := filterState{}
 		cursor := c.defaultIndex()
 		errMsg := ""
 		for {
-			if err := session.Render(c.view(cursor, errMsg)); err != nil {
+			indexes := c.filteredIndexes(filter)
+			cursor = c.normalizeCursor(cursor, indexes)
+			if err := session.Render(c.view(cursor, errMsg, filter, indexes, size)); err != nil {
 				return nil, err
 			}
 
@@ -48,23 +55,31 @@ func (c *Select) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader
 			if ev.Type == backend.EventInterrupt || ev.Key == backend.KeyCtrlC || ev.Key == backend.KeyEsc {
 				return nil, ErrAborted
 			}
+			if ev.Type == backend.EventResize {
+				size = terminalSizeFromEvent(session, ev, size)
+				continue
+			}
 
 			errMsg = ""
 			switch ev.Key {
 			case backend.KeyUp, backend.KeyShiftTab:
-				cursor = c.move(cursor, -1)
+				cursor = c.moveInIndexes(indexes, cursor, -1)
 				continue
 			case backend.KeyDown, backend.KeyTab:
-				cursor = c.move(cursor, 1)
+				cursor = c.moveInIndexes(indexes, cursor, 1)
 				continue
 			case backend.KeyPageUp:
-				cursor = c.firstEnabledIndex()
+				cursor = c.firstEnabledIndexIn(indexes)
 				continue
 			case backend.KeyPageDown:
-				cursor = c.lastEnabledIndex()
+				cursor = c.lastEnabledIndexIn(indexes)
 				continue
 			case backend.KeyEnter:
 				if strings.TrimSpace(ev.Text) == "" {
+					if len(indexes) == 0 {
+						errMsg = "no matched option"
+						continue
+					}
 					item := c.Items[cursor]
 					if item.Disabled {
 						errMsg = "selected option is disabled"
@@ -72,6 +87,10 @@ func (c *Select) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader
 					}
 					return singleResult(item), nil
 				}
+			}
+
+			if c.Filterable && ev.Key != backend.KeyEnter && filter.Handle(ev) {
+				continue
 			}
 
 			key := strings.TrimSpace(ev.Text)
@@ -169,9 +188,78 @@ func (c *Select) move(cursor, delta int) int {
 	return cursor
 }
 
-func (c *Select) view(cursor int, errMsg string) backend.View {
+func (c *Select) filteredIndexes(filter filterState) []int {
+	if c.Filterable {
+		return filter.Indexes(c.Items)
+	}
+
+	indexes := make([]int, len(c.Items))
+	for i := range c.Items {
+		indexes[i] = i
+	}
+	return indexes
+}
+
+func (c *Select) normalizeCursor(cursor int, indexes []int) int {
+	if len(indexes) == 0 {
+		return cursor
+	}
+	if indexPosition(indexes, cursor) >= 0 {
+		return cursor
+	}
+	return firstEnabledFilteredIndex(c.Items, indexes)
+}
+
+func (c *Select) moveInIndexes(indexes []int, cursor, delta int) int {
+	if !c.Filterable && c.PageSize == 0 {
+		return c.move(cursor, delta)
+	}
+	return moveFilteredCursor(c.Items, indexes, cursor, delta)
+}
+
+func (c *Select) firstEnabledIndexIn(indexes []int) int {
+	if !c.Filterable && c.PageSize == 0 {
+		return c.firstEnabledIndex()
+	}
+	return firstEnabledFilteredIndex(c.Items, indexes)
+}
+
+func (c *Select) lastEnabledIndexIn(indexes []int) int {
+	if !c.Filterable && c.PageSize == 0 {
+		return c.lastEnabledIndex()
+	}
+	for i := len(indexes) - 1; i >= 0; i-- {
+		idx := indexes[i]
+		if !c.Items[idx].Disabled {
+			return idx
+		}
+	}
+	if len(indexes) > 0 {
+		return indexes[len(indexes)-1]
+	}
+	return 0
+}
+
+func (c *Select) view(cursor int, errMsg string, filter filterState, indexes []int, size terminalSize) backend.View {
 	lines := []string{c.Prompt}
-	for i, item := range c.Items {
+	if c.Filterable {
+		lines = append(lines, fmt.Sprintf("%s: %s", filterPrompt(c.FilterPrompt), filter.Query()))
+	}
+
+	visible := indexes
+	if c.Filterable || c.PageSize > 0 {
+		cursorPos := indexPosition(indexes, cursor)
+		pageSize := listPageSize(c.PageSize, size.height, c.fixedLines())
+		win := visibleWindow(len(indexes), cursorPos, pageSize)
+		visible = indexes[win.start:win.end]
+	}
+
+	if len(visible) == 0 {
+		lines = append(lines, "No matches")
+	}
+
+	for _, i := range visible {
+		item := c.Items[i]
 		prefix := " "
 		if i == cursor {
 			prefix = ">"
@@ -184,14 +272,21 @@ func (c *Select) view(cursor int, errMsg string) backend.View {
 		lines = append(lines, line)
 	}
 
-	current := c.Items[cursor]
-	currentLine := fmt.Sprintf("Current: %s (%s)", current.Label, current.Key)
-	if current.Disabled {
-		currentLine += " [disabled]"
+	if len(indexes) > 0 {
+		current := c.Items[cursor]
+		currentLine := fmt.Sprintf("Current: %s (%s)", current.Label, current.Key)
+		if current.Disabled {
+			currentLine += " [disabled]"
+		}
+		lines = append(lines, currentLine)
+	} else {
+		lines = append(lines, "Current: none")
 	}
-	lines = append(lines, currentLine)
 
 	hint := "Use Up/Down to move, Enter to confirm, or input item key"
+	if c.Filterable {
+		hint = "Type to filter, use Up/Down to move, Enter to confirm"
+	}
 	lines = append(lines, hint)
 
 	prompt := "Your choice"
@@ -207,9 +302,20 @@ func (c *Select) view(cursor int, errMsg string) backend.View {
 
 	return backend.View{
 		Lines:        lines,
-		CursorRow:    len(c.Items) + 3,
+		CursorRow:    len(lines) - 1,
 		CursorColumn: len(prompt),
+		Width:        size.width,
+		Height:       size.height,
+		HideCursor:   c.Filterable,
 	}
+}
+
+func (c *Select) fixedLines() int {
+	lines := 4
+	if c.Filterable {
+		lines++
+	}
+	return lines
 }
 
 func singleResult(item Item) *Result {

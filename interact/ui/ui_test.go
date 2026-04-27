@@ -501,6 +501,107 @@ func TestSelect_KeepsUnknownOptionErrorUntilNextInput(t *testing.T) {
 	assertErrorDoesNotFlash(t, be.LastSession().Views(), "Error: unknown option", "Current: Alpha (a)")
 }
 
+func TestSelect_RunWithFilter(t *testing.T) {
+	is := assert.New(t)
+
+	be := fake.New(
+		backend.Event{Type: backend.EventKey, Text: "b"},
+		backend.Event{Type: backend.EventKey, Text: "e"},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyEnter},
+	)
+
+	sel := NewSelect("Choose", []Item{
+		{Key: "a", Label: "Alpha", Value: "alpha"},
+		{Key: "b", Label: "Beta", Value: "beta"},
+		{Key: "g", Label: "Gamma", Value: "gamma"},
+	})
+	sel.Filterable = true
+
+	got, err := sel.Run(context.Background(), be)
+	is.Nil(err)
+	is.Eq("b", got.Key)
+
+	last := be.LastSession().Views()[len(be.LastSession().Views())-1]
+	is.True(viewContainsLine(last, "Filter: be"))
+	is.True(viewContainsLine(last, "> b) Beta"))
+}
+
+func TestSelect_FilterNoMatchCanRecover(t *testing.T) {
+	is := assert.New(t)
+
+	be := fake.New(
+		backend.Event{Type: backend.EventKey, Text: "z"},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyEnter},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyBackspace},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyDown},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyEnter},
+	)
+
+	sel := NewSelect("Choose", []Item{
+		{Key: "a", Label: "Alpha", Value: "alpha"},
+		{Key: "b", Label: "Beta", Value: "beta"},
+	})
+	sel.Filterable = true
+
+	got, err := sel.Run(context.Background(), be)
+	is.Nil(err)
+	is.Eq("b", got.Key)
+
+	views := be.LastSession().Views()
+	is.True(anyViewContainsLine(views, "No matches"))
+	is.True(anyViewContainsLine(views, "Error: no matched option"))
+}
+
+func TestSelect_FilteredDisabledItemCannotSubmit(t *testing.T) {
+	is := assert.New(t)
+
+	be := fake.New(
+		backend.Event{Type: backend.EventKey, Text: "b"},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyEnter},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyCtrlU},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyUp},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyEnter},
+	)
+
+	sel := NewSelect("Choose", []Item{
+		{Key: "a", Label: "Alpha", Value: "alpha"},
+		{Key: "b", Label: "Beta", Value: "beta", Disabled: true},
+	})
+	sel.Filterable = true
+
+	got, err := sel.Run(context.Background(), be)
+	is.Nil(err)
+	is.Eq("a", got.Key)
+	is.True(anyViewContainsLine(be.LastSession().Views(), "Error: selected option is disabled"))
+}
+
+func TestSelect_FilterResizeKeepsQuery(t *testing.T) {
+	is := assert.New(t)
+
+	be := fake.NewWithOptions(
+		[]backend.Event{
+			{Type: backend.EventKey, Text: "a"},
+			{Type: backend.EventResize, Width: 80, Height: 6},
+			{Type: backend.EventKey, Key: backend.KeyEnter},
+		},
+		fake.WithSize(80, 12),
+	)
+
+	sel := NewSelect("Choose", []Item{
+		{Key: "a", Label: "Alpha", Value: "alpha"},
+		{Key: "b", Label: "Beta", Value: "beta"},
+	})
+	sel.Filterable = true
+
+	got, err := sel.Run(context.Background(), be)
+	is.Nil(err)
+	is.Eq("a", got.Key)
+
+	views := be.LastSession().Views()
+	is.True(anyViewContainsLine(views, "Filter: a"))
+	is.Eq(6, views[len(views)-1].Height)
+}
+
 func TestMultiSelect_RunWithFakeEvents(t *testing.T) {
 	is := assert.New(t)
 
@@ -577,6 +678,85 @@ func TestMultiSelect_KeepsMinSelectedErrorUntilNextInput(t *testing.T) {
 	assertErrorDoesNotFlash(t, be.LastSession().Views(), "Error: at least one option is required", "Selected(0): none")
 }
 
+func TestMultiSelect_RunWithFilter(t *testing.T) {
+	is := assert.New(t)
+
+	be := fake.New(
+		backend.Event{Type: backend.EventKey, Text: "g"},
+		backend.Event{Type: backend.EventKey, Text: "a"},
+		backend.Event{Type: backend.EventKey, Key: backend.KeySpace},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyCtrlU},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyEnter},
+	)
+
+	sel := NewMultiSelect("Choose", []Item{
+		{Key: "a", Label: "Alpha", Value: "alpha"},
+		{Key: "b", Label: "Beta", Value: "beta"},
+		{Key: "g", Label: "Gamma", Value: "gamma"},
+	})
+	sel.Filterable = true
+
+	got, err := sel.Run(context.Background(), be)
+	is.Nil(err)
+	is.Len(got.Keys, 1)
+	is.Eq("g", got.Key)
+	is.True(anyViewContainsLine(be.LastSession().Views(), "Selected(1): g"))
+}
+
+func TestMultiSelect_FilterNoMatchShowsError(t *testing.T) {
+	is := assert.New(t)
+
+	be := fake.New(
+		backend.Event{Type: backend.EventKey, Text: "z"},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyEnter},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyBackspace},
+		backend.Event{Type: backend.EventKey, Key: backend.KeySpace},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyEnter},
+	)
+
+	sel := NewMultiSelect("Choose", []Item{
+		{Key: "a", Label: "Alpha", Value: "alpha"},
+		{Key: "b", Label: "Beta", Value: "beta"},
+	})
+	sel.Filterable = true
+
+	got, err := sel.Run(context.Background(), be)
+	is.Nil(err)
+	is.Len(got.Keys, 1)
+	is.Eq("a", got.Key)
+	is.True(anyViewContainsLine(be.LastSession().Views(), "Error: no matched option"))
+}
+
+func TestMultiSelect_FilterResizeKeepsSelected(t *testing.T) {
+	is := assert.New(t)
+
+	be := fake.NewWithOptions(
+		[]backend.Event{
+			{Type: backend.EventKey, Text: "b"},
+			{Type: backend.EventKey, Key: backend.KeySpace},
+			{Type: backend.EventResize, Width: 80, Height: 7},
+			{Type: backend.EventKey, Key: backend.KeyEnter},
+		},
+		fake.WithSize(80, 12),
+	)
+
+	sel := NewMultiSelect("Choose", []Item{
+		{Key: "a", Label: "Alpha", Value: "alpha"},
+		{Key: "b", Label: "Beta", Value: "beta"},
+	})
+	sel.Filterable = true
+
+	got, err := sel.Run(context.Background(), be)
+	is.Nil(err)
+	is.Len(got.Keys, 1)
+	is.Eq("b", got.Key)
+
+	views := be.LastSession().Views()
+	is.True(anyViewContainsLine(views, "Filter: b"))
+	is.True(anyViewContainsLine(views, "Selected(1): b"))
+	is.Eq(7, views[len(views)-1].Height)
+}
+
 func assertErrorDoesNotFlash(t *testing.T, views []backend.View, errLine, stateLine string) {
 	t.Helper()
 
@@ -592,6 +772,15 @@ func assertErrorDoesNotFlash(t *testing.T, views []backend.View, errLine, stateL
 	}
 
 	t.Fatalf("missing error line %q", errLine)
+}
+
+func anyViewContainsLine(views []backend.View, line string) bool {
+	for _, view := range views {
+		if viewContainsLine(view, line) {
+			return true
+		}
+	}
+	return false
 }
 
 func viewContainsLine(view backend.View, line string) bool {
