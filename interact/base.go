@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/gookit/cliui/cutypes"
 	"github.com/gookit/color"
 	"github.com/gookit/goutil/structs"
 )
@@ -81,11 +82,12 @@ func (sv *SelectResult) WithKey(key any) *SelectResult {
  *************************************************************/
 
 func exitWithErr(format string, v ...any) {
-	color.Error.Tips(format, v...)
+	prefix := color.RenderString(color.Error.Code(), "ERROR: ")
+	fmt.Fprintf(cutypes.Output, prefix+format+"\n", v...)
 	os.Exit(ERR)
 }
 
 func exitWithMsg(exitCode int, messages ...any) {
-	fmt.Println(messages...)
+	fmt.Fprintln(cutypes.Output, messages...)
 	os.Exit(exitCode)
 }

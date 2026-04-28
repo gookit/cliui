@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gookit/cliui"
 	"github.com/gookit/goutil/testutil/assert"
 )
 
@@ -29,6 +30,39 @@ func TestLoading(t *testing.T) {
 	str := "◐◑◒◓"
 
 	fmt.Println(chars, string(chars[0]), str, string(str[0]))
+}
+
+func TestProgressUsesCustomOutput(t *testing.T) {
+	is := assert.New(t)
+
+	out := new(bytes.Buffer)
+	cliui.SetOutput(out)
+	defer cliui.ResetOutput()
+
+	p := Txt(2)
+	p.Start()
+	p.AdvanceTo(2)
+	p.Finish()
+
+	is.Contains(out.String(), "100")
+}
+
+func TestProgressUsesInstanceOutput(t *testing.T) {
+	is := assert.New(t)
+
+	globalOut := new(bytes.Buffer)
+	cliui.SetOutput(globalOut)
+	defer cliui.ResetOutput()
+
+	out := new(bytes.Buffer)
+	p := Txt(2)
+	p.Out = out
+	p.Start()
+	p.AdvanceTo(2)
+	p.Finish()
+
+	is.Contains(out.String(), "100")
+	is.Eq("", globalOut.String())
 }
 
 func ExampleBar() {

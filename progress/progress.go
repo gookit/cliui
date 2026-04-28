@@ -4,10 +4,12 @@ package progress
 
 import (
 	"fmt"
+	"io"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/gookit/cliui/cutypes"
 	"github.com/gookit/color"
 )
 
@@ -31,6 +33,8 @@ type Progresser interface {
 //
 //	https://github.com/inhere/php-console/blob/master/src/utils/ProgressBar.php
 type Progress struct {
+	// Out output writer. default is cutypes.Output
+	Out io.Writer
 	// Format string the bar format
 	Format string
 	// Newline render progress on newline
@@ -80,6 +84,7 @@ func New(maxSteps ...int) *Progress {
 	}
 
 	return &Progress{
+		Out:       cutypes.Output,
 		Format:    DefFormat,
 		MaxSteps:  max,
 		StepWidth: 3,
@@ -375,7 +380,7 @@ func (p *Progress) Finish(message ...string) {
 		p.render(message[0])
 	}
 
-	fmt.Println() // new line
+	fmt.Fprintln(p.out()) // new line
 }
 
 // Display outputs the current progress string.
@@ -415,20 +420,27 @@ func (p *Progress) render(text string) {
 	if p.Overwrite {
 		// first run. create new line
 		if p.firstRun && p.Newline {
-			fmt.Println()
+			fmt.Fprintln(p.out())
 			p.firstRun = false
 
 			// delete prev rendered line.
 		} else {
 			// \x0D - Move the cursor to the beginning of the line
 			// \x1B[2K - Erase(Delete) the line
-			fmt.Print("\x0D\x1B[2K")
+			fmt.Fprint(p.out(), "\x0D\x1B[2K")
 		}
 
-		color.Print(text)
+		color.Fprint(p.out(), text)
 	} else if p.step > 0 {
-		color.Println(text)
+		color.Fprintln(p.out(), text)
 	}
+}
+
+func (p *Progress) out() io.Writer {
+	if p.Out != nil {
+		return p.Out
+	}
+	return cutypes.Output
 }
 
 func (p *Progress) checkStart() {

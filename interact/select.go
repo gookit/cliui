@@ -3,9 +3,11 @@ package interact
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"sort"
 	"strings"
 
+	"github.com/gookit/cliui/cutypes"
 	"github.com/gookit/color"
 	"github.com/gookit/goutil/arrutil"
 	"github.com/gookit/goutil/strutil"
@@ -13,6 +15,8 @@ import (
 
 // Select definition
 type Select struct {
+	// Out output writer. default is cutypes.Output
+	Out io.Writer
 	// Title message for select. e.g "Your city?"
 	Title string
 	// Options the items data for select. allow: []int, []string, map[string]string
@@ -45,6 +49,7 @@ type Select struct {
 //	val := r.String() // "beijing"
 func NewSelect(title string, items any) *Select {
 	return &Select{
+		Out:     cutypes.Output,
 		Title:   title,
 		Options: items,
 	}
@@ -125,7 +130,7 @@ func (s *Select) render(keys []string) {
 	}
 
 	// render select and options message to terminal
-	color.Println(buf.String())
+	fmt.Fprintln(s.out(), color.Render(buf.String()))
 	buf = nil
 }
 
@@ -146,7 +151,7 @@ func (s *Select) selectOne() *SelectResult {
 	}
 
 DoSelect:
-	key, err := ReadLine(tipsText)
+	key, err := readLineWithOutput(tipsText, s.out())
 	if err != nil {
 		exitWithErr("(interact.Select) %s", err.Error())
 	}
@@ -161,7 +166,7 @@ DoSelect:
 	// check input
 	val, has := s.valMap[key]
 	if !has {
-		color.Error.Println("Unknown option key:", key)
+		fmt.Fprintln(s.out(), color.Error.Render("Unknown option key:", key))
 		goto DoSelect // retry ...
 	}
 
@@ -203,7 +208,7 @@ func (s *Select) selectMulti() *SelectResult {
 	}
 
 DoSelect:
-	ans, err := ReadLine(tipsText)
+	ans, err := readLineWithOutput(tipsText, s.out())
 	if err != nil {
 		exitWithErr("(interact.Select) %s", err.Error())
 	}
@@ -223,7 +228,7 @@ DoSelect:
 	for _, k := range keys {
 		v, has := s.valMap[k]
 		if !has {
-			color.Error.Println("Unknown option key:", k)
+			fmt.Fprintln(s.out(), color.Error.Render("Unknown option key:", k))
 			goto DoSelect // retry ...
 		}
 
@@ -255,4 +260,11 @@ func (s *Select) Run() *SelectResult {
 		return s.selectMulti()
 	}
 	return s.selectOne()
+}
+
+func (s *Select) out() io.Writer {
+	if s.Out != nil {
+		return s.Out
+	}
+	return cutypes.Output
 }

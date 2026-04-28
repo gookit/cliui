@@ -137,7 +137,10 @@ func (b *Base) Print() {
 // Println formatted message and print newline
 func (b *Base) Println() {
 	b.Print()
-	fmt.Println()
+	if b.Out == nil {
+		b.Out = cutypes.Output
+	}
+	fmt.Fprintln(b.Out)
 }
 
 // SetErr set error

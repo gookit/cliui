@@ -2,10 +2,12 @@ package progress
 
 import (
 	"fmt"
+	"io"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/gookit/cliui/cutypes"
 	"github.com/gookit/color"
 )
 
@@ -14,6 +16,8 @@ type BuilderFunc func() string
 
 // SpinnerFactory definition. ref https://github.com/briandowns/spinner
 type SpinnerFactory struct {
+	// Out output writer. default is cutypes.Output
+	Out io.Writer
 	// Speed is the running speed
 	Speed time.Duration
 	// Format setting display format
@@ -31,6 +35,7 @@ type SpinnerFactory struct {
 // Spinner instance
 func Spinner(speed time.Duration) *SpinnerFactory {
 	return &SpinnerFactory{
+		Out:    cutypes.Output,
 		Speed:  speed,
 		Format: "%s",
 		// color: color.Normal.Sprint,
@@ -140,8 +145,8 @@ func (s *SpinnerFactory) Start(format ...string) {
 
 				// \x0D - Move the cursor to the beginning of the line
 				// \x1B[2K - Erase(Delete) the line
-				fmt.Print("\x0D\x1B[2K")
-				color.Printf(s.Format, s.Builder())
+				fmt.Fprint(s.out(), "\x0D\x1B[2K")
+				color.Fprintf(s.out(), s.Format, s.Builder())
 				s.lock.Unlock()
 
 				time.Sleep(s.Speed)
@@ -158,10 +163,10 @@ func (s *SpinnerFactory) Stop(finalMsg ...string) {
 
 	s.lock.Lock()
 	s.active = false
-	fmt.Print("\x0D\x1B[2K")
+	fmt.Fprint(s.out(), "\x0D\x1B[2K")
 
 	if len(finalMsg) > 0 {
-		fmt.Println(finalMsg[0])
+		fmt.Fprintln(s.out(), finalMsg[0])
 	}
 
 	s.stopCh <- struct{}{}
@@ -177,4 +182,11 @@ func (s *SpinnerFactory) Restart() {
 // Active status
 func (s *SpinnerFactory) Active() bool {
 	return s.active
+}
+
+func (s *SpinnerFactory) out() io.Writer {
+	if s.Out != nil {
+		return s.Out
+	}
+	return cutypes.Output
 }

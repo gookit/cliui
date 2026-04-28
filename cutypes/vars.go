@@ -4,6 +4,8 @@ package cutypes
 import (
 	"io"
 	"os"
+
+	"github.com/gookit/color"
 )
 
 // the global input output stream
@@ -16,22 +18,28 @@ var (
 func SetInput(in io.Reader) { Input = in }
 
 // SetOutput stream
-func SetOutput(out io.Writer) { Output = out }
+func SetOutput(out io.Writer) {
+	Output = out
+	color.SetOutput(out)
+}
 
 // CustomIO stream
 func CustomIO(in io.Reader, out io.Writer) {
 	Input = in
-	Output = out
+	SetOutput(out)
 }
 
 // ResetInput stream
 func ResetInput() { Input = os.Stdin }
 
 // ResetOutput stream
-func ResetOutput() { Output = os.Stdout }
+func ResetOutput() {
+	Output = os.Stdout
+	color.ResetOutput()
+}
 
 // ResetIO stream
 func ResetIO() {
 	Input = os.Stdin
-	Output = os.Stdout
+	ResetOutput()
 }

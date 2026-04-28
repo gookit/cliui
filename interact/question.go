@@ -2,13 +2,17 @@ package interact
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
+	"github.com/gookit/cliui/cutypes"
 	"github.com/gookit/color"
 )
 
 // Question definition
 type Question struct {
+	// Out output writer. default is cutypes.Output
+	Out io.Writer
 	// Q the question message
 	Q string
 	// Func validate user input answer is right.
@@ -29,18 +33,17 @@ type Question struct {
 //	ans := q.Run().String()
 func NewQuestion(q string, defVal ...string) *Question {
 	if len(defVal) > 0 {
-		return &Question{Q: q, DefVal: defVal[0]}
+		return &Question{Out: cutypes.Output, Q: q, DefVal: defVal[0]}
 	}
-	return &Question{Q: q}
+	return &Question{Out: cutypes.Output, Q: q}
 }
 
 // Run and returns value
 func (q *Question) Run() *Value {
 	q.render()
-	echoErr := color.Error.Println
 
 DoASK:
-	ans, err := ReadLine("A: ")
+	ans, err := readLineWithOutput("A: ", q.out())
 	if err != nil {
 		exitWithErr("(interact.Question) %s", err.Error())
 	}
@@ -52,7 +55,7 @@ DoASK:
 		}
 
 		q.checkErrTimes()
-		echoErr("A value is required.")
+		fmt.Fprintln(q.out(), color.Error.Render("A value is required."))
 		goto DoASK
 	}
 
@@ -60,7 +63,7 @@ DoASK:
 	if q.Func != nil {
 		if err := q.Func(ans); err != nil {
 			q.checkErrTimes()
-			echoErr(err.Error())
+			fmt.Fprintln(q.out(), color.Error.Render(err.Error()))
 			goto DoASK
 		}
 	}
@@ -82,7 +85,7 @@ func (q *Question) render() {
 	}
 
 	// print question
-	fmt.Printf("%s%s\n", color.Comment.Render(q.Q), defMsg)
+	fmt.Fprintf(q.out(), "%s%s\n", color.Comment.Render(q.Q), defMsg)
 }
 
 func (q *Question) checkErrTimes() {
@@ -97,4 +100,11 @@ func (q *Question) checkErrTimes() {
 	}
 
 	q.errTimes++
+}
+
+func (q *Question) out() io.Writer {
+	if q.Out != nil {
+		return q.Out
+	}
+	return cutypes.Output
 }

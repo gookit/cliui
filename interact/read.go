@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -36,8 +37,15 @@ func ReadInput(question string) (string, error) {
 //	in := ReadLine("")
 //	ans, _ := ReadLine("your name?")
 func ReadLine(question string) (string, error) {
+	return readLineWithOutput(question, cutypes.Output)
+}
+
+func readLineWithOutput(question string, out io.Writer) (string, error) {
 	if len(question) > 0 {
-		color.Fprint(cutypes.Output, question)
+		if out == nil {
+			out = cutypes.Output
+		}
+		color.Fprint(out, question)
 	}
 
 	reader := bufio.NewReader(cutypes.Input)
