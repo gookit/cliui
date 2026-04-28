@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/gookit/cliui/cutypes"
+	"github.com/gookit/cliui/internal"
 	"github.com/gookit/color"
 	"github.com/gookit/goutil/arrutil"
 	"github.com/gookit/goutil/strutil"
@@ -151,7 +152,7 @@ func (s *Select) selectOne() *SelectResult {
 	}
 
 DoSelect:
-	key, err := readLineWithOutput(tipsText, s.out())
+	key, err := internal.ReadLineWithOutput(tipsText, s.out())
 	if err != nil {
 		exitWithErr("(interact.Select) %s", err.Error())
 	}
@@ -208,7 +209,7 @@ func (s *Select) selectMulti() *SelectResult {
 	}
 
 DoSelect:
-	ans, err := readLineWithOutput(tipsText, s.out())
+	ans, err := internal.ReadLineWithOutput(tipsText, s.out())
 	if err != nil {
 		exitWithErr("(interact.Select) %s", err.Error())
 	}

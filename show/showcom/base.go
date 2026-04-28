@@ -108,7 +108,7 @@ func (b *Base) format() {
 	b.formatted = true
 
 	if b.FormatFn == nil {
-		panic("gcli/show: please set the FormatFn")
+		panic("cliui/show: please set the FormatFn")
 	}
 	b.FormatFn()
 }
@@ -121,15 +121,11 @@ func (b *Base) WriteTo(w io.Writer) (int64, error) {
 
 // Print formatted message
 func (b *Base) Print() {
-	if b.Out == nil {
-		b.Out = cutypes.Output
-	}
-
 	// call format
 	b.format()
 
 	if b.Buf != nil && b.Buf.Len() > 0 {
-		color.Fprint(b.Out, b.Buf.String())
+		color.Fprint(b.out(), b.Buf.String())
 		b.Buf.Reset()
 	}
 }
@@ -137,11 +133,15 @@ func (b *Base) Print() {
 // Println formatted message and print newline
 func (b *Base) Println() {
 	b.Print()
-	if b.Out == nil {
-		b.Out = cutypes.Output
-	}
-	fmt.Fprintln(b.Out)
+	fmt.Fprintln(b.out())
 }
 
 // SetErr set error
 func (b *Base) SetErr(err error) { b.Err = err }
+
+func (b *Base) out() io.Writer {
+	if b.Out != nil {
+		return b.Out
+	}
+	return cutypes.Output
+}

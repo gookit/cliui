@@ -1,8 +1,9 @@
 package cparam
 
 import (
+	"github.com/gookit/cliui/cutypes"
+	"github.com/gookit/cliui/internal"
 	"github.com/gookit/color"
-	"github.com/gookit/goutil/cliutil"
 )
 
 // StringParam definition
@@ -39,7 +40,8 @@ func (p *StringParam) Run() (err error) {
 		return p.Set(val)
 	}
 
-	val, err = cliutil.ReadLine(color.WrapTag(p.desc+"? ", "yellow"))
+	askMsg := color.WrapTag(p.desc+"? ", "yellow")
+	val, err = internal.ReadLineWithOutput(askMsg, cutypes.Output)
 	if err != nil {
 		return err
 	}

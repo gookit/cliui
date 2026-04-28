@@ -4,11 +4,11 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 
 	"github.com/gookit/cliui/cutypes"
+	"github.com/gookit/cliui/internal"
 	"github.com/gookit/color"
 	"github.com/gookit/goutil/arrutil"
 	"github.com/gookit/goutil/cliutil"
@@ -37,20 +37,7 @@ func ReadInput(question string) (string, error) {
 //	in := ReadLine("")
 //	ans, _ := ReadLine("your name?")
 func ReadLine(question string) (string, error) {
-	return readLineWithOutput(question, cutypes.Output)
-}
-
-func readLineWithOutput(question string, out io.Writer) (string, error) {
-	if len(question) > 0 {
-		if out == nil {
-			out = cutypes.Output
-		}
-		color.Fprint(out, question)
-	}
-
-	reader := bufio.NewReader(cutypes.Input)
-	answer, _, err := reader.ReadLine()
-	return strings.TrimSpace(string(answer)), err
+	return internal.ReadLineWithOutput(question, cutypes.Output)
 }
 
 // ReadFirst read first char

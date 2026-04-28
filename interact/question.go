@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gookit/cliui/cutypes"
+	"github.com/gookit/cliui/internal"
 	"github.com/gookit/color"
 )
 
@@ -43,7 +44,7 @@ func (q *Question) Run() *Value {
 	q.render()
 
 DoASK:
-	ans, err := readLineWithOutput("A: ", q.out())
+	ans, err := internal.ReadLineWithOutput("A: ", q.out())
 	if err != nil {
 		exitWithErr("(interact.Question) %s", err.Error())
 	}
