@@ -2,15 +2,17 @@ package interact
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 
 	"github.com/gookit/cliui/cutypes"
 	"github.com/gookit/color"
+	"github.com/gookit/goutil/arrutil"
 	"github.com/gookit/goutil/cliutil"
 	"github.com/gookit/goutil/envutil"
+	"golang.org/x/term"
 )
 
 // ReadInput read user input form Stdin
@@ -96,13 +98,26 @@ func AnswerIsYes(defVal ...bool) bool {
 	return AnswerIsYes()
 }
 
+// ReadPassword from terminal
+func ReadPassword(question ...string) string {
+	fmt.Fprint(cutypes.Output, arrutil.FirstOr(question, "Enter Password: "))
+
+	bs, err := term.ReadPassword(syscallStdin())
+	if err != nil {
+		return ""
+	}
+
+	fmt.Fprintln(cutypes.Output) // new line
+	return string(bs)
+}
+
 // GetHiddenInput interactively prompts for input without echoing to the terminal.
 //
 // Usage:
 //
 //	// askPassword
 //	pwd := GetHiddenInput("Enter Password:")
-func GetHiddenInput(message string, trimmed bool) string {
+func GetHiddenInput(message string, trimmed bool) (string, error) {
 	var err error
 	var input string
 	var hasResult bool
@@ -113,17 +128,16 @@ func GetHiddenInput(message string, trimmed bool) string {
 		cmd := fmt.Sprintf(`'read -p "%s" -s user_input && echo $user_input'`, message)
 		input, err = cliutil.ShellExec(cmd)
 		if err != nil {
-			fmt.Println("error:", err)
-			return ""
+			return "", err
 		}
 
-		println() // new line
+		fmt.Fprintln(cutypes.Output) // new line
 		hasResult = true
 	} else if envutil.IsWin() { // at windows cmd.exe
 		// create a temp VB script file
-		vbFile, err := ioutil.TempFile("", "gcli-pwd")
+		vbFile, err := os.CreateTemp("", "cliui-pwd")
 		if err != nil {
-			return ""
+			return "", err
 		}
 		defer func() {
 			// delete file
@@ -139,16 +153,15 @@ func GetHiddenInput(message string, trimmed bool) string {
 		// COMMAND: cscript //nologo vbFile.Name()
 		input, err = cliutil.ExecCmd("cscript", []string{"//nologo", vbFile.Name()})
 		if err != nil {
-			return ""
+			return "", err
 		}
 	}
 
 	if hasResult {
 		if trimmed {
-			return strings.TrimSpace(input)
+			return strings.TrimSpace(input), nil
 		}
-		return input
+		return input, nil
 	}
-
-	panic("current env is not support the method")
+	return "", errors.New("current env is not support the method")
 }
