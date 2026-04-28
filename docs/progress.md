@@ -53,10 +53,7 @@ func main() {
 
 Output preview:
 
-```txt
-[==============>-------------]  50%(55/110)
-[============================] 100%(110/110)
-```
+![prog-bar](images/prog-bar.svg)
 
 ### Full
 
@@ -88,10 +85,7 @@ p.Finish()
 
 Output preview:
 
-```txt
- 50%(50/100)
-100%(100/100)
-```
+![prog-txt](images/prog-txt.svg)
 
 ### Counter
 
@@ -302,15 +296,15 @@ Output preview:
 
 ### Internal Widgets
 
- Widget Name | Usage example      | Description                               
+ Widget Name | Usage example      | Description
 -------------|--------------------|-------------------------------------------
- `max`       | `{@max}`           | Display max steps for progress bar        
- `current`   | `{@current}`       | Display current steps for progress bar    
- `percent`   | `{@percent:4s}`    | Display percent for progress run          
- `elapsed`   | `{@elapsed:7s}`    | Display has elapsed time for progress run 
- `remaining` | `{@remaining:7s}`  | Display remaining time                    
- `estimated` | `{@estimated:-7s}` | Display estimated time                    
- `memory`    | `{@memory:6s}`     | Display memory consumption size           
+ `max`       | `{@max}`           | Display max steps for progress bar
+ `current`   | `{@current}`       | Display current steps for progress bar
+ `percent`   | `{@percent:4s}`    | Display percent for progress run
+ `elapsed`   | `{@elapsed:7s}`    | Display has elapsed time for progress run
+ `remaining` | `{@remaining:7s}`  | Display remaining time
+ `estimated` | `{@estimated:-7s}` | Display estimated time
+ `memory`    | `{@memory:6s}`     | Display memory consumption size
 
 ### Custom Progress Bar
 

@@ -59,6 +59,8 @@ func main() {
 [============================] 100%(110/110)
 ```
 
+![prog-bar](../images/prog-bar.svg)
+
 ### Full
 
 `Full` 会在进度条旁显示更完整的运行信息，包括当前进度、耗时、预计耗时和内存占用。
@@ -89,10 +91,7 @@ p.Finish()
 
 效果示例：
 
-```txt
- 50%(50/100)
-100%(100/100)
-```
+![prog-txt](../images/prog-txt.svg)
 
 ### Counter
 
@@ -315,15 +314,15 @@ func main() {
 
 ### 内置 Widgets
 
- Widget Name | Usage example      | Description                
+ Widget Name | Usage example      | Description
 -------------|--------------------|----------------------------
- `max`       | `{@max}`           | 显示进度条最大步数         
- `current`   | `{@current}`       | 显示当前进度步数           
- `percent`   | `{@percent:4s}`    | 显示当前进度百分比         
- `elapsed`   | `{@elapsed:7s}`    | 显示已耗时                 
- `remaining` | `{@remaining:7s}`  | 显示剩余时间               
- `estimated` | `{@estimated:-7s}` | 显示预计耗时               
- `memory`    | `{@memory:6s}`     | 显示内存占用               
+ `max`       | `{@max}`           | 显示进度条最大步数
+ `current`   | `{@current}`       | 显示当前进度步数
+ `percent`   | `{@percent:4s}`    | 显示当前进度百分比
+ `elapsed`   | `{@elapsed:7s}`    | 显示已耗时
+ `remaining` | `{@remaining:7s}`  | 显示剩余时间
+ `estimated` | `{@estimated:-7s}` | 显示预计耗时
+ `memory`    | `{@memory:6s}`     | 显示内存占用
 
 ### 自定义进度条
 
