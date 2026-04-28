@@ -385,7 +385,3 @@ go run ./examples/interact-ui-demo
 ```bash
 go test ./interact/ui -run Example -v
 ```
-
-## 下一步
-
-当前抽象已经可以支持后续更丰富的事件驱动 backend、resize 处理和选择过滤能力，并且不需要改变 `ui` 包的表层 API。

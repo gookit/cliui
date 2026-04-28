@@ -305,7 +305,7 @@ func main() {
 
 预览：
 
-![select](../../examples/images/select.png)
+![select](../images/select.png)
 
 ## 相关项目
 

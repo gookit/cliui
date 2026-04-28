@@ -305,7 +305,7 @@ func main() {
 
 Preview:
 
-![](../examples/images/select.png)
+![](images/select.png)
 
 ## Related
 

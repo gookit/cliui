@@ -385,7 +385,3 @@ Run the package examples, including the `readline` fallback example:
 ```bash
 go test ./interact/ui -run Example -v
 ```
-
-## Next Step
-
-The current abstraction is ready for richer event-driven backends, resize handling and future selection filtering without changing the `ui` package surface.
