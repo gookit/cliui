@@ -80,8 +80,8 @@ type Progress struct {
 // New Progress instance
 func New(maxSteps ...int64) *Progress {
 	var max int64
-	if len(maxSteps) > 0 && maxSteps[0] > 0 {
-		max = maxSteps[0]
+	if len(maxSteps) > 0 {
+		max = normalizeMaxSteps(maxSteps[0])
 	}
 
 	return &Progress{
@@ -141,8 +141,8 @@ func (p *Progress) WithOptions(fns ...func(p *Progress)) *Progress {
 
 // WithMaxSteps setting max steps
 func (p *Progress) WithMaxSteps(maxSteps ...int64) *Progress {
-	if len(maxSteps) > 0 && maxSteps[0] > 0 {
-		p.MaxSteps = maxSteps[0]
+	if len(maxSteps) > 0 {
+		p.MaxSteps = normalizeMaxSteps(maxSteps[0])
 	}
 	return p
 }
@@ -287,8 +287,8 @@ func (p *Progress) init(maxSteps ...int64) {
 		p.RedrawFreq = 1
 	}
 
-	if len(maxSteps) > 0 && maxSteps[0] > 0 {
-		p.MaxSteps = maxSteps[0]
+	if len(maxSteps) > 0 {
+		p.MaxSteps = normalizeMaxSteps(maxSteps[0])
 	} else {
 		p.MaxSteps = normalizeMaxSteps(p.MaxSteps)
 	}
