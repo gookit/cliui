@@ -27,7 +27,7 @@ var builtinWidgets = map[string]WidgetFunc{
 		// get elapsed time
 		elapsed := int64(time.Since(p.StartedAt()).Seconds())
 		// calc remaining time
-		remaining := uint(elapsed) / step * (p.MaxSteps - step)
+		remaining := elapsed / step * (p.MaxSteps - step)
 		return fmtutil.HowLongAgo(int64(remaining))
 	},
 	"estimated": func(p *Progress) string { // 计算总的预计时间
@@ -50,22 +50,34 @@ var builtinWidgets = map[string]WidgetFunc{
 		runtime.ReadMemStats(mem)
 		return fmtutil.DataSize(mem.Sys)
 	},
-	"max": func(p *Progress) string {
+	"max": func(p *Progress) string { // 最大值数值，eg 1502 计数场景
 		return fmt.Sprint(p.MaxSteps)
 	},
-	"current": func(p *Progress) string {
+	"maxSize": func(p *Progress) string { // 最大值大小，eg "100MB" 文件下载场景
+		return dataSize(p.MaxSteps)
+	},
+	"current": func(p *Progress) string { // 当前数值，左对齐 eg 342 计数场景
 		step := fmt.Sprint(p.Progress())
-		width := fmt.Sprint(p.StepWidth)
-		diff := len(width) - len(step)
+		diff := p.currentStepWidth() - len(step)
 		if diff <= 0 {
 			return step
 		}
 
 		return strings.Repeat(" ", diff) + step
 	},
+	"curSize": func(p *Progress) string { // 当前数值大小，eg "42MB" 文件下载场景
+		return dataSize(p.Progress())
+	},
 	"percent": func(p *Progress) string {
 		return fmt.Sprintf("%.1f", p.Percent()*100)
 	},
+}
+
+func dataSize(size int64) string {
+	if size < 0 {
+		size = 0
+	}
+	return fmtutil.DataSize(uint64(size))
 }
 
 // DynamicTextWidget dynamic text message widget for progress bar.
@@ -130,7 +142,7 @@ func BarWidget(width int, cs BarChars) WidgetFunc {
 		if p.MaxSteps > 0 { // MaxSteps is valid
 			completeLen = p.percent * float32(width)
 		} else { // not set MaxSteps
-			completeLen = float32(p.step % uint(width))
+			completeLen = float32(p.step % int64(width))
 		}
 
 		bar := string(repeatRune(cs.Completed, int(completeLen)))

@@ -38,28 +38,28 @@ const (
 )
 
 // Txt progress bar create.
-func Txt(maxSteps ...int) *Progress {
+func Txt(maxSteps ...int64) *Progress {
 	return New(maxSteps...).Config(func(p *Progress) {
 		p.Format = TxtFormat
 	})
 }
 
 // Full text progress bar create.
-func Full(maxSteps ...int) *Progress {
+func Full(maxSteps ...int64) *Progress {
 	return NewWithConfig(func(p *Progress) {
 		p.Format = FullFormat
 	}, maxSteps...)
 }
 
 // Counter progress bar create
-func Counter(maxSteps ...int) *Progress {
+func Counter(maxSteps ...int64) *Progress {
 	return NewWithConfig(func(p *Progress) {
 		p.Format = MinFormat
 	}, maxSteps...)
 }
 
 // DynamicText progress bar create
-func DynamicText(messages map[int]string, maxSteps ...int) *Progress {
+func DynamicText(messages map[int]string, maxSteps ...int64) *Progress {
 	return NewWithConfig(func(p *Progress) {
 		p.Format = "{@percent:4s}%({@current}/{@max}){@message}"
 		p.AddWidget("message", DynamicTextWidget(messages))
@@ -75,6 +75,8 @@ const (
 	// BarWidth default bar width
 	BarWidth  = 40
 	BarFormat = "{@bar} {@percent:4s}%({@current}/{@max}){@message}"
+	// SizeFormat size progress bar format. use for file download/upload.
+	SizeFormat = "{@bar} {@percent:4s}% {@curSize}/{@maxSize} {@message}"
 
 	// MdlBarFormat more format
 	MdlBarFormat  = "{@bar} {@percent:4s}%({@current}/{@max}) {@elapsed:7s}/{@estimated:-7s}"
@@ -105,17 +107,17 @@ var BarStyles = []BarChars{
 //		1 [->--------------------------]
 //		3 [■■■>------------------------]
 //	25/50 [==============>-------------]  50%
-func Bar(maxSteps ...int) *Progress {
+func Bar(maxSteps ...int64) *Progress {
 	return CustomBar(BarWidth, BarStyles[0], maxSteps...)
 }
 
 // Tape create new tape progress bar. is alias of Bar()
-func Tape(maxSteps ...int) *Progress {
+func Tape(maxSteps ...int64) *Progress {
 	return Bar(maxSteps...)
 }
 
 // CustomBar create a custom progress bar.
-func CustomBar(width int, cs BarChars, maxSteps ...int) *Progress {
+func CustomBar(width int, cs BarChars, maxSteps ...int64) *Progress {
 	return New(maxSteps...).
 		Config(func(p *Progress) {
 			p.Format = BarFormat
@@ -168,17 +170,17 @@ func RoundTrip(char rune, charNumAndBoxWidth ...int) *Progress {
  *************************************************************/
 
 // LoadingBar alias of load bar LoadBar()
-func LoadingBar(chars []rune, maxSteps ...int) *Progress {
+func LoadingBar(chars []rune, maxSteps ...int64) *Progress {
 	return LoadBar(chars, maxSteps...)
 }
 
 // SpinnerBar alias of load bar LoadBar()
-func SpinnerBar(chars []rune, maxSteps ...int) *Progress {
+func SpinnerBar(chars []rune, maxSteps ...int64) *Progress {
 	return LoadBar(chars, maxSteps...)
 }
 
 // LoadBar create loading progress bar
-func LoadBar(chars []rune, maxSteps ...int) *Progress {
+func LoadBar(chars []rune, maxSteps ...int64) *Progress {
 	return New(maxSteps...).Config(func(p *Progress) {
 		p.Format = "{@loading} ({@current}/{@max}){@message}"
 		p.AddWidget("loading", LoadingWidget(chars))

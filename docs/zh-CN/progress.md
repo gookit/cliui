@@ -39,11 +39,11 @@ import (
 
 func main() {
 	speed := 100
-	maxSteps := 110
+	maxSteps := int64(110)
 	p := progress.Bar(maxSteps)
 	p.Start()
 
-	for i := 0; i < maxSteps; i++ {
+	for i := int64(0); i < maxSteps; i++ {
 		time.Sleep(time.Duration(speed) * time.Millisecond)
 		p.Advance()
 	}
@@ -318,11 +318,15 @@ func main() {
 -------------|--------------------|----------------------------
  `max`       | `{@max}`           | 显示进度条最大步数
  `current`   | `{@current}`       | 显示当前进度步数
+ `maxSize`   | `{@maxSize}`       | 将最大步数按字节大小显示
+ `curSize`   | `{@curSize}`       | 将当前步数按字节大小显示
  `percent`   | `{@percent:4s}`    | 显示当前进度百分比
  `elapsed`   | `{@elapsed:7s}`    | 显示已耗时
  `remaining` | `{@remaining:7s}`  | 显示剩余时间
  `estimated` | `{@estimated:-7s}` | 显示预计耗时
  `memory`    | `{@memory:6s}`     | 显示内存占用
+
+`StepWidth` 控制 `{@current}` 的显示宽度。保持 `0` 时会按 `MaxSteps` 自动计算；只有需要固定当前进度数字列宽时才需要设置它。
 
 ### 自定义进度条
 
@@ -354,7 +358,7 @@ import (
 
 // CustomBar create custom progress bar
 func main() {
-	maxSteps := 100
+	maxSteps := int64(100)
 	// use special bar style: [==============>-------------]
 	// barStyle := progress.BarStyles[0]
 	// use random bar style
@@ -368,7 +372,7 @@ func main() {
 
 	p.Start()
 
-	for i := 0; i < maxSteps; i++ {
+	for i := int64(0); i < maxSteps; i++ {
 		time.Sleep(80 * time.Millisecond)
 		p.Advance()
 	}
@@ -377,26 +381,46 @@ func main() {
 }
 ```
 
+### IO Progress
+
+`Progress` 可以直接用于按字节数跟踪 IO 进度。`Write` 会按写入到进度对象自身的字节数推进进度，`WrapReader` / `WrapWriter` 会按被包装对象实际读写的字节数推进进度。下载场景里 `http.Response.ContentLength` 是 `int64`，可以直接作为最大进度值传入。
+
+```go
+resp, err := http.Get(url)
+if err != nil {
+	return err
+}
+defer resp.Body.Close()
+
+p := progress.Bar(resp.ContentLength)
+p.Format = "{@bar} {@percent:4s}% {@curSize}/{@maxSize}"
+p.Start()
+defer p.Finish()
+
+_, err = io.Copy(dst, p.WrapReader(resp.Body))
+return err
+```
+
 ### Progress Functions
 
 快速创建进度条：
 
 ```text
-func Bar(maxSteps ...int) *Progress
-func Counter(maxSteps ...int) *Progress
-func CustomBar(width int, cs BarChars, maxSteps ...int) *Progress
-func DynamicText(messages map[int]string, maxSteps ...int) *Progress
-func Full(maxSteps ...int) *Progress
-func LoadBar(chars []rune, maxSteps ...int) *Progress
-func LoadingBar(chars []rune, maxSteps ...int) *Progress
-func New(maxSteps ...int) *Progress
+func Bar(maxSteps ...int64) *Progress
+func Counter(maxSteps ...int64) *Progress
+func CustomBar(width int, cs BarChars, maxSteps ...int64) *Progress
+func DynamicText(messages map[int]string, maxSteps ...int64) *Progress
+func Full(maxSteps ...int64) *Progress
+func LoadBar(chars []rune, maxSteps ...int64) *Progress
+func LoadingBar(chars []rune, maxSteps ...int64) *Progress
+func New(maxSteps ...int64) *Progress
 func NewMulti() *MultiProgress
-func NewWithConfig(fn func(p *Progress), maxSteps ...int) *Progress
+func NewWithConfig(fn func(p *Progress), maxSteps ...int64) *Progress
 func RoundTrip(char rune, charNumAndBoxWidth ...int) *Progress
 func RoundTripBar(char rune, charNumAndBoxWidth ...int) *Progress
-func SpinnerBar(chars []rune, maxSteps ...int) *Progress
-func Tape(maxSteps ...int) *Progress
-func Txt(maxSteps ...int) *Progress
+func SpinnerBar(chars []rune, maxSteps ...int64) *Progress
+func Tape(maxSteps ...int64) *Progress
+func Txt(maxSteps ...int64) *Progress
 ```
 
 `Progress.Line()` 会返回当前渲染行，主要供 `MultiProgress` 管理渲染使用；在将进度输出嵌入其它 renderer 时也可能有用。

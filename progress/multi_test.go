@@ -18,7 +18,7 @@ func TestProgress_Line(t *testing.T) {
 	p.applyStep(3)
 
 	line := p.Line()
-	is.Contains(line, "30.0%(3/10)")
+	is.Contains(line, "30.0%( 3/10)")
 }
 
 func TestMultiProgress_Render(t *testing.T) {

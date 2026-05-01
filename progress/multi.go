@@ -44,7 +44,7 @@ func (mp *MultiProgress) Add(p *Progress) *Progress {
 }
 
 // New creates a managed progress bar.
-func (mp *MultiProgress) New(maxSteps ...int) *Progress {
+func (mp *MultiProgress) New(maxSteps ...int64) *Progress {
 	return mp.Add(New(maxSteps...))
 }
 
@@ -115,7 +115,7 @@ func (mp *MultiProgress) update(fn func()) {
 	mp.refreshLocked()
 }
 
-func (mp *MultiProgress) startProgress(p *Progress, maxSteps ...int) {
+func (mp *MultiProgress) startProgress(p *Progress, maxSteps ...int64) {
 	mp.mu.Lock()
 	defer mp.mu.Unlock()
 

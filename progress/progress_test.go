@@ -3,6 +3,8 @@ package progress
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"strings"
 	"testing"
 	"time"
 
@@ -65,10 +67,140 @@ func TestProgressUsesInstanceOutput(t *testing.T) {
 	is.Eq("", globalOut.String())
 }
 
+func TestProgressSupportsLargeStepCounts(t *testing.T) {
+	is := assert.New(t)
+
+	p := Txt()
+	p.Out = new(bytes.Buffer)
+	p.MaxSteps = int64(5 << 32)
+	p.RedrawFreq = uint(1 << 16)
+
+	p.Start()
+	p.AdvanceTo(int64(4 << 32))
+
+	is.Eq(int64(4<<32), p.Step())
+	is.Eq(float32(0.8), p.Percent())
+}
+
+func TestProgressPadsCurrentByStepWidth(t *testing.T) {
+	is := assert.New(t)
+
+	p := Txt(1_000_000_000_000)
+	p.Out = new(bytes.Buffer)
+	p.Start()
+	p.AdvanceTo(1)
+
+	current := p.Handler("current")(p)
+
+	is.Eq(strings.Repeat(" ", 12)+"1", current)
+}
+
+func TestProgressRespectsCustomStepWidth(t *testing.T) {
+	is := assert.New(t)
+
+	p := Txt(1_000_000_000_000)
+	p.Out = new(bytes.Buffer)
+	p.StepWidth = 4
+	p.Start()
+	p.AdvanceTo(1)
+
+	current := p.Handler("current")(p)
+
+	is.Eq("   1", current)
+}
+
+func TestProgressAutoWidthFollowsMaxStepsGrowth(t *testing.T) {
+	is := assert.New(t)
+
+	p := Txt(9)
+	p.Out = new(bytes.Buffer)
+	p.Start()
+	p.AdvanceTo(1_000)
+
+	is.Eq("1000", p.Handler("current")(p))
+}
+
+func TestProgressStartTreatsNegativeMaxStepsAsUnknown(t *testing.T) {
+	is := assert.New(t)
+
+	p := Txt(100)
+	p.Out = new(bytes.Buffer)
+	p.Start(-1)
+	p.AdvanceTo(5)
+	p.Finish()
+
+	is.Eq(int64(5), p.MaxSteps)
+	is.Eq(int64(5), p.Step())
+}
+
+func TestProgressSizeWidgets(t *testing.T) {
+	is := assert.New(t)
+
+	p := Txt(5 << 30)
+	p.Out = new(bytes.Buffer)
+	p.Start()
+	p.AdvanceTo(1200346778)
+
+	is.Eq("1.12G", p.Handler("curSize")(p))
+	is.Eq("5.00G", p.Handler("maxSize")(p))
+}
+
+func TestProgressTreatsNegativeMaxStepsAsUnknown(t *testing.T) {
+	is := assert.New(t)
+
+	p := Txt(-1)
+	p.Out = new(bytes.Buffer)
+	p.Start()
+
+	p.AdvanceTo(5)
+	p.Finish()
+
+	is.Eq(int64(5), p.MaxSteps)
+	is.Eq(int64(5), p.Step())
+}
+
+func TestProgressWriteAdvancesByByteCount(t *testing.T) {
+	is := assert.New(t)
+
+	p := Txt(10)
+	p.Out = new(bytes.Buffer)
+	p.Start()
+
+	n, err := p.Write([]byte("hello"))
+
+	is.NoErr(err)
+	is.Eq(5, n)
+	is.Eq(int64(5), p.Step())
+}
+
+func TestProgressWrapsReaderAndWriter(t *testing.T) {
+	is := assert.New(t)
+
+	readProgress := Txt(11)
+	readProgress.Out = new(bytes.Buffer)
+	readProgress.Start()
+
+	data, err := io.ReadAll(readProgress.WrapReader(strings.NewReader("hello world")))
+	is.NoErr(err)
+	is.Eq("hello world", string(data))
+	is.Eq(int64(11), readProgress.Step())
+
+	writeProgress := Txt(11)
+	writeProgress.Out = new(bytes.Buffer)
+	writeProgress.Start()
+
+	dst := new(bytes.Buffer)
+	n, err := writeProgress.WrapWriter(dst).Write([]byte("hello world"))
+	is.NoErr(err)
+	is.Eq(11, n)
+	is.Eq("hello world", dst.String())
+	is.Eq(int64(11), writeProgress.Step())
+}
+
 func ExampleBar() {
 	maxStep := 105
-	p := CustomBar(60, BarStyles[0], maxStep)
-	p.MaxSteps = uint(maxStep)
+	p := CustomBar(60, BarStyles[0], int64(maxStep))
+	p.MaxSteps = int64(maxStep)
 	p.Format = FullBarFormat
 
 	p.Start()
@@ -90,7 +222,7 @@ func ExampleDynamicText() {
 	}
 
 	maxStep := 105
-	p := DynamicText(messages, maxStep)
+	p := DynamicText(messages, int64(maxStep))
 
 	p.Start()
 

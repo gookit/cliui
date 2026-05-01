@@ -38,11 +38,11 @@ import (
 
 func main() {
 	speed := 100
-	maxSteps := 110
+	maxSteps := int64(110)
 	p := progress.Bar(maxSteps)
 	p.Start()
 
-	for i := 0; i < maxSteps; i++ {
+	for i := int64(0); i < maxSteps; i++ {
 		time.Sleep(time.Duration(speed) * time.Millisecond)
 		p.Advance()
 	}
@@ -300,11 +300,15 @@ Output preview:
 -------------|--------------------|-------------------------------------------
  `max`       | `{@max}`           | Display max steps for progress bar
  `current`   | `{@current}`       | Display current steps for progress bar
+ `maxSize`   | `{@maxSize}`       | Display max steps as a byte size
+ `curSize`   | `{@curSize}`       | Display current steps as a byte size
  `percent`   | `{@percent:4s}`    | Display percent for progress run
  `elapsed`   | `{@elapsed:7s}`    | Display has elapsed time for progress run
  `remaining` | `{@remaining:7s}`  | Display remaining time
  `estimated` | `{@estimated:-7s}` | Display estimated time
  `memory`    | `{@memory:6s}`     | Display memory consumption size
+
+`StepWidth` controls the display width of `{@current}`. Leave it as `0` to auto-size from `MaxSteps`; set it only when you need a fixed current-count column.
 
 ### Custom Progress Bar
 
@@ -336,7 +340,7 @@ import (
 
 // CustomBar create custom progress bar
 func main() {
-	maxSteps := 100
+	maxSteps := int64(100)
 	// use special bar style: [==============>-------------]
 	// barStyle := progress.BarStyles[0]
 	// use random bar style
@@ -350,7 +354,7 @@ func main() {
 
 	p.Start()
 
-	for i := 0; i < maxSteps; i++ {
+	for i := int64(0); i < maxSteps; i++ {
 		time.Sleep(80 * time.Millisecond)
 		p.Advance()
 	}
@@ -359,26 +363,46 @@ func main() {
 }
 ```
 
+### IO Progress
+
+`Progress` can track byte counts for IO flows. `Write` advances by the number of bytes written to the progress itself, and `WrapReader` / `WrapWriter` advance by the actual bytes read or written on the wrapped object. This is useful for downloads where `http.Response.ContentLength` is an `int64`.
+
+```go
+resp, err := http.Get(url)
+if err != nil {
+	return err
+}
+defer resp.Body.Close()
+
+p := progress.Bar(resp.ContentLength)
+p.Format = "{@bar} {@percent:4s}% {@curSize}/{@maxSize}"
+p.Start()
+defer p.Finish()
+
+_, err = io.Copy(dst, p.WrapReader(resp.Body))
+return err
+```
+
 ### Progress Functions
 
 Quick create progress bar:
 
 ```text
-func Bar(maxSteps ...int) *Progress
-func Counter(maxSteps ...int) *Progress
-func CustomBar(width int, cs BarChars, maxSteps ...int) *Progress
-func DynamicText(messages map[int]string, maxSteps ...int) *Progress
-func Full(maxSteps ...int) *Progress
-func LoadBar(chars []rune, maxSteps ...int) *Progress
-func LoadingBar(chars []rune, maxSteps ...int) *Progress
-func New(maxSteps ...int) *Progress
+func Bar(maxSteps ...int64) *Progress
+func Counter(maxSteps ...int64) *Progress
+func CustomBar(width int, cs BarChars, maxSteps ...int64) *Progress
+func DynamicText(messages map[int]string, maxSteps ...int64) *Progress
+func Full(maxSteps ...int64) *Progress
+func LoadBar(chars []rune, maxSteps ...int64) *Progress
+func LoadingBar(chars []rune, maxSteps ...int64) *Progress
+func New(maxSteps ...int64) *Progress
 func NewMulti() *MultiProgress
-func NewWithConfig(fn func(p *Progress), maxSteps ...int) *Progress
+func NewWithConfig(fn func(p *Progress), maxSteps ...int64) *Progress
 func RoundTrip(char rune, charNumAndBoxWidth ...int) *Progress
 func RoundTripBar(char rune, charNumAndBoxWidth ...int) *Progress
-func SpinnerBar(chars []rune, maxSteps ...int) *Progress
-func Tape(maxSteps ...int) *Progress
-func Txt(maxSteps ...int) *Progress
+func SpinnerBar(chars []rune, maxSteps ...int64) *Progress
+func Tape(maxSteps ...int64) *Progress
+func Txt(maxSteps ...int64) *Progress
 ```
 
 `Progress.Line()` returns the current rendered line for managed rendering. It is mainly used by `MultiProgress`, but can also be useful when embedding progress output in another renderer.

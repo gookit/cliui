@@ -21,9 +21,9 @@ type WidgetFunc func(p *Progress) string
 
 // Progresser progress interface
 type Progresser interface {
-	Start(maxSteps ...int)
-	Advance(steps ...uint)
-	AdvanceTo(step uint)
+	Start(maxSteps ...int64)
+	Advance(steps ...int64)
+	AdvanceTo(step int64)
 	Finish(msg ...string)
 	Bound() any
 }
@@ -40,13 +40,14 @@ type Progress struct {
 	// Newline render progress on newline
 	Newline bool
 	// MaxSteps maximal steps.
-	MaxSteps uint
-	// StepWidth the width for display "{@current}". default is 2
+	MaxSteps int64
+	// StepWidth the width for display "{@current}". default 0 means auto.
+	// eg: 342 计数场景，StepWidth = 3. 用于计算填充空格宽度
 	StepWidth uint8
 	// Overwrite prev output. default is True
 	Overwrite bool
 	// RedrawFreq redraw freq. default is 1
-	RedrawFreq uint8
+	RedrawFreq uint
 	// Widgets for build the progress bar
 	Widgets map[string]WidgetFunc
 	// Messages named messages for build progress bar
@@ -55,7 +56,7 @@ type Progress struct {
 	// 	"{@percent}% {@msg}" -> "83% downloading ..."
 	Messages map[string]string
 	// current step value
-	step uint
+	step int64
 	// bound user custom data.
 	bound any
 	// mark start status
@@ -77,17 +78,16 @@ type Progress struct {
  *************************************************************/
 
 // New Progress instance
-func New(maxSteps ...int) *Progress {
-	var max uint
-	if len(maxSteps) > 0 {
-		max = uint(maxSteps[0])
+func New(maxSteps ...int64) *Progress {
+	var max int64
+	if len(maxSteps) > 0 && maxSteps[0] > 0 {
+		max = maxSteps[0]
 	}
 
 	return &Progress{
 		Out:       cutypes.Output,
 		Format:    DefFormat,
 		MaxSteps:  max,
-		StepWidth: 3,
 		Overwrite: true,
 		// init widgets
 		Widgets: make(map[string]WidgetFunc),
@@ -97,7 +97,7 @@ func New(maxSteps ...int) *Progress {
 }
 
 // NewWithConfig create new Progress
-func NewWithConfig(fn func(p *Progress), maxSteps ...int) *Progress {
+func NewWithConfig(fn func(p *Progress), maxSteps ...int64) *Progress {
 	return New(maxSteps...).Config(fn)
 }
 
@@ -113,9 +113,9 @@ func RenderFormat(f string) func(p *Progress) {
 }
 
 // MaxSteps setting max steps
-func MaxSteps(maxStep int) func(p *Progress) {
+func MaxSteps(maxStep int64) func(p *Progress) {
 	return func(p *Progress) {
-		p.MaxSteps = uint(maxStep)
+		p.MaxSteps = normalizeMaxSteps(maxStep)
 	}
 }
 
@@ -140,9 +140,9 @@ func (p *Progress) WithOptions(fns ...func(p *Progress)) *Progress {
 }
 
 // WithMaxSteps setting max steps
-func (p *Progress) WithMaxSteps(maxSteps ...int) *Progress {
-	if len(maxSteps) > 0 {
-		p.MaxSteps = uint(maxSteps[0])
+func (p *Progress) WithMaxSteps(maxSteps ...int64) *Progress {
+	if len(maxSteps) > 0 && maxSteps[0] > 0 {
+		p.MaxSteps = maxSteps[0]
 	}
 	return p
 }
@@ -259,7 +259,7 @@ func (p *Progress) addWidgets(widgets map[string]WidgetFunc) {
  *************************************************************/
 
 // Start the progress bar
-func (p *Progress) Start(maxSteps ...int) {
+func (p *Progress) Start(maxSteps ...int64) {
 	if p.started {
 		panic("Progress bar already started")
 	}
@@ -276,7 +276,7 @@ func (p *Progress) Start(maxSteps ...int) {
 	p.Display()
 }
 
-func (p *Progress) init(maxSteps ...int) {
+func (p *Progress) init(maxSteps ...int64) {
 	p.step = 0
 	p.percent = 0.0
 	p.started = true
@@ -287,18 +287,10 @@ func (p *Progress) init(maxSteps ...int) {
 		p.RedrawFreq = 1
 	}
 
-	if len(maxSteps) > 0 {
-		p.MaxSteps = uint(maxSteps[0])
-	}
-
-	// use MaxSteps len as StepWidth. eg: MaxSteps=1000 -> StepWidth=4
-	if p.MaxSteps > 0 {
-		maxStepsLen := len(fmt.Sprint(p.MaxSteps))
-		p.StepWidth = uint8(maxStepsLen)
-	}
-
-	if p.StepWidth == 0 {
-		p.StepWidth = 3
+	if len(maxSteps) > 0 && maxSteps[0] > 0 {
+		p.MaxSteps = maxSteps[0]
+	} else {
+		p.MaxSteps = normalizeMaxSteps(p.MaxSteps)
 	}
 
 	// load default widgets
@@ -306,10 +298,10 @@ func (p *Progress) init(maxSteps ...int) {
 }
 
 // Advance specified step size. default is 1
-func (p *Progress) Advance(steps ...uint) {
+func (p *Progress) Advance(steps ...int64) {
 	p.checkStart()
 
-	var step uint = 1
+	var step int64 = 1
 	if len(steps) > 0 && steps[0] > 0 {
 		step = steps[0]
 	}
@@ -318,7 +310,7 @@ func (p *Progress) Advance(steps ...uint) {
 }
 
 // AdvanceTo specified number of steps
-func (p *Progress) AdvanceTo(step uint) {
+func (p *Progress) AdvanceTo(step int64) {
 	p.checkStart()
 
 	if p.manager != nil {
@@ -333,15 +325,18 @@ func (p *Progress) AdvanceTo(step uint) {
 	}
 }
 
-func (p *Progress) applyStep(step uint) bool {
+func (p *Progress) applyStep(step int64) bool {
 	// check arg
+	if step < 0 {
+		step = 0
+	}
 	if p.MaxSteps > 0 && step > p.MaxSteps {
 		p.MaxSteps = step
 	}
 
-	freq := uint(p.RedrawFreq)
-	prevPeriod := int(p.step / freq)
-	currPeriod := int(step / freq)
+	freq := uint64(p.RedrawFreq)
+	prevPeriod := uint64(p.step) / freq
+	currPeriod := uint64(step) / freq
 
 	p.step = step
 	if p.MaxSteps > 0 {
@@ -411,6 +406,51 @@ func (p *Progress) Destroy() {
 	}
 }
 
+// Write advances the progress by the number of bytes in bs.
+func (p *Progress) Write(bs []byte) (int, error) {
+	n := len(bs)
+	if n > 0 {
+		p.Advance(int64(n))
+	}
+	return n, nil
+}
+
+// WrapReader wraps r and advances the progress by each successful read count.
+func (p *Progress) WrapReader(r io.Reader) io.Reader {
+	return progressReader{reader: r, progress: p}
+}
+
+// WrapWriter wraps w and advances the progress by each successful write count.
+func (p *Progress) WrapWriter(w io.Writer) io.Writer {
+	return progressWriter{writer: w, progress: p}
+}
+
+type progressReader struct {
+	reader   io.Reader
+	progress *Progress
+}
+
+func (r progressReader) Read(bs []byte) (int, error) {
+	n, err := r.reader.Read(bs)
+	if n > 0 {
+		r.progress.Advance(int64(n))
+	}
+	return n, err
+}
+
+type progressWriter struct {
+	writer   io.Writer
+	progress *Progress
+}
+
+func (w progressWriter) Write(bs []byte) (int, error) {
+	n, err := w.writer.Write(bs)
+	if n > 0 {
+		w.progress.Advance(int64(n))
+	}
+	return n, err
+}
+
 /*************************************************************
  * helper methods
  *************************************************************/
@@ -441,6 +481,16 @@ func (p *Progress) out() io.Writer {
 		return p.Out
 	}
 	return cutypes.Output
+}
+
+func (p *Progress) currentStepWidth() int {
+	if p.StepWidth > 0 {
+		return int(p.StepWidth)
+	}
+	if p.MaxSteps > 0 {
+		return len(fmt.Sprint(p.MaxSteps))
+	}
+	return 3
 }
 
 func (p *Progress) checkStart() {
@@ -527,12 +577,12 @@ func (p *Progress) Percent() float32 {
 }
 
 // Step gets the current step position.
-func (p *Progress) Step() uint {
+func (p *Progress) Step() int64 {
 	return p.step
 }
 
 // Progress alias of the Step()
-func (p *Progress) Progress() uint {
+func (p *Progress) Progress() int64 {
 	return p.step
 }
 

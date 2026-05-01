@@ -75,3 +75,10 @@ func GetCharsTheme(index int) []rune {
 func RandomCharsTheme() []rune {
 	return CharsThemes[rand.IntN(len(CharsThemes)-1)]
 }
+
+func normalizeMaxSteps(maxSteps int64) int64 {
+	if maxSteps < 0 {
+		return 0
+	}
+	return maxSteps
+}
