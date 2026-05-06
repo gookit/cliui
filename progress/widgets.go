@@ -25,9 +25,9 @@ var builtinWidgets = map[string]WidgetFunc{
 		}
 
 		// get elapsed time
-		elapsed := int64(time.Since(p.StartedAt()).Seconds())
+		elapsed := time.Since(p.StartedAt()).Seconds()
 		// calc remaining time
-		remaining := elapsed / step * (p.MaxSteps - step)
+		remaining := elapsed / float64(step) * float64(p.MaxSteps-step)
 		return fmtutil.HowLongAgo(int64(remaining))
 	},
 	"estimated": func(p *Progress) string { // 计算总的预计时间

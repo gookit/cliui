@@ -145,6 +145,18 @@ func TestProgressSizeWidgets(t *testing.T) {
 	is.Eq("5.00G", p.Handler("maxSize")(p))
 }
 
+func TestProgressRemainingUsesFractionalRateForByteProgress(t *testing.T) {
+	is := assert.New(t)
+
+	p := Txt(10 << 20)
+	p.Out = new(bytes.Buffer)
+	p.Start()
+	p.startedAt = time.Now().Add(-2 * time.Second)
+	p.AdvanceTo(2 << 20)
+
+	is.Eq("8 secs", p.Handler("remaining")(p))
+}
+
 func TestProgressTreatsNegativeMaxStepsAsUnknown(t *testing.T) {
 	is := assert.New(t)
 
