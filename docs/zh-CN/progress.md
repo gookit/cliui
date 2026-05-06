@@ -323,6 +323,7 @@ func main() {
  `percent`   | `{@percent:4s}`    | 显示当前进度百分比
  `elapsed`   | `{@elapsed:7s}`    | 显示已耗时
  `remaining` | `{@remaining:7s}`  | 显示剩余时间
+ `eta`       | `{@eta:7s}`        | `remaining` 的别名
  `estimated` | `{@estimated:-7s}` | 显示预计耗时
  `memory`    | `{@memory:6s}`     | 显示内存占用
 

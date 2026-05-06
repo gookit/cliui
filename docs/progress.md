@@ -305,6 +305,7 @@ Output preview:
  `percent`   | `{@percent:4s}`    | Display percent for progress run
  `elapsed`   | `{@elapsed:7s}`    | Display has elapsed time for progress run
  `remaining` | `{@remaining:7s}`  | Display remaining time
+ `eta`       | `{@eta:7s}`        | Alias of `remaining`
  `estimated` | `{@estimated:-7s}` | Display estimated time
  `memory`    | `{@memory:6s}`     | Display memory consumption size
 

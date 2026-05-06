@@ -157,6 +157,21 @@ func TestProgressRemainingUsesFractionalRateForByteProgress(t *testing.T) {
 	is.Eq("8 secs", p.Handler("remaining")(p))
 }
 
+func TestProgressSupportsWidgetAlias(t *testing.T) {
+	is := assert.New(t)
+
+	p := NewWithConfig(func(p *Progress) {
+		p.Out = new(bytes.Buffer)
+		p.Format = "{@remaining}|{@eta}"
+	}, 10)
+	p.Start()
+	p.startedAt = time.Now().Add(-2 * time.Second)
+	p.AdvanceTo(2)
+
+	is.Eq("8 secs|8 secs", p.Line())
+	is.NotNil(p.Handler("eta"))
+}
+
 func TestProgressTreatsNegativeMaxStepsAsUnknown(t *testing.T) {
 	is := assert.New(t)
 

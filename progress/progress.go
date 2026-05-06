@@ -16,6 +16,10 @@ import (
 // use for match like "{@bar}" "{@percent:3s}"
 var widgetMatch = regexp.MustCompile(`{@([\w_]+)(?::([\w-]+))?}`)
 
+var widgetAliases = map[string]string{
+	"eta": "remaining",
+}
+
 // WidgetFunc handler func for progress widget
 type WidgetFunc func(p *Progress) string
 
@@ -535,6 +539,8 @@ func (p *Progress) buildLine() string {
 			text = handler(p)
 		} else if msg, ok := p.Messages[name]; ok {
 			text = msg
+		} else if handler := p.Handler(name); handler != nil {
+			text = handler(p)
 		} else {
 			return s
 		}
@@ -562,6 +568,9 @@ func (p *Progress) Line() string {
 func (p *Progress) Handler(name string) WidgetFunc {
 	if handler, ok := p.Widgets[name]; ok {
 		return handler
+	}
+	if widgetName, ok := widgetAliases[name]; ok {
+		return p.Widgets[widgetName]
 	}
 
 	return nil
