@@ -513,6 +513,21 @@ func (p *Progress) Finish(message ...string) {
 	fmt.Fprintln(p.out()) // new line
 }
 
+// Done marks the progress as completed.
+func (p *Progress) Done(message ...string) {
+	p.finishStatus("done", true, message...)
+}
+
+// Fail marks the progress as failed without advancing it to completion.
+func (p *Progress) Fail(message ...string) {
+	p.finishStatus("failed", false, message...)
+}
+
+// Skip marks the progress as skipped without advancing it to completion.
+func (p *Progress) Skip(message ...string) {
+	p.finishStatus("skipped", false, message...)
+}
+
 // Display outputs the current progress string.
 func (p *Progress) Display() {
 	if p.manager != nil {
@@ -651,6 +666,46 @@ func (p *Progress) finishManaged(message ...string) {
 	if len(message) > 0 {
 		p.addMessage("message", message[0])
 	}
+}
+
+func (p *Progress) finishStatus(status string, complete bool, message ...string) {
+	p.checkStart()
+
+	if p.manager != nil {
+		p.manager.updateBar(updateFinalState, p, func() bool {
+			p.applyStatus(status, complete, message...)
+			return true
+		})
+		return
+	}
+
+	p.applyStatus(status, complete, message...)
+	p.display()
+	fmt.Fprintln(p.out())
+}
+
+func (p *Progress) applyStatus(status string, complete bool, message ...string) {
+	p.finishedAt = time.Now()
+
+	if complete {
+		if p.MaxSteps == 0 {
+			p.MaxSteps = p.step
+		}
+		p.step = p.MaxSteps
+		if p.MaxSteps > 0 {
+			p.percent = 1
+		}
+	} else if p.MaxSteps > 0 {
+		p.percent = float32(p.step) / float32(p.MaxSteps)
+	}
+
+	text := status
+	if len(message) > 0 {
+		text = message[0]
+	}
+
+	p.addMessage("message", text)
+	p.addMessage("status", status)
 }
 
 // build widgets form Format string.

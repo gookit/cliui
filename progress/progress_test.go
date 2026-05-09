@@ -295,6 +295,80 @@ func TestProgressSetters(t *testing.T) {
 	is.Eq("fd:downloading:8", p.Line())
 }
 
+func TestProgressDone(t *testing.T) {
+	is := assert.New(t)
+	p := New(10)
+	p.SetFormat("{@message}|{@status}|{@current}/{@max}")
+	p.Start()
+	p.AdvanceTo(3)
+
+	p.Done()
+
+	is.True(p.Finished())
+	is.Eq(int64(10), p.Step())
+	is.Eq("done|done|10/10", p.Line())
+}
+
+func TestProgressFailAndSkip(t *testing.T) {
+	is := assert.New(t)
+
+	failed := New(10)
+	failed.SetFormat("{@message}|{@status}|{@current}/{@max}")
+	failed.Start()
+	failed.AdvanceTo(4)
+	failed.Fail("network failed")
+
+	is.True(failed.Finished())
+	is.Eq(int64(4), failed.Step())
+	is.Eq("network failed|failed| 4/10", failed.Line())
+
+	skipped := New(10)
+	skipped.SetFormat("{@message}|{@status}|{@current}/{@max}")
+	skipped.Start()
+	skipped.AdvanceTo(2)
+	skipped.Skip()
+
+	is.True(skipped.Finished())
+	is.Eq(int64(2), skipped.Step())
+	is.Eq("skipped|skipped| 2/10", skipped.Line())
+}
+
+func TestProgressStatusHelpersManaged(t *testing.T) {
+	is := assert.New(t)
+	buf := new(bytes.Buffer)
+	mp := NewMulti()
+	mp.Writer = buf
+
+	p := mp.New(5)
+	p.SetFormat("{@message}|{@status}|{@current}/{@max}")
+	mp.Start()
+	p.AdvanceTo(2)
+	p.Fail()
+	mp.Finish()
+
+	is.Contains(buf.String(), "failed|failed|2/5")
+	is.True(p.Finished())
+	is.Eq(int64(2), p.Step())
+}
+
+func TestProgressStatusHelpersRenderPlainPrintFinalState(t *testing.T) {
+	is := assert.New(t)
+	buf := new(bytes.Buffer)
+	mp := NewMulti()
+	mp.Writer = buf
+	mp.RenderMode = RenderPlain
+
+	p := mp.New(5)
+	p.SetFormat("{@message}|{@status}|{@current}/{@max}")
+	mp.Start()
+	size := buf.Len()
+	p.Fail("network failed")
+
+	out := buf.String()[size:]
+	is.Contains(out, "network failed|failed|0/5")
+	is.NotContains(out, "\x1B[")
+}
+
 func ExampleBar() {
 	maxStep := 105
 	p := CustomBar(60, BarStyles[0], int64(maxStep))

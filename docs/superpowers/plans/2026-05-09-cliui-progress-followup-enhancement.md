@@ -931,7 +931,7 @@ git commit -m "feat(progress): support dynamic multi progress bars"
 - Modify: `progress/progress.go`
 - Test: `progress/progress_test.go`
 
-- [ ] **Step 1: 添加 Done 失败测试**
+- [x] **Step 1: 添加 Done 失败测试**
 
 在 `progress/progress_test.go` 添加：
 
@@ -951,7 +951,7 @@ func TestProgressDone(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 添加 Fail / Skip 失败测试**
+- [x] **Step 2: 添加 Fail / Skip 失败测试**
 
 在 `progress/progress_test.go` 添加：
 
@@ -981,7 +981,7 @@ func TestProgressFailAndSkip(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3: 添加 managed helper 测试**
+- [x] **Step 3: 添加 managed helper 测试**
 
 在 `progress/progress_test.go` 添加：
 
@@ -1005,7 +1005,7 @@ func TestProgressStatusHelpersManaged(t *testing.T) {
 }
 ```
 
-- [ ] **Step 4: 添加 RenderPlain status helper 输出测试**
+- [x] **Step 4: 添加 RenderPlain status helper 输出测试**
 
 在 `progress/progress_test.go` 添加：
 
@@ -1029,7 +1029,7 @@ func TestProgressStatusHelpersRenderPlainPrintFinalState(t *testing.T) {
 }
 ```
 
-- [ ] **Step 5: 运行测试并确认失败**
+- [x] **Step 5: 运行测试并确认失败**
 
 运行：
 
@@ -1039,7 +1039,7 @@ go test ./progress -run "TestProgress(Done|FailAndSkip|StatusHelpersManaged|Stat
 
 预期：编译失败，因为 `Done()` / `Fail()` / `Skip()` 不存在。
 
-- [ ] **Step 6: 实现内部 status helper**
+- [x] **Step 6: 实现内部 status helper**
 
 在 `progress/progress.go` 增加：
 
@@ -1057,7 +1057,7 @@ func (p *Progress) finishStatus(status string, complete bool, message ...string)
 - managed 模式下 removed 判断必须在 manager 锁内执行。
 - `RenderPlain` 下应作为 `updateFinalState` 输出当前 bar 行。
 
-- [ ] **Step 7: 实现 Done / Fail / Skip**
+- [x] **Step 7: 实现 Done / Fail / Skip**
 
 添加：
 
@@ -1079,7 +1079,7 @@ func (p *Progress) Skip(message ...string)
 - `Fail()` 调用 `finishStatus("failed", false, message...)`。
 - `Skip()` 调用 `finishStatus("skipped", false, message...)`。
 
-- [ ] **Step 8: 验证 Task 6**
+- [x] **Step 8: 验证 Task 6**
 
 运行：
 
@@ -1090,7 +1090,7 @@ go test ./progress
 
 预期：新增 tests 和 `progress` 包测试通过。
 
-- [ ] **Step 9: 提交 Task 6**
+- [x] **Step 9: 提交 Task 6**
 
 运行：
 
