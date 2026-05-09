@@ -116,6 +116,35 @@ func TestMultiProgress_ConcurrentAdvance(t *testing.T) {
 	is.Contains(out, "100.0%(5/5)")
 }
 
+func TestMultiProgressConcurrentAdvanceSameBar(t *testing.T) {
+	is := assert.New(t)
+
+	buf := new(bytes.Buffer)
+	mp := NewMulti()
+	mp.Writer = buf
+	mp.AutoRefresh = true
+	mp.RefreshInterval = time.Hour
+
+	p := mp.New(1000)
+	mp.Start()
+
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 100; j++ {
+				p.Advance()
+			}
+		}()
+	}
+
+	wg.Wait()
+	mp.Finish()
+
+	is.Eq(int64(1000), p.Step())
+}
+
 func TestMultiProgressRedrawFreqInManagedMode(t *testing.T) {
 	is := assert.New(t)
 	buf := new(bytes.Buffer)
@@ -229,6 +258,27 @@ func TestMultiProgressRenderPlainResetPrintsKeyState(t *testing.T) {
 	out := buf.String()[size:]
 	is.Contains(out, "fd 0.0%")
 	is.NotContains(out, "\x1B[")
+}
+
+func TestMultiProgressRenderPlainSetMessageDoesNotPrint(t *testing.T) {
+	is := assert.New(t)
+	buf := new(bytes.Buffer)
+	mp := NewMulti()
+	mp.Writer = buf
+	mp.RenderMode = RenderPlain
+
+	p := mp.New(10)
+	p.SetFormat("{@name} {@percent}%")
+	p.SetMessage("name", "fd")
+	mp.Start()
+	size := buf.Len()
+
+	p.SetMessage("name", "bat")
+	p.SetFormat("{@name} {@current}/{@max}")
+
+	is.Eq(size, buf.Len())
+	mp.Refresh()
+	is.Contains(buf.String()[size:], "bat  0/10")
 }
 
 func TestMultiProgressRenderPlainProgressFinishPrintsOnce(t *testing.T) {

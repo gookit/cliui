@@ -156,7 +156,7 @@ func (p *Progress) WithMaxSteps(maxSteps ...int64) *Progress {
 // SetMaxSteps updates the progress max steps.
 func (p *Progress) SetMaxSteps(maxSteps int64) *Progress {
 	if p.manager != nil {
-		p.manager.updateBar(updateKeyState, p, func() bool {
+		p.manager.updateBar(updateConfig, p, func() bool {
 			p.MaxSteps = normalizeMaxSteps(maxSteps)
 			return true
 		})
@@ -170,7 +170,7 @@ func (p *Progress) SetMaxSteps(maxSteps int64) *Progress {
 // SetFormat updates the progress render format.
 func (p *Progress) SetFormat(format string) *Progress {
 	if p.manager != nil {
-		p.manager.updateBar(updateKeyState, p, func() bool {
+		p.manager.updateBar(updateConfig, p, func() bool {
 			p.Format = format
 			return true
 		})
@@ -195,7 +195,7 @@ func (p *Progress) Bound() any {
 // AddMessage to progress instance
 func (p *Progress) AddMessage(name, message string) {
 	if p.manager != nil {
-		p.manager.updateBar(updateKeyState, p, func() bool {
+		p.manager.updateBar(updateConfig, p, func() bool {
 			p.addMessage(name, message)
 			return true
 		})
@@ -208,7 +208,7 @@ func (p *Progress) AddMessage(name, message string) {
 // SetMessage sets a named message and returns the progress instance.
 func (p *Progress) SetMessage(name, message string) *Progress {
 	if p.manager != nil {
-		p.manager.updateBar(updateKeyState, p, func() bool {
+		p.manager.updateBar(updateConfig, p, func() bool {
 			p.addMessage(name, message)
 			return true
 		})
@@ -222,7 +222,7 @@ func (p *Progress) SetMessage(name, message string) *Progress {
 // AddMessages to progress instance
 func (p *Progress) AddMessages(msgMap map[string]string) {
 	if p.manager != nil {
-		p.manager.updateBar(updateKeyState, p, func() bool {
+		p.manager.updateBar(updateConfig, p, func() bool {
 			p.addMessages(msgMap)
 			return true
 		})
@@ -235,7 +235,7 @@ func (p *Progress) AddMessages(msgMap map[string]string) {
 // SetMessages sets multiple named messages and returns the progress instance.
 func (p *Progress) SetMessages(msgMap map[string]string) *Progress {
 	if p.manager != nil {
-		p.manager.updateBar(updateKeyState, p, func() bool {
+		p.manager.updateBar(updateConfig, p, func() bool {
 			p.addMessages(msgMap)
 			return true
 		})
@@ -266,7 +266,7 @@ func (p *Progress) addMessages(msgMap map[string]string) {
 // AddWidget to progress instance
 func (p *Progress) AddWidget(name string, handler WidgetFunc) *Progress {
 	if p.manager != nil {
-		p.manager.updateBar(updateKeyState, p, func() bool {
+		p.manager.updateBar(updateConfig, p, func() bool {
 			p.addWidget(name, handler)
 			return true
 		})
@@ -280,7 +280,7 @@ func (p *Progress) AddWidget(name string, handler WidgetFunc) *Progress {
 // SetWidget to progress instance
 func (p *Progress) SetWidget(name string, handler WidgetFunc) *Progress {
 	if p.manager != nil {
-		p.manager.updateBar(updateKeyState, p, func() bool {
+		p.manager.updateBar(updateConfig, p, func() bool {
 			p.setWidget(name, handler)
 			return true
 		})
@@ -294,7 +294,7 @@ func (p *Progress) SetWidget(name string, handler WidgetFunc) *Progress {
 // AddWidgets to progress instance
 func (p *Progress) AddWidgets(widgets map[string]WidgetFunc) {
 	if p.manager != nil {
-		p.manager.updateBar(updateKeyState, p, func() bool {
+		p.manager.updateBar(updateConfig, p, func() bool {
 			p.addWidgets(widgets)
 			return true
 		})
@@ -438,6 +438,13 @@ func (p *Progress) Advance(steps ...int64) {
 	var step int64 = 1
 	if len(steps) > 0 && steps[0] > 0 {
 		step = steps[0]
+	}
+
+	if p.manager != nil {
+		p.manager.updateBar(updateProgress, p, func() bool {
+			return p.applyStep(p.step + step)
+		})
+		return
 	}
 
 	p.AdvanceTo(p.step + step)

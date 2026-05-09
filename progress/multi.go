@@ -30,6 +30,7 @@ type updateEvent int
 const (
 	updateSilent updateEvent = iota
 	updateProgress
+	updateConfig
 	updateKeyState
 	updateFinalState
 )
