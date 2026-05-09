@@ -65,7 +65,7 @@
 - Modify: `progress/progress.go`
 - Test: `progress/multi_test.go`
 
-- [ ] **Step 1: 添加托管模式 `RedrawFreq` 的失败测试**
+- [x] **Step 1: 添加托管模式 `RedrawFreq` 的失败测试**
 
 在 `progress/multi_test.go` 添加：
 
@@ -90,7 +90,7 @@ func TestMultiProgressRedrawFreqInManagedMode(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 添加 auto refresh dirty 刷新的失败测试**
+- [x] **Step 2: 添加 auto refresh dirty 刷新的失败测试**
 
 在 `progress/multi_test.go` 添加：
 
@@ -115,7 +115,7 @@ func TestMultiProgressAutoRefreshMarksDirty(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3: 添加 `Finish()` 停止 auto refresh 的失败测试**
+- [x] **Step 3: 添加 `Finish()` 停止 auto refresh 的失败测试**
 
 在 `progress/multi_test.go` 添加：
 
@@ -139,7 +139,7 @@ func TestMultiProgressFinishStopsAutoRefresh(t *testing.T) {
 }
 ```
 
-- [ ] **Step 4: 运行测试并确认失败**
+- [x] **Step 4: 运行测试并确认失败**
 
 运行：
 
@@ -149,7 +149,7 @@ go test ./progress -run "TestMultiProgress(RedrawFreq|AutoRefresh|FinishStops)" 
 
 预期：新增测试至少有失败项，因为当前托管更新仍然同步刷新，`AutoRefresh` 还没有 ticker。
 
-- [ ] **Step 5: 给 `MultiProgress` 增加刷新状态**
+- [x] **Step 5: 给 `MultiProgress` 增加刷新状态**
 
 在 `progress/multi.go` 添加默认刷新间隔：
 
@@ -165,7 +165,7 @@ stopCh chan struct{}
 doneCh chan struct{}
 ```
 
-- [ ] **Step 6: 修改 manager update callback 签名**
+- [x] **Step 6: 修改 manager update callback 签名**
 
 将：
 
@@ -186,7 +186,7 @@ func (mp *MultiProgress) update(fn func() bool)
 - `mp.AutoRefresh == true` 时设置 `mp.dirty = true` 并返回。
 - 否则调用 `mp.refreshLocked()` 同步刷新。
 
-- [ ] **Step 7: 更新 `progress.go` 中的托管调用**
+- [x] **Step 7: 更新 `progress.go` 中的托管调用**
 
 将所有 `p.manager.update` 调用改为返回 `bool`。
 
@@ -202,7 +202,7 @@ message/widget/config 变更在更新状态后返回 `true`。
 
 托管 `Finish()` 在 `p.finishManaged(message...)` 后返回 `true`。
 
-- [ ] **Step 8: 实现 auto refresh loop**
+- [x] **Step 8: 实现 auto refresh loop**
 
 在 `progress/multi.go` 添加私有方法：
 
@@ -218,7 +218,7 @@ func (mp *MultiProgress) stopAutoRefresh()
 - `flushDirty()` 获取 `mp.mu`，没有 dirty 时跳过；有 dirty 时清理标记并调用 `refreshLocked()`。
 - `stopAutoRefresh()` 关闭 `stopCh` 并等待 `doneCh`；等待时不能持有 `mp.mu`。
 
-- [ ] **Step 9: 将 auto refresh 接入 `Start()` 和 `Finish()`**
+- [x] **Step 9: 将 auto refresh 接入 `Start()` 和 `Finish()`**
 
 `Start()` 中：
 
@@ -238,7 +238,7 @@ func (mp *MultiProgress) stopAutoRefresh()
 
 实现时需要注意锁顺序：等待 `doneCh` 时不能持有 `mp.mu`。
 
-- [ ] **Step 10: 验证本任务测试**
+- [x] **Step 10: 验证本任务测试**
 
 运行：
 
@@ -248,7 +248,7 @@ go test ./progress -run "TestMultiProgress(RedrawFreq|AutoRefresh|FinishStops)" 
 
 预期：三个新增测试全部通过。
 
-- [ ] **Step 11: 验证 progress 包现有测试**
+- [x] **Step 11: 验证 progress 包现有测试**
 
 运行：
 
@@ -258,7 +258,7 @@ go test ./progress
 
 预期：`progress` 包全部测试通过。
 
-- [ ] **Step 12: 提交 Task 1**
+- [x] **Step 12: 提交 Task 1**
 
 运行：
 
@@ -277,7 +277,7 @@ git commit -m "feat(progress): throttle managed multi progress refresh"
 - Modify: `progress/progress.go`
 - Test: `progress/progress_test.go`
 
-- [ ] **Step 1: 添加 standalone `Reset()` 的失败测试**
+- [x] **Step 1: 添加 standalone `Reset()` 的失败测试**
 
 在 `progress/progress_test.go` 添加：
 
@@ -299,7 +299,7 @@ func TestProgressReset(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 添加 managed `Reset()` 复用测试**
+- [x] **Step 2: 添加 managed `Reset()` 复用测试**
 
 在 `progress/progress_test.go` 添加：
 
@@ -327,7 +327,7 @@ func TestProgressResetManaged(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3: 添加 setter API 测试**
+- [x] **Step 3: 添加 setter API 测试**
 
 在 `progress/progress_test.go` 添加：
 
@@ -345,7 +345,7 @@ func TestProgressSetters(t *testing.T) {
 }
 ```
 
-- [ ] **Step 4: 运行测试并确认失败**
+- [x] **Step 4: 运行测试并确认失败**
 
 运行：
 
@@ -355,7 +355,7 @@ go test ./progress -run "TestProgress(Reset|Setters)" -count=1
 
 预期：测试失败，因为新 API 还不存在。
 
-- [ ] **Step 5: 实现 `Reset()` 和内部 `reset()`**
+- [x] **Step 5: 实现 `Reset()` 和内部 `reset()`**
 
 在 `progress/progress.go` 添加：
 
@@ -373,7 +373,7 @@ func (p *Progress) reset(maxSteps ...int64)
 - `reset()` 调用 `p.addWidgets(builtinWidgets)`。
 - `reset()` 不清空已有 `Messages`。
 
-- [ ] **Step 6: 实现 `ResetWith()`**
+- [x] **Step 6: 实现 `ResetWith()`**
 
 添加：
 
@@ -387,7 +387,7 @@ func (p *Progress) ResetWith(fn func(p *Progress))
 - standalone 模式不经过 manager 锁，逻辑相同；如果已经 started，则显示当前行。
 - `fn == nil` 时行为等同 `Reset()`。
 
-- [ ] **Step 7: 实现 setter API**
+- [x] **Step 7: 实现 setter API**
 
 添加方法：
 
@@ -405,7 +405,7 @@ func (p *Progress) SetFormat(format string) *Progress
 - `SetMessages` 使用现有 `addMessages` 合并 message。
 - `SetMaxSteps` 使用 `normalizeMaxSteps`。
 
-- [ ] **Step 8: 实现生命周期 getter**
+- [x] **Step 8: 实现生命周期 getter**
 
 添加：
 
@@ -421,7 +421,7 @@ func (p *Progress) Max() int64
 - `Finished()` 返回 `!p.finishedAt.IsZero()`。
 - `Max()` 返回 `p.MaxSteps`。
 
-- [ ] **Step 9: 验证本任务测试**
+- [x] **Step 9: 验证本任务测试**
 
 运行：
 
@@ -431,7 +431,7 @@ go test ./progress -run "TestProgress(Reset|Setters)" -count=1
 
 预期：新增 reset 和 setter 测试通过。
 
-- [ ] **Step 10: 验证 progress 包**
+- [x] **Step 10: 验证 progress 包**
 
 运行：
 
@@ -441,7 +441,7 @@ go test ./progress
 
 预期：`progress` 包全部测试通过。
 
-- [ ] **Step 11: 提交 Task 2**
+- [x] **Step 11: 提交 Task 2**
 
 运行：
 
@@ -460,7 +460,7 @@ git commit -m "feat(progress): add reusable progress reset APIs"
 - Modify: `progress/multi.go`
 - Test: `progress/multi_test.go`
 
-- [ ] **Step 1: 添加 `RunExclusive()` / `Println()` 失败测试**
+- [x] **Step 1: 添加 `RunExclusive()` / `Println()` 失败测试**
 
 在 `progress/multi_test.go` 添加：
 
@@ -486,7 +486,7 @@ func TestMultiProgressRunExclusivePrintsBetweenBlocks(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 添加 `Printf()` 失败测试**
+- [x] **Step 2: 添加 `Printf()` 失败测试**
 
 在 `progress/multi_test.go` 添加：
 
@@ -506,7 +506,7 @@ func TestMultiProgressPrintf(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3: 添加 manager getter 失败测试**
+- [x] **Step 3: 添加 manager getter 失败测试**
 
 在 `progress/multi_test.go` 添加：
 
@@ -529,7 +529,7 @@ func TestMultiProgressStateGetters(t *testing.T) {
 }
 ```
 
-- [ ] **Step 4: 运行测试并确认失败**
+- [x] **Step 4: 运行测试并确认失败**
 
 运行：
 
@@ -539,7 +539,7 @@ go test ./progress -run "TestMultiProgress(RunExclusive|Printf|StateGetters)" -c
 
 预期：测试失败，因为安全日志和 getter API 还不存在。
 
-- [ ] **Step 5: 实现 `clearLocked()`**
+- [x] **Step 5: 实现 `clearLocked()`**
 
 在 `progress/multi.go` 添加：
 
@@ -555,7 +555,7 @@ func (mp *MultiProgress) clearLocked()
 - 将光标恢复到清除区域起点。
 - 设置 `mp.rendered = false`。
 
-- [ ] **Step 6: 实现 `RunExclusive()`**
+- [x] **Step 6: 实现 `RunExclusive()`**
 
 添加：
 
@@ -571,7 +571,7 @@ func (mp *MultiProgress) RunExclusive(fn func(w io.Writer))
 - 如果 `mp.started && !mp.finished`，调用 `mp.refreshLocked()`。
 - 释放锁。
 
-- [ ] **Step 7: 实现 `Println()` 和 `Printf()`**
+- [x] **Step 7: 实现 `Println()` 和 `Printf()`**
 
 添加：
 
@@ -582,7 +582,7 @@ func (mp *MultiProgress) Printf(format string, args ...any)
 
 两个方法都通过 `RunExclusive()` 实现，分别使用 `fmt.Fprintln` 和 `fmt.Fprintf`。
 
-- [ ] **Step 8: 实现 manager getter**
+- [x] **Step 8: 实现 manager getter**
 
 添加：
 
@@ -598,7 +598,7 @@ func (mp *MultiProgress) VisibleLen() int
 - 所有方法都获取 `mp.mu`。
 - 第一阶段 `VisibleLen()` 返回 `len(mp.bars)`。
 
-- [ ] **Step 9: 验证本任务测试**
+- [x] **Step 9: 验证本任务测试**
 
 运行：
 
@@ -608,7 +608,7 @@ go test ./progress -run "TestMultiProgress(RunExclusive|Printf|StateGetters)" -c
 
 预期：Task 3 新增测试全部通过。
 
-- [ ] **Step 10: 验证 progress 包**
+- [x] **Step 10: 验证 progress 包**
 
 运行：
 
@@ -618,7 +618,7 @@ go test ./progress
 
 预期：`progress` 包全部测试通过。
 
-- [ ] **Step 11: 提交 Task 3**
+- [x] **Step 11: 提交 Task 3**
 
 运行：
 
@@ -641,7 +641,7 @@ git commit -m "feat(progress): add safe multi progress logging"
 - Verify: `progress/multi_test.go`
 - Verify: `progress/progress_test.go`
 
-- [ ] **Step 1: 更新中文 progress 文档**
+- [x] **Step 1: 更新中文 progress 文档**
 
 在 `docs/zh-CN/progress.md` 的 `Multi Progress` 部分补充：
 
@@ -670,7 +670,7 @@ bar.Reset(100)
 bar.SetMessages(map[string]string{"name": "fd", "phase": "downloading"})
 ```
 
-- [ ] **Step 2: 更新英文 progress 文档**
+- [x] **Step 2: 更新英文 progress 文档**
 
 在 `docs/progress.md` 添加对应英文说明和示例。
 
@@ -681,7 +681,7 @@ bar.SetMessages(map[string]string{"name": "fd", "phase": "downloading"})
 - exclusive logging
 - lifecycle getters
 
-- [ ] **Step 3: 运行 progress 测试**
+- [x] **Step 3: 运行 progress 测试**
 
 运行：
 
@@ -691,7 +691,7 @@ go test ./progress
 
 预期：`progress` 测试全部通过。
 
-- [ ] **Step 4: 运行全仓库测试**
+- [x] **Step 4: 运行全仓库测试**
 
 运行：
 
@@ -701,7 +701,7 @@ go test ./...
 
 预期：全部测试通过。如果无关包失败，记录失败 package 和关键错误文本，再判断是否与本次改动相关。
 
-- [ ] **Step 5: 检查 diff 范围**
+- [x] **Step 5: 检查 diff 范围**
 
 运行：
 
@@ -721,7 +721,7 @@ git diff --name-only
 - `docs/superpowers/specs/2026-05-09-cliui-progress-enhancement-design.md`
 - `docs/superpowers/plans/2026-05-09-cliui-progress-enhancement.md`
 
-- [ ] **Step 6: 提交 Task 4**
+- [x] **Step 6: 提交 Task 4**
 
 运行：
 
