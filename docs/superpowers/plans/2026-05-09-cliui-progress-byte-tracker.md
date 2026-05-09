@@ -409,7 +409,7 @@ git commit -m "test(progress): cover byte tracker concurrency"
 - Modify: `progress/byte_tracker.go`
 - Modify: `progress/progress_test.go`
 
-- [ ] **Step 1: 添加 Write 返回长度测试**
+- [x] **Step 1: 添加 Write 返回长度测试**
 
 在 `progress/progress_test.go` 添加：
 
@@ -428,7 +428,7 @@ func TestConcurrentWriterWriteReturnsLength(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 添加并发 Write 测试**
+- [x] **Step 2: 添加并发 Write 测试**
 
 在 `progress/progress_test.go` 添加：
 
@@ -480,7 +480,7 @@ func NewConcurrentWriterWithInterval(p *Progress, interval time.Duration) io.Wri
 
 如果不希望公开该 API，则测试可以通过类型断言到内部类型并调用 `Close()`；但公开 `io.WriteCloser` 版本对调用方更实用。
 
-- [ ] **Step 3: 添加 io.Copy 测试**
+- [x] **Step 3: 添加 io.Copy 测试**
 
 在 `progress/progress_test.go` 添加：
 
@@ -501,7 +501,7 @@ func TestConcurrentWriterWorksWithCopy(t *testing.T) {
 }
 ```
 
-- [ ] **Step 4: 运行测试并确认失败**
+- [x] **Step 4: 运行测试并确认失败**
 
 运行：
 
@@ -511,7 +511,7 @@ go test ./progress -run "TestConcurrentWriter" -count=1
 
 预期：如果 Task 1 只提供了 `NewConcurrentWriter(p) io.Writer`，新增的 `NewConcurrentWriterWithInterval` 和 `Close()` 能力尚不存在，测试失败。
 
-- [ ] **Step 5: 实现 closeable writer**
+- [x] **Step 5: 实现 closeable writer**
 
 将 writer adapter 改为：
 
@@ -548,7 +548,7 @@ func (w byteTrackerWriter) Close() error {
 - `NewConcurrentWriterWithInterval` 返回 `io.WriteCloser`，便于调用方显式 flush。
 - 如果调用方只用 `io.Writer` 且不 Close，后台 ticker 仍会按 interval flush，但最后不足一个 interval 的 pending bytes 可能需要等待 ticker；文档必须建议在下载完成后 Close closeable writer 或直接使用 `ByteTracker`。
 
-- [ ] **Step 6: 验证 Task 3**
+- [x] **Step 6: 验证 Task 3**
 
 运行：
 
@@ -559,7 +559,7 @@ go test ./progress
 
 预期：新增 writer 测试和 `progress` 包测试通过。
 
-- [ ] **Step 7: 提交 Task 3**
+- [x] **Step 7: 提交 Task 3**
 
 运行：
 

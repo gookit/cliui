@@ -327,6 +327,72 @@ func TestByteTrackerFlushesOnInterval(t *testing.T) {
 	is.Eq(int64(4), p.Step())
 }
 
+func TestConcurrentWriterWriteReturnsLength(t *testing.T) {
+	is := assert.New(t)
+	p := New(10)
+	p.Out = new(bytes.Buffer)
+	p.Start()
+
+	writer := NewConcurrentWriter(p)
+	n, err := writer.Write([]byte("hello"))
+
+	is.NoErr(err)
+	is.Eq(5, n)
+}
+
+func TestConcurrentWriterConcurrentWrite(t *testing.T) {
+	is := assert.New(t)
+	p := New(1000)
+	p.Out = new(bytes.Buffer)
+	p.Start()
+
+	writer := NewConcurrentWriterWithInterval(p, time.Hour)
+	closer := writer.(io.Closer)
+
+	var wg sync.WaitGroup
+	errCh := make(chan error, 10)
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 100; j++ {
+				n, err := writer.Write([]byte("x"))
+				if err != nil {
+					errCh <- err
+					return
+				}
+				if n != 1 {
+					errCh <- fmt.Errorf("unexpected write length: %d", n)
+					return
+				}
+			}
+		}()
+	}
+	wg.Wait()
+	close(errCh)
+	for err := range errCh {
+		is.NoErr(err)
+	}
+	is.NoErr(closer.Close())
+
+	is.Eq(int64(1000), p.Step())
+}
+
+func TestConcurrentWriterWorksWithCopy(t *testing.T) {
+	is := assert.New(t)
+	p := New(11)
+	p.Out = new(bytes.Buffer)
+	p.Start()
+
+	writer := NewConcurrentWriterWithInterval(p, time.Hour)
+	n, err := io.Copy(writer, strings.NewReader("hello world"))
+	is.NoErr(err)
+	is.Eq(int64(11), n)
+	is.NoErr(writer.Close())
+
+	is.Eq(int64(11), p.Step())
+}
+
 func TestProgressReset(t *testing.T) {
 	is := assert.New(t)
 	p := Txt(10)

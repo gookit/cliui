@@ -106,7 +106,13 @@ func (t *ByteTracker) flush() {
 
 // NewConcurrentWriter creates a writer that tracks written byte counts.
 func NewConcurrentWriter(p *Progress) io.Writer {
-	return byteTrackerWriter{tracker: NewByteTracker(p)}
+	return NewConcurrentWriterWithInterval(p, DefaultByteTrackerInterval)
+}
+
+// NewConcurrentWriterWithInterval creates a closeable writer with a custom
+// byte tracking flush interval.
+func NewConcurrentWriterWithInterval(p *Progress, interval time.Duration) io.WriteCloser {
+	return byteTrackerWriter{tracker: NewByteTrackerWithInterval(p, interval)}
 }
 
 type byteTrackerWriter struct {
@@ -119,4 +125,9 @@ func (w byteTrackerWriter) Write(bs []byte) (int, error) {
 		w.tracker.Add(int64(n))
 	}
 	return n, nil
+}
+
+func (w byteTrackerWriter) Close() error {
+	w.tracker.Close()
+	return nil
 }
