@@ -523,6 +523,26 @@ _, err = io.Copy(dst, p.WrapReader(resp.Body))
 return err
 ```
 
+多个 goroutine 同时上报字节增量时，可以使用 `ByteTracker` 聚合更新。它会按 flush interval 批量调用 `Progress.Advance(delta)`，下载结束后调用 `Close()` 可以刷新最后尚未输出的字节数。
+
+```go
+tracker := progress.NewByteTracker(bar)
+defer tracker.Close()
+
+go func() {
+	tracker.Add(n)
+}()
+```
+
+如果下载代码需要一个并发安全的 writer，可以使用 closeable writer，并在完成后关闭以 flush pending bytes：
+
+```go
+writer := progress.NewConcurrentWriterWithInterval(bar, 100*time.Millisecond)
+defer writer.Close()
+
+_, err := io.Copy(writer, resp.Body)
+```
+
 ### Progress Functions
 
 快速创建进度条：
@@ -535,6 +555,10 @@ func DynamicText(messages map[int]string, maxSteps ...int64) *Progress
 func Full(maxSteps ...int64) *Progress
 func LoadBar(chars []rune, maxSteps ...int64) *Progress
 func LoadingBar(chars []rune, maxSteps ...int64) *Progress
+func NewByteTracker(p *Progress) *ByteTracker
+func NewByteTrackerWithInterval(p *Progress, interval time.Duration) *ByteTracker
+func NewConcurrentWriter(p *Progress) io.Writer
+func NewConcurrentWriterWithInterval(p *Progress, interval time.Duration) io.WriteCloser
 func New(maxSteps ...int64) *Progress
 func NewMulti() *MultiProgress
 func NewWithConfig(fn func(p *Progress), maxSteps ...int64) *Progress

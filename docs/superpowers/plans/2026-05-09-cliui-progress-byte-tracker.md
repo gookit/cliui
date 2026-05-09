@@ -577,7 +577,7 @@ git commit -m "feat(progress): add concurrent progress writer"
 - Modify: `docs/zh-CN/progress.md`
 - Modify: `docs/progress.md`
 
-- [ ] **Step 1: 添加 managed AutoRefresh 集成测试**
+- [x] **Step 1: 添加 managed AutoRefresh 集成测试**
 
 在 `progress/progress_test.go` 添加：
 
@@ -606,7 +606,7 @@ func TestByteTrackerWithManagedAutoRefreshProgress(t *testing.T) {
 
 该测试确认 tracker 和 managed progress 通过现有 `Progress.Advance()` 集成，不直接依赖 `MultiProgress` 内部锁。
 
-- [ ] **Step 2: 更新中文文档**
+- [x] **Step 2: 更新中文文档**
 
 在 `docs/zh-CN/progress.md` 的 `IO Progress` 部分补充：
 
@@ -634,7 +634,7 @@ defer writer.Close()
 _, err := io.Copy(writer, resp.Body)
 ```
 
-- [ ] **Step 3: 更新英文文档**
+- [x] **Step 3: 更新英文文档**
 
 在 `docs/progress.md` 添加对应英文说明。术语保持一致：
 
@@ -643,7 +643,7 @@ _, err := io.Copy(writer, resp.Body)
 - flush interval
 - close to flush pending bytes
 
-- [ ] **Step 4: 验证 Task 4**
+- [x] **Step 4: 验证 Task 4**
 
 运行：
 
@@ -655,7 +655,7 @@ go test ./...
 
 预期：新增 tests、`progress` 包和全仓库测试通过。
 
-- [ ] **Step 5: 检查 diff 范围**
+- [x] **Step 5: 检查 diff 范围**
 
 运行：
 
@@ -672,7 +672,7 @@ git diff --name-only
 - `docs/progress.md`
 - `docs/superpowers/plans/2026-05-09-cliui-progress-byte-tracker.md`
 
-- [ ] **Step 6: 提交 Task 4**
+- [x] **Step 6: 提交 Task 4**
 
 运行：
 

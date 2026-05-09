@@ -505,6 +505,26 @@ _, err = io.Copy(dst, p.WrapReader(resp.Body))
 return err
 ```
 
+When multiple goroutines report byte deltas, use `ByteTracker` to aggregate updates. It flushes batched deltas to `Progress.Advance(delta)` at a fixed interval. Call `Close()` when the transfer finishes to flush pending bytes.
+
+```go
+tracker := progress.NewByteTracker(bar)
+defer tracker.Close()
+
+go func() {
+	tracker.Add(n)
+}()
+```
+
+If download code needs a concurrent writer, use the closeable writer and close it after the transfer to flush pending bytes:
+
+```go
+writer := progress.NewConcurrentWriterWithInterval(bar, 100*time.Millisecond)
+defer writer.Close()
+
+_, err := io.Copy(writer, resp.Body)
+```
+
 ### Progress Functions
 
 Quick create progress bar:
@@ -517,6 +537,10 @@ func DynamicText(messages map[int]string, maxSteps ...int64) *Progress
 func Full(maxSteps ...int64) *Progress
 func LoadBar(chars []rune, maxSteps ...int64) *Progress
 func LoadingBar(chars []rune, maxSteps ...int64) *Progress
+func NewByteTracker(p *Progress) *ByteTracker
+func NewByteTrackerWithInterval(p *Progress, interval time.Duration) *ByteTracker
+func NewConcurrentWriter(p *Progress) io.Writer
+func NewConcurrentWriterWithInterval(p *Progress, interval time.Duration) io.WriteCloser
 func New(maxSteps ...int64) *Progress
 func NewMulti() *MultiProgress
 func NewWithConfig(fn func(p *Progress), maxSteps ...int64) *Progress

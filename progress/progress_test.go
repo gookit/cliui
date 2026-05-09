@@ -393,6 +393,27 @@ func TestConcurrentWriterWorksWithCopy(t *testing.T) {
 	is.Eq(int64(11), p.Step())
 }
 
+func TestByteTrackerWithManagedAutoRefreshProgress(t *testing.T) {
+	is := assert.New(t)
+	buf := new(bytes.Buffer)
+	mp := NewMulti()
+	mp.Writer = buf
+	mp.AutoRefresh = true
+	mp.RefreshInterval = 10 * time.Millisecond
+
+	p := mp.New(12)
+	mp.Start()
+
+	tracker := NewByteTrackerWithInterval(p, time.Hour)
+	tracker.Add(5)
+	tracker.Add(7)
+	tracker.Close()
+	mp.Finish()
+
+	is.Eq(int64(12), p.Step())
+	is.Contains(buf.String(), "100.0%(12/12)")
+}
+
 func TestProgressReset(t *testing.T) {
 	is := assert.New(t)
 	p := Txt(10)
