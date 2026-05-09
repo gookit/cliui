@@ -151,6 +151,34 @@ func (p *Progress) WithMaxSteps(maxSteps ...int64) *Progress {
 	return p
 }
 
+// SetMaxSteps updates the progress max steps.
+func (p *Progress) SetMaxSteps(maxSteps int64) *Progress {
+	if p.manager != nil {
+		p.manager.update(func() bool {
+			p.MaxSteps = normalizeMaxSteps(maxSteps)
+			return true
+		})
+		return p
+	}
+
+	p.MaxSteps = normalizeMaxSteps(maxSteps)
+	return p
+}
+
+// SetFormat updates the progress render format.
+func (p *Progress) SetFormat(format string) *Progress {
+	if p.manager != nil {
+		p.manager.update(func() bool {
+			p.Format = format
+			return true
+		})
+		return p
+	}
+
+	p.Format = format
+	return p
+}
+
 // Binding user custom data to instance
 func (p *Progress) Binding(data any) *Progress {
 	p.bound = data
@@ -165,8 +193,9 @@ func (p *Progress) Bound() any {
 // AddMessage to progress instance
 func (p *Progress) AddMessage(name, message string) {
 	if p.manager != nil {
-		p.manager.update(func() {
+		p.manager.update(func() bool {
 			p.addMessage(name, message)
+			return true
 		})
 		return
 	}
@@ -174,11 +203,26 @@ func (p *Progress) AddMessage(name, message string) {
 	p.addMessage(name, message)
 }
 
+// SetMessage sets a named message and returns the progress instance.
+func (p *Progress) SetMessage(name, message string) *Progress {
+	if p.manager != nil {
+		p.manager.update(func() bool {
+			p.addMessage(name, message)
+			return true
+		})
+		return p
+	}
+
+	p.addMessage(name, message)
+	return p
+}
+
 // AddMessages to progress instance
 func (p *Progress) AddMessages(msgMap map[string]string) {
 	if p.manager != nil {
-		p.manager.update(func() {
+		p.manager.update(func() bool {
 			p.addMessages(msgMap)
+			return true
 		})
 		return
 	}
@@ -186,7 +230,24 @@ func (p *Progress) AddMessages(msgMap map[string]string) {
 	p.addMessages(msgMap)
 }
 
+// SetMessages sets multiple named messages and returns the progress instance.
+func (p *Progress) SetMessages(msgMap map[string]string) *Progress {
+	if p.manager != nil {
+		p.manager.update(func() bool {
+			p.addMessages(msgMap)
+			return true
+		})
+		return p
+	}
+
+	p.addMessages(msgMap)
+	return p
+}
+
 func (p *Progress) addMessage(name, message string) {
+	if p.Messages == nil {
+		p.Messages = make(map[string]string)
+	}
 	p.Messages[name] = message
 }
 
@@ -203,8 +264,9 @@ func (p *Progress) addMessages(msgMap map[string]string) {
 // AddWidget to progress instance
 func (p *Progress) AddWidget(name string, handler WidgetFunc) *Progress {
 	if p.manager != nil {
-		p.manager.update(func() {
+		p.manager.update(func() bool {
 			p.addWidget(name, handler)
+			return true
 		})
 		return p
 	}
@@ -216,8 +278,9 @@ func (p *Progress) AddWidget(name string, handler WidgetFunc) *Progress {
 // SetWidget to progress instance
 func (p *Progress) SetWidget(name string, handler WidgetFunc) *Progress {
 	if p.manager != nil {
-		p.manager.update(func() {
+		p.manager.update(func() bool {
 			p.setWidget(name, handler)
+			return true
 		})
 		return p
 	}
@@ -229,8 +292,9 @@ func (p *Progress) SetWidget(name string, handler WidgetFunc) *Progress {
 // AddWidgets to progress instance
 func (p *Progress) AddWidgets(widgets map[string]WidgetFunc) {
 	if p.manager != nil {
-		p.manager.update(func() {
+		p.manager.update(func() bool {
 			p.addWidgets(widgets)
+			return true
 		})
 		return
 	}
@@ -301,6 +365,70 @@ func (p *Progress) init(maxSteps ...int64) {
 	p.addWidgets(builtinWidgets)
 }
 
+// Reset resets the progress state so the instance can be reused.
+func (p *Progress) Reset(maxSteps ...int64) {
+	if p.manager != nil {
+		p.manager.update(func() bool {
+			p.reset(maxSteps...)
+			return true
+		})
+		return
+	}
+
+	wasStarted := p.started
+	p.reset(maxSteps...)
+	if wasStarted {
+		p.Display()
+	}
+}
+
+// ResetWith resets the progress and applies fn while holding the manager lock
+// when the progress is managed.
+func (p *Progress) ResetWith(fn func(p *Progress)) {
+	if p.manager != nil {
+		p.manager.update(func() bool {
+			p.reset()
+			if fn != nil {
+				fn(p)
+				p.MaxSteps = normalizeMaxSteps(p.MaxSteps)
+			}
+			return true
+		})
+		return
+	}
+
+	wasStarted := p.started
+	p.reset()
+	if fn != nil {
+		fn(p)
+		p.MaxSteps = normalizeMaxSteps(p.MaxSteps)
+	}
+	if wasStarted {
+		p.Display()
+	}
+}
+
+func (p *Progress) reset(maxSteps ...int64) {
+	p.step = 0
+	p.percent = 0.0
+	p.started = true
+	p.firstRun = true
+	p.startedAt = time.Now()
+	p.finishedAt = time.Time{}
+
+	if p.RedrawFreq == 0 {
+		p.RedrawFreq = 1
+	}
+
+	if len(maxSteps) > 0 {
+		p.MaxSteps = normalizeMaxSteps(maxSteps[0])
+	} else {
+		p.MaxSteps = normalizeMaxSteps(p.MaxSteps)
+	}
+
+	p.addWidgets(builtinWidgets)
+}
+
 // Advance specified step size. default is 1
 func (p *Progress) Advance(steps ...int64) {
 	p.checkStart()
@@ -318,8 +446,8 @@ func (p *Progress) AdvanceTo(step int64) {
 	p.checkStart()
 
 	if p.manager != nil {
-		p.manager.update(func() {
-			p.applyStep(step)
+		p.manager.update(func() bool {
+			return p.applyStep(step)
 		})
 		return
 	}
@@ -356,8 +484,9 @@ func (p *Progress) Finish(message ...string) {
 	p.checkStart()
 
 	if p.manager != nil {
-		p.manager.update(func() {
+		p.manager.update(func() bool {
 			p.finishManaged(message...)
+			return true
 		})
 		return
 	}
@@ -585,9 +714,24 @@ func (p *Progress) Percent() float32 {
 	return p.percent
 }
 
+// Started reports whether the progress has been started.
+func (p *Progress) Started() bool {
+	return p.started
+}
+
+// Finished reports whether the progress has been finished.
+func (p *Progress) Finished() bool {
+	return !p.finishedAt.IsZero()
+}
+
 // Step gets the current step position.
 func (p *Progress) Step() int64 {
 	return p.step
+}
+
+// Max gets the max steps.
+func (p *Progress) Max() int64 {
+	return p.MaxSteps
 }
 
 // Progress alias of the Step()

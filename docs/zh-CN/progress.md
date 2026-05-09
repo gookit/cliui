@@ -310,6 +310,70 @@ func main() {
 [=================>----------]  62%(50/80)  test
 ```
 
+### 自动刷新和节流
+
+`MultiProgress` 默认在托管 `Progress` 状态变化时同步刷新。下载、复制等高频更新场景可以开启 `AutoRefresh`，让 `Advance()`、`SetMessage()`、`Reset()` 等操作只标记 dirty，由后台 ticker 按 `RefreshInterval` 刷新。
+
+```go
+mp := progress.NewMulti()
+mp.AutoRefresh = true
+mp.RefreshInterval = 100 * time.Millisecond
+mp.Start()
+defer mp.Finish()
+```
+
+`RefreshInterval <= 0` 时会使用默认刷新间隔。`Finish()` 会停止后台刷新并最终渲染一次，结束后不会继续写终端。
+
+即使没有开启 `AutoRefresh`，托管模式下也会尊重每个 `Progress` 的 `RedrawFreq`，避免每次 `Advance()` 都重绘整个多行区域。
+
+### 复用固定 worker slot
+
+批量任务可以创建固定数量的 progress bar，并在一个任务完成后用 `Reset()` 复用同一行。
+
+```go
+bar := mp.New()
+bar.SetFormat("{@slot} {@name} {@percent}% {@phase}")
+bar.SetMessage("slot", "#1")
+
+bar.Reset(100)
+bar.SetMessages(map[string]string{
+	"name":  "fd",
+	"phase": "downloading",
+})
+```
+
+`Reset()` 会重置当前步数、百分比、开始时间和完成时间，但不会让 bar 离开 `MultiProgress`。需要一次性修改多个字段时可以使用 `ResetWith()`。
+
+### 安全日志输出
+
+多行 progress 正在渲染时，不要直接向同一个 writer 输出普通日志。使用 `RunExclusive()`、`Println()` 或 `Printf()` 可以先移开当前 progress block，输出日志后再恢复渲染。
+
+```go
+mp.Println("warning: fallback to single connection")
+mp.Printf("package %s failed: %v\n", name, err)
+
+mp.RunExclusive(func(w io.Writer) {
+	fmt.Fprintf(w, "checksum verified with %s\n", sum)
+})
+```
+
+### 状态查询
+
+`Progress` 提供：
+
+- `Started() bool`
+- `Finished() bool`
+- `Step() int64`
+- `Max() int64`
+- `Percent() float32`
+
+`MultiProgress` 提供：
+
+- `Started() bool`
+- `Finished() bool`
+- `Len() int`
+- `VisibleLen() int`
+
 ## Progress Bar
 
 ### 内置 Widgets

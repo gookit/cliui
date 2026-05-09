@@ -224,6 +224,56 @@ func TestProgressWrapsReaderAndWriter(t *testing.T) {
 	is.Eq(int64(11), writeProgress.Step())
 }
 
+func TestProgressReset(t *testing.T) {
+	is := assert.New(t)
+	p := Txt(10)
+	p.Out = new(bytes.Buffer)
+	p.Start()
+	p.AdvanceTo(7)
+	p.Finish()
+
+	p.Reset(20)
+	is.Eq(int64(0), p.Step())
+	is.Eq(float32(0), p.Percent())
+	is.Eq(int64(20), p.Max())
+	is.True(p.Started())
+	is.False(p.Finished())
+}
+
+func TestProgressResetManaged(t *testing.T) {
+	is := assert.New(t)
+	buf := new(bytes.Buffer)
+	mp := NewMulti()
+	mp.Writer = buf
+
+	p := mp.New(10)
+	p.SetFormat("{@name} {@percent}%")
+	p.SetMessage("name", "fd")
+	mp.Start()
+	p.AdvanceTo(10)
+	p.Reset(20)
+	p.SetMessage("name", "bat")
+	p.AdvanceTo(5)
+	mp.Finish()
+
+	out := buf.String()
+	is.Contains(out, "bat 25.0%")
+	is.Eq(int64(5), p.Step())
+	is.Eq(int64(20), p.Max())
+}
+
+func TestProgressSetters(t *testing.T) {
+	is := assert.New(t)
+	p := New()
+	p.SetMaxSteps(8).
+		SetFormat("{@name}:{@phase}:{@max}").
+		SetMessage("name", "fd")
+	p.SetMessages(map[string]string{"phase": "downloading"})
+	p.Start()
+
+	is.Eq("fd:downloading:8", p.Line())
+}
+
 func ExampleBar() {
 	maxStep := 105
 	p := CustomBar(60, BarStyles[0], int64(maxStep))

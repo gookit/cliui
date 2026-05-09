@@ -292,6 +292,70 @@ Output preview:
 [=================>----------]  62%(50/80)  test
 ```
 
+### Auto Refresh And Throttling
+
+By default, `MultiProgress` refreshes synchronously when a managed `Progress` changes state. For high-frequency updates such as downloads or copies, enable `AutoRefresh` so `Advance()`, `SetMessage()`, `Reset()`, and similar operations only mark the manager dirty. A background ticker refreshes the block at `RefreshInterval`.
+
+```go
+mp := progress.NewMulti()
+mp.AutoRefresh = true
+mp.RefreshInterval = 100 * time.Millisecond
+mp.Start()
+defer mp.Finish()
+```
+
+When `RefreshInterval <= 0`, the default refresh interval is used. `Finish()` stops the background refresh loop and renders one final time, so the manager does not keep writing after it is finished.
+
+Managed progress bars also respect each bar's `RedrawFreq` when `AutoRefresh` is disabled, avoiding a full multi-line redraw on every `Advance()`.
+
+### Reusable Worker Slots
+
+Batch tasks can create a fixed number of progress bars and reuse each line for the next task with `Reset()`.
+
+```go
+bar := mp.New()
+bar.SetFormat("{@slot} {@name} {@percent}% {@phase}")
+bar.SetMessage("slot", "#1")
+
+bar.Reset(100)
+bar.SetMessages(map[string]string{
+	"name":  "fd",
+	"phase": "downloading",
+})
+```
+
+`Reset()` clears the current step, percent, start time, and finish time, but keeps the bar attached to its `MultiProgress`. Use `ResetWith()` when several fields should be changed in one managed update.
+
+### Exclusive Logging
+
+Do not write normal logs directly to the same writer while a multi-line progress block is active. Use `RunExclusive()`, `Println()`, or `Printf()` to clear the current progress block, write the log, and redraw the block.
+
+```go
+mp.Println("warning: fallback to single connection")
+mp.Printf("package %s failed: %v\n", name, err)
+
+mp.RunExclusive(func(w io.Writer) {
+	fmt.Fprintf(w, "checksum verified with %s\n", sum)
+})
+```
+
+### State Queries
+
+`Progress` provides:
+
+- `Started() bool`
+- `Finished() bool`
+- `Step() int64`
+- `Max() int64`
+- `Percent() float32`
+
+`MultiProgress` provides:
+
+- `Started() bool`
+- `Finished() bool`
+- `Len() int`
+- `VisibleLen() int`
+
 ## Progress Bar
 
 ### Internal Widgets

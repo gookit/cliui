@@ -9,6 +9,10 @@ import (
 	"github.com/gookit/cliui/cutypes"
 )
 
+// DefaultRefreshInterval is used when MultiProgress auto refresh is enabled
+// and RefreshInterval is not set.
+const DefaultRefreshInterval = 100 * time.Millisecond
+
 // MultiProgress manages multiple Progress instances and renders them as one block.
 type MultiProgress struct {
 	Overwrite       bool
@@ -21,6 +25,9 @@ type MultiProgress struct {
 	started   bool
 	finished  bool
 	rendered  bool
+	dirty     bool
+	stopCh    chan struct{}
+	doneCh    chan struct{}
 	lastLines int
 }
 
@@ -65,6 +72,9 @@ func (mp *MultiProgress) Start() {
 
 	mp.started = true
 	mp.refreshLocked()
+	if mp.AutoRefresh {
+		mp.startAutoRefreshLocked()
+	}
 }
 
 // Refresh re-renders all managed progress bars.
@@ -72,15 +82,44 @@ func (mp *MultiProgress) Refresh() {
 	mp.mu.Lock()
 	defer mp.mu.Unlock()
 
+	mp.dirty = false
 	mp.refreshLocked()
+}
+
+// RunExclusive clears the managed progress block, lets fn write to the
+// manager writer, then redraws the block.
+func (mp *MultiProgress) RunExclusive(fn func(w io.Writer)) {
+	mp.mu.Lock()
+	defer mp.mu.Unlock()
+
+	mp.clearLocked()
+	if fn != nil {
+		fn(mp.writer())
+	}
+	if mp.started && !mp.finished {
+		mp.refreshLocked()
+	}
+}
+
+// Println writes a line without breaking the managed progress block.
+func (mp *MultiProgress) Println(args ...any) {
+	mp.RunExclusive(func(w io.Writer) {
+		fmt.Fprintln(w, args...)
+	})
+}
+
+// Printf writes formatted text without breaking the managed progress block.
+func (mp *MultiProgress) Printf(format string, args ...any) {
+	mp.RunExclusive(func(w io.Writer) {
+		fmt.Fprintf(w, format, args...)
+	})
 }
 
 // Finish renders the final state and ends the managed block.
 func (mp *MultiProgress) Finish() {
 	mp.mu.Lock()
-	defer mp.mu.Unlock()
-
 	if mp.finished {
+		mp.mu.Unlock()
 		return
 	}
 
@@ -93,6 +132,26 @@ func (mp *MultiProgress) Finish() {
 		mp.started = true
 	}
 
+	stopCh := mp.stopCh
+	doneCh := mp.doneCh
+	mp.stopCh = nil
+	mp.doneCh = nil
+	mp.mu.Unlock()
+
+	if stopCh != nil {
+		close(stopCh)
+		if doneCh != nil {
+			<-doneCh
+		}
+	}
+
+	mp.mu.Lock()
+	defer mp.mu.Unlock()
+	if mp.finished {
+		return
+	}
+
+	mp.dirty = false
 	mp.refreshLocked()
 	if len(mp.bars) > 0 {
 		fmt.Fprintln(mp.writer())
@@ -107,11 +166,20 @@ func (mp *MultiProgress) writer() io.Writer {
 	return cutypes.Output
 }
 
-func (mp *MultiProgress) update(fn func()) {
+func (mp *MultiProgress) update(fn func() bool) {
 	mp.mu.Lock()
 	defer mp.mu.Unlock()
 
-	fn()
+	changed := fn()
+	if !changed {
+		return
+	}
+
+	if mp.AutoRefresh {
+		mp.dirty = true
+		return
+	}
+
 	mp.refreshLocked()
 }
 
@@ -127,6 +195,108 @@ func (mp *MultiProgress) startProgress(p *Progress, maxSteps ...int64) {
 	if mp.started && !mp.finished {
 		mp.refreshLocked()
 	}
+}
+
+func (mp *MultiProgress) startAutoRefreshLocked() {
+	if mp.stopCh != nil {
+		return
+	}
+
+	interval := mp.RefreshInterval
+	if interval <= 0 {
+		interval = DefaultRefreshInterval
+	}
+
+	mp.stopCh = make(chan struct{})
+	mp.doneCh = make(chan struct{})
+	stopCh := mp.stopCh
+	doneCh := mp.doneCh
+
+	go func() {
+		defer close(doneCh)
+
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				mp.flushDirty()
+			case <-stopCh:
+				return
+			}
+		}
+	}()
+}
+
+func (mp *MultiProgress) flushDirty() {
+	mp.mu.Lock()
+	defer mp.mu.Unlock()
+
+	if !mp.dirty {
+		return
+	}
+
+	mp.dirty = false
+	mp.refreshLocked()
+}
+
+func (mp *MultiProgress) clearLocked() {
+	if !mp.rendered || mp.lastLines == 0 {
+		return
+	}
+
+	out := mp.writer()
+	fmt.Fprint(out, "\r")
+	if mp.lastLines > 1 {
+		fmt.Fprintf(out, "\x1B[%dA", mp.lastLines-1)
+	}
+
+	for i := 0; i < mp.lastLines; i++ {
+		fmt.Fprint(out, "\x1B[2K")
+		if i < mp.lastLines-1 {
+			fmt.Fprint(out, "\n")
+		}
+	}
+
+	fmt.Fprint(out, "\r")
+	if mp.lastLines > 1 {
+		fmt.Fprintf(out, "\x1B[%dA", mp.lastLines-1)
+	}
+
+	mp.rendered = false
+}
+
+// Started reports whether the multi progress manager has started.
+func (mp *MultiProgress) Started() bool {
+	mp.mu.Lock()
+	defer mp.mu.Unlock()
+
+	return mp.started
+}
+
+// Finished reports whether the multi progress manager has finished.
+func (mp *MultiProgress) Finished() bool {
+	mp.mu.Lock()
+	defer mp.mu.Unlock()
+
+	return mp.finished
+}
+
+// Len returns the number of managed progress bars.
+func (mp *MultiProgress) Len() int {
+	mp.mu.Lock()
+	defer mp.mu.Unlock()
+
+	return len(mp.bars)
+}
+
+// VisibleLen returns the number of visible managed progress bars.
+func (mp *MultiProgress) VisibleLen() int {
+	mp.mu.Lock()
+	defer mp.mu.Unlock()
+
+	return len(mp.bars)
 }
 
 func (mp *MultiProgress) refreshLocked() {
