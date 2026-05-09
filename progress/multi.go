@@ -68,6 +68,8 @@ func (mp *MultiProgress) Add(p *Progress) *Progress {
 
 	p.manager = mp
 	p.index = len(mp.bars)
+	p.hidden = false
+	p.removed = false
 	mp.bars = append(mp.bars, p)
 	return p
 }
@@ -200,6 +202,10 @@ func (mp *MultiProgress) updateBar(event updateEvent, p *Progress, fn func() boo
 	mp.mu.Lock()
 	defer mp.mu.Unlock()
 
+	if p != nil && p.removed {
+		return
+	}
+
 	changed := fn()
 	if !changed {
 		return
@@ -214,6 +220,8 @@ func (mp *MultiProgress) updateBar(event updateEvent, p *Progress, fn func() boo
 		return
 	case RenderPlain:
 		switch event {
+		case updateSilent:
+			mp.refreshPlainLocked()
 		case updateKeyState, updateFinalState:
 			if p != nil {
 				fmt.Fprintln(mp.writer(), p.Line())
@@ -235,12 +243,87 @@ func (mp *MultiProgress) startProgress(p *Progress, maxSteps ...int64) {
 	mp.mu.Lock()
 	defer mp.mu.Unlock()
 
+	if p.removed {
+		return
+	}
+
 	if p.started {
 		panic("Progress bar already started")
 	}
 
 	p.init(maxSteps...)
 	if mp.started && !mp.finished {
+		mp.refreshLocked()
+	}
+}
+
+// Hide hides a managed progress bar without removing it from the manager.
+func (mp *MultiProgress) Hide(p *Progress) {
+	mp.mu.Lock()
+	defer mp.mu.Unlock()
+
+	if !mp.canManageLocked(p) || p.hidden {
+		return
+	}
+
+	p.hidden = true
+	mp.renderAfterVisibleChangeLocked()
+}
+
+// Show makes a hidden managed progress bar visible again.
+func (mp *MultiProgress) Show(p *Progress) {
+	mp.mu.Lock()
+	defer mp.mu.Unlock()
+
+	if !mp.canManageLocked(p) || !p.hidden {
+		return
+	}
+
+	p.hidden = false
+	mp.renderAfterVisibleChangeLocked()
+}
+
+// Remove removes a progress bar from rendering while keeping it managed so
+// later updates become no-ops instead of standalone output.
+func (mp *MultiProgress) Remove(p *Progress) {
+	mp.mu.Lock()
+	defer mp.mu.Unlock()
+
+	if !mp.canManageLocked(p) {
+		return
+	}
+
+	for i, bar := range mp.bars {
+		if bar == p {
+			mp.bars = append(mp.bars[:i], mp.bars[i+1:]...)
+			break
+		}
+	}
+	for i, bar := range mp.bars {
+		bar.index = i
+	}
+
+	p.removed = true
+	p.hidden = true
+	mp.renderAfterVisibleChangeLocked()
+}
+
+func (mp *MultiProgress) canManageLocked(p *Progress) bool {
+	return p != nil && p.manager == mp && !p.removed
+}
+
+func (mp *MultiProgress) renderAfterVisibleChangeLocked() {
+	if !mp.started || mp.finished {
+		return
+	}
+
+	if mp.RenderMode == RenderDynamic {
+		if mp.AutoRefresh {
+			mp.dirty = true
+			mp.clearRenderedBlockLocked()
+			return
+		}
+		mp.clearRenderedBlockLocked()
 		mp.refreshLocked()
 	}
 }
@@ -355,7 +438,7 @@ func (mp *MultiProgress) VisibleLen() int {
 	mp.mu.Lock()
 	defer mp.mu.Unlock()
 
-	return len(mp.bars)
+	return len(mp.visibleBarsLocked())
 }
 
 func (mp *MultiProgress) refreshLocked() {
@@ -376,6 +459,7 @@ func (mp *MultiProgress) refreshDynamicLocked() {
 
 	lines := mp.currentLinesLocked()
 	if len(lines) == 0 {
+		mp.clearRenderedBlockLocked()
 		return
 	}
 
@@ -387,11 +471,22 @@ func (mp *MultiProgress) refreshDynamicLocked() {
 }
 
 func (mp *MultiProgress) currentLinesLocked() []string {
-	lines := make([]string, 0, len(mp.bars))
-	for _, p := range mp.bars {
+	bars := mp.visibleBarsLocked()
+	lines := make([]string, 0, len(bars))
+	for _, p := range bars {
 		lines = append(lines, p.Line())
 	}
 	return lines
+}
+
+func (mp *MultiProgress) visibleBarsLocked() []*Progress {
+	bars := make([]*Progress, 0, len(mp.bars))
+	for _, p := range mp.bars {
+		if !p.hidden && !p.removed {
+			bars = append(bars, p)
+		}
+	}
+	return bars
 }
 
 func (mp *MultiProgress) refreshPlainLocked() {

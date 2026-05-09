@@ -302,6 +302,81 @@ func TestIsTerminalReturnsFalseForRegularFile(t *testing.T) {
 	is.False(IsTerminal(file))
 }
 
+func TestMultiProgressHideAndShow(t *testing.T) {
+	is := assert.New(t)
+	buf := new(bytes.Buffer)
+	mp := NewMulti()
+	mp.Writer = buf
+
+	p1 := mp.New(1)
+	p1.SetMessage("message", " one")
+	p2 := mp.New(1)
+	p2.SetMessage("message", " two")
+	mp.Start()
+
+	mp.Hide(p2)
+	is.Eq(2, mp.Len())
+	is.Eq(1, mp.VisibleLen())
+	buf.Reset()
+	mp.Refresh()
+	is.Contains(buf.String(), " one")
+	is.NotContains(buf.String(), " two")
+
+	mp.Show(p2)
+	is.Eq(2, mp.Len())
+	is.Eq(2, mp.VisibleLen())
+	buf.Reset()
+	mp.Refresh()
+	is.Contains(buf.String(), " two")
+}
+
+func TestMultiProgressRemove(t *testing.T) {
+	is := assert.New(t)
+	buf := new(bytes.Buffer)
+	mp := NewMulti()
+	mp.Writer = buf
+
+	p1 := mp.New(1)
+	p1.SetMessage("message", " one")
+	p2 := mp.New(1)
+	p2.SetMessage("message", " two")
+	mp.Start()
+
+	mp.Remove(p2)
+	is.Eq(1, mp.Len())
+	is.Eq(1, mp.VisibleLen())
+	p2.Advance()
+	p2.SetMessage("message", " removed")
+	p2.Finish()
+	buf.Reset()
+	mp.Refresh()
+
+	out := buf.String()
+	is.Contains(out, " one")
+	is.NotContains(out, " removed")
+}
+
+func TestMultiProgressHideClearsStaleDynamicLines(t *testing.T) {
+	is := assert.New(t)
+	buf := new(bytes.Buffer)
+	mp := NewMulti()
+	mp.Writer = buf
+
+	p1 := mp.New(1)
+	p1.SetMessage("message", " one")
+	p2 := mp.New(1)
+	p2.SetMessage("message", " two")
+	mp.Start()
+
+	buf.Reset()
+	mp.Hide(p2)
+	out := buf.String()
+
+	is.Contains(out, "\x1B[2K")
+	is.Contains(out, " one")
+	is.NotContains(out, " two")
+}
+
 func TestMultiProgressRunExclusivePrintsBetweenBlocks(t *testing.T) {
 	is := assert.New(t)
 	buf := new(bytes.Buffer)

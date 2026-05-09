@@ -699,7 +699,7 @@ git commit -m "feat(progress): support wider progress format verbs"
 - Modify: `progress/progress.go`
 - Test: `progress/multi_test.go`
 
-- [ ] **Step 1: 添加 Hide/Show 失败测试**
+- [x] **Step 1: 添加 Hide/Show 失败测试**
 
 在 `progress/multi_test.go` 添加：
 
@@ -735,7 +735,7 @@ func TestMultiProgressHideAndShow(t *testing.T) {
 
 这个测试通过 `buf.Reset(); mp.Refresh()` 检查新一次刷新输出，避免从历史 ANSI buffer 中截取最后一个清行导致误判。
 
-- [ ] **Step 2: 添加 Remove 失败测试**
+- [x] **Step 2: 添加 Remove 失败测试**
 
 在 `progress/multi_test.go` 添加：
 
@@ -767,7 +767,7 @@ func TestMultiProgressRemove(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3: 添加 dynamic 行数减少时清理旧 block 的失败测试**
+- [x] **Step 3: 添加 dynamic 行数减少时清理旧 block 的失败测试**
 
 在 `progress/multi_test.go` 添加：
 
@@ -796,7 +796,7 @@ func TestMultiProgressHideClearsStaleDynamicLines(t *testing.T) {
 
 这个测试要求 hide/remove 导致可见行减少时，dynamic renderer 清理旧 block，不能留下旧的第二行。
 
-- [ ] **Step 4: 运行测试并确认失败**
+- [x] **Step 4: 运行测试并确认失败**
 
 运行：
 
@@ -806,7 +806,7 @@ go test ./progress -run "TestMultiProgress(HideAndShow|Remove|HideClearsStaleDyn
 
 预期：编译失败，因为 `Hide()` / `Show()` / `Remove()` 不存在。
 
-- [ ] **Step 5: 给 `Progress` 增加内部状态**
+- [x] **Step 5: 给 `Progress` 增加内部状态**
 
 在 `Progress` 结构体增加：
 
@@ -815,7 +815,7 @@ hidden  bool
 removed bool
 ```
 
-- [ ] **Step 6: 实现 visible bar helper**
+- [x] **Step 6: 实现 visible bar helper**
 
 在 `progress/multi.go` 增加：
 
@@ -827,7 +827,7 @@ func (mp *MultiProgress) visibleBarsLocked() []*Progress
 
 `refreshDynamicLocked()` 和 `refreshPlainLocked()` 都改用 visible bars。
 
-- [ ] **Step 7: 实现 Hide / Show**
+- [x] **Step 7: 实现 Hide / Show**
 
 在 `progress/multi.go` 添加：
 
@@ -845,7 +845,7 @@ func (mp *MultiProgress) Show(p *Progress)
 - dynamic mode 下刷新或 auto refresh dirty；如果可见行数减少，必须使用 `clearRenderedBlockLocked()` 清理旧 block。
 - plain/disabled mode 下不自动输出。
 
-- [ ] **Step 8: 实现 Remove**
+- [x] **Step 8: 实现 Remove**
 
 在 `progress/multi.go` 添加：
 
@@ -863,7 +863,7 @@ func (mp *MultiProgress) Remove(p *Progress)
 - 保留 `p.manager = mp`，让后续 update 能 no-op，不退化成 standalone 输出。
 - dynamic mode 下刷新或 auto refresh dirty；如果可见行数减少，必须清理旧 block。
 
-- [ ] **Step 9: 让 removed progress 更新 no-op**
+- [x] **Step 9: 让 removed progress 更新 no-op**
 
 调整 `Progress` 的托管更新路径：
 
@@ -895,13 +895,13 @@ if p.removed {
 
 不要在未持有 `mp.mu` 时读取 `p.removed`。这些方法的 managed 分支应先进入 `mp.update(...)` 或 `mp.updateBar(...)`，在 closure 中检查 `p.removed` 并返回 `false`。
 
-- [ ] **Step 10: 调整 Len / VisibleLen**
+- [x] **Step 10: 调整 Len / VisibleLen**
 
 `Len()` 返回 `len(mp.bars)`。
 
 `VisibleLen()` 返回 `len(mp.visibleBarsLocked())`。
 
-- [ ] **Step 11: 验证 Task 5**
+- [x] **Step 11: 验证 Task 5**
 
 运行：
 
@@ -912,7 +912,7 @@ go test ./progress
 
 预期：新增 tests 和 `progress` 包测试通过。
 
-- [ ] **Step 12: 提交 Task 5**
+- [x] **Step 12: 提交 Task 5**
 
 运行：
 
