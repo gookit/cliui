@@ -46,6 +46,24 @@ func TestMultiProgress_Render(t *testing.T) {
 	is.True(strings.HasSuffix(out, "\n"))
 }
 
+func TestMultiProgressRenderDynamicKeepsANSIBlock(t *testing.T) {
+	is := assert.New(t)
+	buf := new(bytes.Buffer)
+	mp := NewMulti()
+	mp.Writer = buf
+	mp.RenderMode = RenderDynamic
+
+	p := mp.New(2)
+	p.AddMessage("message", " task")
+	mp.Start()
+	p.Advance()
+	mp.Finish()
+
+	out := buf.String()
+	is.Contains(out, "\x1B[2K")
+	is.Contains(out, " task")
+}
+
 func TestMultiProgress_WriterFallbackUsesGlobalOutput(t *testing.T) {
 	buf := new(bytes.Buffer)
 	cutypes.SetOutput(buf)

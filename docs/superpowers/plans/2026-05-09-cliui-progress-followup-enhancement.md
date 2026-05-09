@@ -76,7 +76,7 @@
 - Modify: `progress/multi.go`
 - Test: `progress/multi_test.go`
 
-- [ ] **Step 1: 添加 RenderDynamic 兼容测试**
+- [x] **Step 1: 添加 RenderDynamic 兼容测试**
 
 在 `progress/multi_test.go` 添加：
 
@@ -100,7 +100,7 @@ func TestMultiProgressRenderDynamicKeepsANSIBlock(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 运行测试并确认失败**
+- [x] **Step 2: 运行测试并确认失败**
 
 运行：
 
@@ -110,7 +110,7 @@ go test ./progress -run TestMultiProgressRenderDynamicKeepsANSIBlock -count=1
 
 预期：编译失败，原因是 `RenderDynamic` 和 `MultiProgress.RenderMode` 还不存在。
 
-- [ ] **Step 3: 增加 RenderMode 类型和字段**
+- [x] **Step 3: 增加 RenderMode 类型和字段**
 
 在 `progress/multi.go` 添加：
 
@@ -132,7 +132,7 @@ RenderMode RenderMode
 
 默认零值 `RenderDynamic` 保持现有行为。
 
-- [ ] **Step 4: 重构 dynamic renderer**
+- [x] **Step 4: 重构 dynamic renderer**
 
 将当前 `refreshLocked()` 的 ANSI 多行逻辑移动到：
 
@@ -151,7 +151,7 @@ func (mp *MultiProgress) refreshLocked() {
 }
 ```
 
-- [ ] **Step 5: 抽出 dynamic block helper**
+- [x] **Step 5: 抽出 dynamic block helper**
 
 在 `progress/multi.go` 中抽出：
 
@@ -171,7 +171,7 @@ func (mp *MultiProgress) currentLinesLocked() []string
 
 这一步是为了后续 hide/remove 时能清理旧 block 多余行，避免残留。
 
-- [ ] **Step 6: 验证 Task 1**
+- [x] **Step 6: 验证 Task 1**
 
 运行：
 

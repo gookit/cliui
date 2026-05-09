@@ -13,11 +13,24 @@ import (
 // and RefreshInterval is not set.
 const DefaultRefreshInterval = 100 * time.Millisecond
 
+// RenderMode controls how MultiProgress writes progress output.
+type RenderMode int
+
+const (
+	// RenderDynamic renders a managed ANSI block.
+	RenderDynamic RenderMode = iota
+	// RenderPlain renders plain progress lines without ANSI block controls.
+	RenderPlain
+	// RenderDisabled disables progress rendering.
+	RenderDisabled
+)
+
 // MultiProgress manages multiple Progress instances and renders them as one block.
 type MultiProgress struct {
 	Overwrite       bool
 	AutoRefresh     bool
 	RefreshInterval time.Duration
+	RenderMode      RenderMode
 	Writer          io.Writer
 
 	mu        sync.Mutex
@@ -246,11 +259,24 @@ func (mp *MultiProgress) clearLocked() {
 		return
 	}
 
+	mp.clearRenderedBlockLocked()
+}
+
+func (mp *MultiProgress) moveToBlockStartLocked() {
 	out := mp.writer()
 	fmt.Fprint(out, "\r")
 	if mp.lastLines > 1 {
 		fmt.Fprintf(out, "\x1B[%dA", mp.lastLines-1)
 	}
+}
+
+func (mp *MultiProgress) clearRenderedBlockLocked() {
+	if !mp.rendered || mp.lastLines == 0 {
+		return
+	}
+
+	out := mp.writer()
+	mp.moveToBlockStartLocked()
 
 	for i := 0; i < mp.lastLines; i++ {
 		fmt.Fprint(out, "\x1B[2K")
@@ -259,12 +285,10 @@ func (mp *MultiProgress) clearLocked() {
 		}
 	}
 
-	fmt.Fprint(out, "\r")
-	if mp.lastLines > 1 {
-		fmt.Fprintf(out, "\x1B[%dA", mp.lastLines-1)
-	}
+	mp.moveToBlockStartLocked()
 
 	mp.rendered = false
+	mp.lastLines = 0
 }
 
 // Started reports whether the multi progress manager has started.
@@ -300,31 +324,47 @@ func (mp *MultiProgress) VisibleLen() int {
 }
 
 func (mp *MultiProgress) refreshLocked() {
+	switch mp.RenderMode {
+	default:
+		mp.refreshDynamicLocked()
+	}
+}
+
+func (mp *MultiProgress) refreshDynamicLocked() {
 	if !mp.started || mp.finished {
 		return
 	}
 
-	lines := len(mp.bars)
-	if lines == 0 {
+	lines := mp.currentLinesLocked()
+	if len(lines) == 0 {
 		return
 	}
 
-	out := mp.writer()
 	if mp.rendered {
-		fmt.Fprint(out, "\r")
-		if mp.lastLines > 1 {
-			fmt.Fprintf(out, "\x1B[%dA", mp.lastLines-1)
-		}
+		mp.moveToBlockStartLocked()
 	}
 
-	for i, p := range mp.bars {
+	mp.renderDynamicLinesLocked(lines)
+}
+
+func (mp *MultiProgress) currentLinesLocked() []string {
+	lines := make([]string, 0, len(mp.bars))
+	for _, p := range mp.bars {
+		lines = append(lines, p.Line())
+	}
+	return lines
+}
+
+func (mp *MultiProgress) renderDynamicLinesLocked(lines []string) {
+	out := mp.writer()
+	for i, line := range lines {
 		fmt.Fprint(out, "\x1B[2K")
-		fmt.Fprint(out, p.Line())
-		if i < lines-1 {
+		fmt.Fprint(out, line)
+		if i < len(lines)-1 {
 			fmt.Fprint(out, "\n")
 		}
 	}
 
 	mp.rendered = true
-	mp.lastLines = lines
+	mp.lastLines = len(lines)
 }
