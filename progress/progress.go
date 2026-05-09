@@ -154,7 +154,7 @@ func (p *Progress) WithMaxSteps(maxSteps ...int64) *Progress {
 // SetMaxSteps updates the progress max steps.
 func (p *Progress) SetMaxSteps(maxSteps int64) *Progress {
 	if p.manager != nil {
-		p.manager.update(func() bool {
+		p.manager.update(updateKeyState, func() bool {
 			p.MaxSteps = normalizeMaxSteps(maxSteps)
 			return true
 		})
@@ -168,7 +168,7 @@ func (p *Progress) SetMaxSteps(maxSteps int64) *Progress {
 // SetFormat updates the progress render format.
 func (p *Progress) SetFormat(format string) *Progress {
 	if p.manager != nil {
-		p.manager.update(func() bool {
+		p.manager.update(updateKeyState, func() bool {
 			p.Format = format
 			return true
 		})
@@ -193,7 +193,7 @@ func (p *Progress) Bound() any {
 // AddMessage to progress instance
 func (p *Progress) AddMessage(name, message string) {
 	if p.manager != nil {
-		p.manager.update(func() bool {
+		p.manager.update(updateKeyState, func() bool {
 			p.addMessage(name, message)
 			return true
 		})
@@ -206,7 +206,7 @@ func (p *Progress) AddMessage(name, message string) {
 // SetMessage sets a named message and returns the progress instance.
 func (p *Progress) SetMessage(name, message string) *Progress {
 	if p.manager != nil {
-		p.manager.update(func() bool {
+		p.manager.update(updateKeyState, func() bool {
 			p.addMessage(name, message)
 			return true
 		})
@@ -220,7 +220,7 @@ func (p *Progress) SetMessage(name, message string) *Progress {
 // AddMessages to progress instance
 func (p *Progress) AddMessages(msgMap map[string]string) {
 	if p.manager != nil {
-		p.manager.update(func() bool {
+		p.manager.update(updateKeyState, func() bool {
 			p.addMessages(msgMap)
 			return true
 		})
@@ -233,7 +233,7 @@ func (p *Progress) AddMessages(msgMap map[string]string) {
 // SetMessages sets multiple named messages and returns the progress instance.
 func (p *Progress) SetMessages(msgMap map[string]string) *Progress {
 	if p.manager != nil {
-		p.manager.update(func() bool {
+		p.manager.update(updateKeyState, func() bool {
 			p.addMessages(msgMap)
 			return true
 		})
@@ -264,7 +264,7 @@ func (p *Progress) addMessages(msgMap map[string]string) {
 // AddWidget to progress instance
 func (p *Progress) AddWidget(name string, handler WidgetFunc) *Progress {
 	if p.manager != nil {
-		p.manager.update(func() bool {
+		p.manager.update(updateKeyState, func() bool {
 			p.addWidget(name, handler)
 			return true
 		})
@@ -278,7 +278,7 @@ func (p *Progress) AddWidget(name string, handler WidgetFunc) *Progress {
 // SetWidget to progress instance
 func (p *Progress) SetWidget(name string, handler WidgetFunc) *Progress {
 	if p.manager != nil {
-		p.manager.update(func() bool {
+		p.manager.update(updateKeyState, func() bool {
 			p.setWidget(name, handler)
 			return true
 		})
@@ -292,7 +292,7 @@ func (p *Progress) SetWidget(name string, handler WidgetFunc) *Progress {
 // AddWidgets to progress instance
 func (p *Progress) AddWidgets(widgets map[string]WidgetFunc) {
 	if p.manager != nil {
-		p.manager.update(func() bool {
+		p.manager.update(updateKeyState, func() bool {
 			p.addWidgets(widgets)
 			return true
 		})
@@ -368,7 +368,7 @@ func (p *Progress) init(maxSteps ...int64) {
 // Reset resets the progress state so the instance can be reused.
 func (p *Progress) Reset(maxSteps ...int64) {
 	if p.manager != nil {
-		p.manager.update(func() bool {
+		p.manager.updateBar(updateKeyState, p, func() bool {
 			p.reset(maxSteps...)
 			return true
 		})
@@ -386,7 +386,7 @@ func (p *Progress) Reset(maxSteps ...int64) {
 // when the progress is managed.
 func (p *Progress) ResetWith(fn func(p *Progress)) {
 	if p.manager != nil {
-		p.manager.update(func() bool {
+		p.manager.updateBar(updateKeyState, p, func() bool {
 			p.reset()
 			if fn != nil {
 				fn(p)
@@ -446,7 +446,7 @@ func (p *Progress) AdvanceTo(step int64) {
 	p.checkStart()
 
 	if p.manager != nil {
-		p.manager.update(func() bool {
+		p.manager.update(updateProgress, func() bool {
 			return p.applyStep(step)
 		})
 		return
@@ -484,7 +484,7 @@ func (p *Progress) Finish(message ...string) {
 	p.checkStart()
 
 	if p.manager != nil {
-		p.manager.update(func() bool {
+		p.manager.updateBar(updateFinalState, p, func() bool {
 			p.finishManaged(message...)
 			return true
 		})

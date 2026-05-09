@@ -171,6 +171,121 @@ func TestMultiProgressFinishStopsAutoRefresh(t *testing.T) {
 	is.Eq(size, buf.Len())
 }
 
+func TestMultiProgressRenderPlainDoesNotUseANSIBlock(t *testing.T) {
+	is := assert.New(t)
+	buf := new(bytes.Buffer)
+	mp := NewMulti()
+	mp.Writer = buf
+	mp.RenderMode = RenderPlain
+
+	p := mp.New(3)
+	p.AddMessage("message", " task")
+	mp.Start()
+	p.Advance()
+	mp.Refresh()
+	mp.Finish()
+
+	out := buf.String()
+	is.NotContains(out, "\x1B[2K")
+	is.NotContains(out, "\x1B[")
+	is.Contains(out, " task")
+}
+
+func TestMultiProgressRenderPlainAdvanceDoesNotPrint(t *testing.T) {
+	is := assert.New(t)
+	buf := new(bytes.Buffer)
+	mp := NewMulti()
+	mp.Writer = buf
+	mp.RenderMode = RenderPlain
+
+	p := mp.New(10)
+	mp.Start()
+	size := buf.Len()
+	p.Advance()
+	p.Advance()
+
+	is.Eq(size, buf.Len())
+	mp.Refresh()
+	is.True(buf.Len() > size)
+}
+
+func TestMultiProgressRenderPlainResetPrintsKeyState(t *testing.T) {
+	is := assert.New(t)
+	buf := new(bytes.Buffer)
+	mp := NewMulti()
+	mp.Writer = buf
+	mp.RenderMode = RenderPlain
+
+	p := mp.New(10)
+	p.SetFormat("{@name} {@percent}%")
+	p.SetMessage("name", "fd")
+	mp.Start()
+	size := buf.Len()
+
+	p.Reset(20)
+	p.SetMessage("name", "bat")
+
+	out := buf.String()[size:]
+	is.Contains(out, "fd 0.0%")
+	is.NotContains(out, "\x1B[")
+}
+
+func TestMultiProgressRenderPlainProgressFinishPrintsOnce(t *testing.T) {
+	is := assert.New(t)
+	buf := new(bytes.Buffer)
+	mp := NewMulti()
+	mp.Writer = buf
+	mp.RenderMode = RenderPlain
+
+	p := mp.New(2)
+	p.SetFormat("{@message} {@percent}%")
+	mp.Start()
+	p.Finish("done")
+	afterProgressFinish := strings.Count(buf.String(), "done 100.0%")
+	mp.Finish()
+	afterManagerFinish := strings.Count(buf.String(), "done 100.0%")
+
+	is.Eq(1, afterProgressFinish)
+	is.Eq(1, afterManagerFinish)
+}
+
+func TestMultiProgressRenderDisabledSuppressesProgress(t *testing.T) {
+	is := assert.New(t)
+	buf := new(bytes.Buffer)
+	mp := NewMulti()
+	mp.Writer = buf
+	mp.RenderMode = RenderDisabled
+
+	p := mp.New(3)
+	p.AddMessage("message", " hidden")
+	mp.Start()
+	p.Advance()
+	mp.Refresh()
+	p.Finish()
+	mp.Finish()
+
+	is.Eq("", buf.String())
+}
+
+func TestMultiProgressRenderDisabledStillPrintsLogs(t *testing.T) {
+	is := assert.New(t)
+	buf := new(bytes.Buffer)
+	mp := NewMulti()
+	mp.Writer = buf
+	mp.RenderMode = RenderDisabled
+	mp.New(1)
+	mp.Start()
+
+	mp.Println("warning: fallback")
+	mp.Printf("package %s failed\n", "fd")
+	mp.Finish()
+
+	out := buf.String()
+	is.Contains(out, "warning: fallback")
+	is.Contains(out, "package fd failed")
+	is.NotContains(out, "\x1B[")
+}
+
 func TestMultiProgressRunExclusivePrintsBetweenBlocks(t *testing.T) {
 	is := assert.New(t)
 	buf := new(bytes.Buffer)

@@ -182,7 +182,7 @@ go test ./progress
 
 预期：新增测试和 `progress` 包测试通过。
 
-- [ ] **Step 7: 提交 Task 1**
+- [x] **Step 7: 提交 Task 1**
 
 运行：
 
@@ -202,7 +202,7 @@ git commit -m "refactor(progress): prepare multi progress render modes"
 - Modify: `progress/progress.go`
 - Test: `progress/multi_test.go`
 
-- [ ] **Step 1: 添加 RenderPlain 不输出 ANSI 的失败测试**
+- [x] **Step 1: 添加 RenderPlain 不输出 ANSI 的失败测试**
 
 在 `progress/multi_test.go` 添加：
 
@@ -228,7 +228,7 @@ func TestMultiProgressRenderPlainDoesNotUseANSIBlock(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 添加 RenderPlain 下 Advance 不刷屏的失败测试**
+- [x] **Step 2: 添加 RenderPlain 下 Advance 不刷屏的失败测试**
 
 在 `progress/multi_test.go` 添加：
 
@@ -252,7 +252,7 @@ func TestMultiProgressRenderPlainAdvanceDoesNotPrint(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3: 添加 RenderPlain Reset 输出关键事件的失败测试**
+- [x] **Step 3: 添加 RenderPlain Reset 输出关键事件的失败测试**
 
 在 `progress/multi_test.go` 添加：
 
@@ -281,7 +281,7 @@ func TestMultiProgressRenderPlainResetPrintsKeyState(t *testing.T) {
 
 说明：`Reset()` 是关键状态事件，plain mode 应输出该 bar 的当前行；后续 `SetMessage()` 不要求立即输出。
 
-- [ ] **Step 4: 添加 RenderPlain 下 Progress.Finish 输出且 manager Finish 不重复输出的失败测试**
+- [x] **Step 4: 添加 RenderPlain 下 Progress.Finish 输出且 manager Finish 不重复输出的失败测试**
 
 在 `progress/multi_test.go` 添加：
 
@@ -306,7 +306,7 @@ func TestMultiProgressRenderPlainProgressFinishPrintsOnce(t *testing.T) {
 }
 ```
 
-- [ ] **Step 5: 添加 RenderDisabled 的失败测试**
+- [x] **Step 5: 添加 RenderDisabled 的失败测试**
 
 在 `progress/multi_test.go` 添加：
 
@@ -330,7 +330,7 @@ func TestMultiProgressRenderDisabledSuppressesProgress(t *testing.T) {
 }
 ```
 
-- [ ] **Step 6: 添加 RenderDisabled 仍允许日志输出的失败测试**
+- [x] **Step 6: 添加 RenderDisabled 仍允许日志输出的失败测试**
 
 在 `progress/multi_test.go` 添加：
 
@@ -355,7 +355,7 @@ func TestMultiProgressRenderDisabledStillPrintsLogs(t *testing.T) {
 }
 ```
 
-- [ ] **Step 7: 运行测试并确认失败**
+- [x] **Step 7: 运行测试并确认失败**
 
 运行：
 
@@ -365,7 +365,7 @@ go test ./progress -run "TestMultiProgressRender(Plain|Disabled)" -count=1
 
 预期：测试失败，因为 plain/disabled 还没有专用渲染分支。
 
-- [ ] **Step 8: 增加 updateEvent**
+- [x] **Step 8: 增加 updateEvent**
 
 在 `progress/multi.go` 增加：
 
@@ -399,7 +399,7 @@ func (mp *MultiProgress) update(event updateEvent, fn func() bool)
 - `Progress.Finish()` 使用 `updateFinalState`。
 - setter/message/widget 更新使用 `updateKeyState`，但 plain mode 可以选择不立即输出，避免频繁日志；实现时以 `Reset()` 和 final events 为 plain 输出重点。
 
-- [ ] **Step 9: 改造 `refreshLocked()` mode 分发**
+- [x] **Step 9: 改造 `refreshLocked()` mode 分发**
 
 将 `refreshLocked()` 改成按 mode 分发：
 
@@ -430,7 +430,7 @@ plain refresh 行为：
 - 不输出任何 ANSI 控制符。
 - 不设置 `rendered = true`。
 
-- [ ] **Step 10: 调整 update 事件处理**
+- [x] **Step 10: 调整 update 事件处理**
 
 `MultiProgress.update(event, fn)` 的行为：
 
@@ -457,7 +457,7 @@ func (mp *MultiProgress) updateBar(event updateEvent, p *Progress, fn func() boo
 
 `Progress.Reset()`、`Progress.Finish()`、后续 status helper 走 `updateBar(..., p, ...)`，plain mode 才能只输出相关 bar。
 
-- [ ] **Step 11: 调整 `Start()` / `Finish()` / `RunExclusive()`**
+- [x] **Step 11: 调整 `Start()` / `Finish()` / `RunExclusive()`**
 
 `Start()`：
 
@@ -477,13 +477,13 @@ func (mp *MultiProgress) updateBar(event updateEvent, p *Progress, fn func() boo
 - `RenderPlain`：直接执行 `fn(mp.writer())`，不自动 redraw。
 - `RenderDisabled`：直接执行 `fn(mp.writer())`。
 
-- [ ] **Step 12: AutoRefresh 与 render mode 交互**
+- [x] **Step 12: AutoRefresh 与 render mode 交互**
 
 `Start()` 只有在 `RenderMode == RenderDynamic && AutoRefresh` 时启动 ticker。
 
 `update()` 在 `RenderPlain` / `RenderDisabled` 下不启动或依赖 auto refresh 输出。
 
-- [ ] **Step 13: 验证 Task 2**
+- [x] **Step 13: 验证 Task 2**
 
 运行：
 
@@ -494,7 +494,7 @@ go test ./progress
 
 预期：新增 tests 和 `progress` 包测试通过。
 
-- [ ] **Step 14: 提交 Task 2**
+- [x] **Step 14: 提交 Task 2**
 
 运行：
 

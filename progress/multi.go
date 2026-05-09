@@ -25,6 +25,15 @@ const (
 	RenderDisabled
 )
 
+type updateEvent int
+
+const (
+	updateSilent updateEvent = iota
+	updateProgress
+	updateKeyState
+	updateFinalState
+)
+
 // MultiProgress manages multiple Progress instances and renders them as one block.
 type MultiProgress struct {
 	Overwrite       bool
@@ -85,7 +94,7 @@ func (mp *MultiProgress) Start() {
 
 	mp.started = true
 	mp.refreshLocked()
-	if mp.AutoRefresh {
+	if mp.RenderMode == RenderDynamic && mp.AutoRefresh {
 		mp.startAutoRefreshLocked()
 	}
 }
@@ -105,11 +114,13 @@ func (mp *MultiProgress) RunExclusive(fn func(w io.Writer)) {
 	mp.mu.Lock()
 	defer mp.mu.Unlock()
 
-	mp.clearLocked()
+	if mp.RenderMode == RenderDynamic {
+		mp.clearLocked()
+	}
 	if fn != nil {
 		fn(mp.writer())
 	}
-	if mp.started && !mp.finished {
+	if mp.RenderMode == RenderDynamic && mp.started && !mp.finished {
 		mp.refreshLocked()
 	}
 }
@@ -165,8 +176,10 @@ func (mp *MultiProgress) Finish() {
 	}
 
 	mp.dirty = false
-	mp.refreshLocked()
-	if len(mp.bars) > 0 {
+	if mp.RenderMode == RenderDynamic {
+		mp.refreshLocked()
+	}
+	if mp.RenderMode == RenderDynamic && len(mp.bars) > 0 {
 		fmt.Fprintln(mp.writer())
 	}
 	mp.finished = true
@@ -179,13 +192,35 @@ func (mp *MultiProgress) writer() io.Writer {
 	return cutypes.Output
 }
 
-func (mp *MultiProgress) update(fn func() bool) {
+func (mp *MultiProgress) update(event updateEvent, fn func() bool) {
+	mp.updateBar(event, nil, fn)
+}
+
+func (mp *MultiProgress) updateBar(event updateEvent, p *Progress, fn func() bool) {
 	mp.mu.Lock()
 	defer mp.mu.Unlock()
 
 	changed := fn()
 	if !changed {
 		return
+	}
+
+	if !mp.started || mp.finished {
+		return
+	}
+
+	switch mp.RenderMode {
+	case RenderDisabled:
+		return
+	case RenderPlain:
+		switch event {
+		case updateKeyState, updateFinalState:
+			if p != nil {
+				fmt.Fprintln(mp.writer(), p.Line())
+			}
+		}
+		return
+	default:
 	}
 
 	if mp.AutoRefresh {
@@ -325,6 +360,10 @@ func (mp *MultiProgress) VisibleLen() int {
 
 func (mp *MultiProgress) refreshLocked() {
 	switch mp.RenderMode {
+	case RenderDisabled:
+		return
+	case RenderPlain:
+		mp.refreshPlainLocked()
 	default:
 		mp.refreshDynamicLocked()
 	}
@@ -353,6 +392,16 @@ func (mp *MultiProgress) currentLinesLocked() []string {
 		lines = append(lines, p.Line())
 	}
 	return lines
+}
+
+func (mp *MultiProgress) refreshPlainLocked() {
+	if !mp.started || mp.finished {
+		return
+	}
+
+	for _, line := range mp.currentLinesLocked() {
+		fmt.Fprintln(mp.writer(), line)
+	}
 }
 
 func (mp *MultiProgress) renderDynamicLinesLocked(lines []string) {
