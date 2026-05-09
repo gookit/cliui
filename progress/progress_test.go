@@ -245,6 +245,35 @@ func TestProgressWrapsReaderAndWriter(t *testing.T) {
 	is.Eq(int64(11), writeProgress.Step())
 }
 
+func TestByteTrackerCloseFlushesPendingBytes(t *testing.T) {
+	is := assert.New(t)
+	p := New(10)
+	p.Out = new(bytes.Buffer)
+	p.Start()
+
+	tracker := NewByteTrackerWithInterval(p, time.Hour)
+	tracker.Add(3)
+	is.Eq(int64(0), p.Step())
+
+	tracker.Close()
+
+	is.Eq(int64(3), p.Step())
+}
+
+func TestByteTrackerAddIgnoresNonPositiveValues(t *testing.T) {
+	is := assert.New(t)
+	p := New(10)
+	p.Out = new(bytes.Buffer)
+	p.Start()
+
+	tracker := NewByteTrackerWithInterval(p, time.Hour)
+	tracker.Add(0)
+	tracker.Add(-3)
+	tracker.Close()
+
+	is.Eq(int64(0), p.Step())
+}
+
 func TestProgressReset(t *testing.T) {
 	is := assert.New(t)
 	p := Txt(10)

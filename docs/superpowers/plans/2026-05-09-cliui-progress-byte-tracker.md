@@ -59,7 +59,7 @@
 - Create: `progress/byte_tracker.go`
 - Modify: `progress/progress_test.go`
 
-- [ ] **Step 1: 添加 `NewByteTracker` 编译失败测试**
+- [x] **Step 1: 添加 `NewByteTracker` 编译失败测试**
 
 在 `progress/progress_test.go` 添加：
 
@@ -82,7 +82,7 @@ func TestByteTrackerCloseFlushesPendingBytes(t *testing.T) {
 
 说明：使用很长 interval，确保不是 ticker 自动 flush，而是 `Close()` flush 剩余字节。
 
-- [ ] **Step 2: 添加 `Add(n <= 0)` no-op 测试**
+- [x] **Step 2: 添加 `Add(n <= 0)` no-op 测试**
 
 在 `progress/progress_test.go` 添加：
 
@@ -102,7 +102,7 @@ func TestByteTrackerAddIgnoresNonPositiveValues(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3: 运行测试并确认失败**
+- [x] **Step 3: 运行测试并确认失败**
 
 运行：
 
@@ -112,7 +112,7 @@ go test ./progress -run "TestByteTracker(CloseFlushesPendingBytes|AddIgnoresNonP
 
 预期：编译失败，因为 `NewByteTrackerWithInterval` 和 `ByteTracker` 还不存在。
 
-- [ ] **Step 4: 新建 `progress/byte_tracker.go`**
+- [x] **Step 4: 新建 `progress/byte_tracker.go`**
 
 创建文件并实现最小 API：
 
@@ -238,7 +238,7 @@ func (w byteTrackerWriter) Write(bs []byte) (int, error) {
 - `flush()` 不要持有 `ByteTracker.mu` 调用 `Progress.Advance()`，避免锁顺序耦合。
 - `progress == nil` 时 `Add()` / `Close()` 不 panic，但不推进任何进度。
 
-- [ ] **Step 5: 验证 Task 1**
+- [x] **Step 5: 验证 Task 1**
 
 运行：
 
@@ -249,7 +249,7 @@ go test ./progress
 
 预期：新增测试和 `progress` 包测试通过。
 
-- [ ] **Step 6: 提交 Task 1**
+- [x] **Step 6: 提交 Task 1**
 
 运行：
 
