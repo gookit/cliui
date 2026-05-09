@@ -2,6 +2,7 @@ package progress
 
 import (
 	"bytes"
+	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -284,6 +285,21 @@ func TestMultiProgressRenderDisabledStillPrintsLogs(t *testing.T) {
 	is.Contains(out, "warning: fallback")
 	is.Contains(out, "package fd failed")
 	is.NotContains(out, "\x1B[")
+}
+
+func TestIsTerminalReturnsFalseForBuffer(t *testing.T) {
+	is := assert.New(t)
+	is.False(IsTerminal(new(bytes.Buffer)))
+}
+
+func TestIsTerminalReturnsFalseForRegularFile(t *testing.T) {
+	is := assert.New(t)
+	file, err := os.CreateTemp("", "cliui-progress-terminal-*")
+	is.NoErr(err)
+	defer os.Remove(file.Name())
+	defer file.Close()
+
+	is.False(IsTerminal(file))
 }
 
 func TestMultiProgressRunExclusivePrintsBetweenBlocks(t *testing.T) {

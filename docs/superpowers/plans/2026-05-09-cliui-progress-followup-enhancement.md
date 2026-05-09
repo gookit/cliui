@@ -513,7 +513,7 @@ git commit -m "feat(progress): add plain and disabled render modes"
 - Create: `progress/terminal.go`
 - Test: `progress/multi_test.go`
 
-- [ ] **Step 1: 添加 `IsTerminal` 失败测试**
+- [x] **Step 1: 添加 `IsTerminal` 失败测试**
 
 在 `progress/multi_test.go` 添加：
 
@@ -524,7 +524,7 @@ func TestIsTerminalReturnsFalseForBuffer(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 添加普通文件检测测试**
+- [x] **Step 2: 添加普通文件检测测试**
 
 在 `progress/multi_test.go` 添加：
 
@@ -542,7 +542,7 @@ func TestIsTerminalReturnsFalseForRegularFile(t *testing.T) {
 
 同时给 `progress/multi_test.go` 增加 `os` import。
 
-- [ ] **Step 3: 运行测试并确认失败**
+- [x] **Step 3: 运行测试并确认失败**
 
 运行：
 
@@ -552,7 +552,7 @@ go test ./progress -run TestIsTerminal -count=1
 
 预期：编译失败，因为 `IsTerminal` 还不存在。
 
-- [ ] **Step 4: 新增 `progress/terminal.go`**
+- [x] **Step 4: 新增 `progress/terminal.go`**
 
 创建 `progress/terminal.go`：
 
@@ -579,7 +579,7 @@ func IsTerminal(w io.Writer) bool {
 
 项目当前已经依赖 `golang.org/x/term`，直接复用该依赖，不需要新增 go.mod/go.sum 变更。
 
-- [ ] **Step 5: 验证 Task 3**
+- [x] **Step 5: 验证 Task 3**
 
 运行：
 
@@ -590,7 +590,7 @@ go test ./progress
 
 预期：新增 tests 和 `progress` 包测试通过。
 
-- [ ] **Step 6: 提交 Task 3**
+- [x] **Step 6: 提交 Task 3**
 
 运行：
 
