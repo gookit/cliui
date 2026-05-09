@@ -609,7 +609,7 @@ git commit -m "feat(progress): add terminal detection helper"
 - Modify: `progress/progress.go`
 - Test: `progress/progress_test.go`
 
-- [ ] **Step 1: 添加左对齐和截断失败测试**
+- [x] **Step 1: 添加左对齐和截断失败测试**
 
 在 `progress/progress_test.go` 添加：
 
@@ -625,7 +625,7 @@ func TestProgressFormatSupportsAlignmentAndTruncation(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 添加既有格式兼容测试**
+- [x] **Step 2: 添加既有格式兼容测试**
 
 在 `progress/progress_test.go` 添加：
 
@@ -642,7 +642,7 @@ func TestProgressFormatKeepsExistingWidgetFormats(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3: 运行测试并确认失败**
+- [x] **Step 3: 运行测试并确认失败**
 
 运行：
 
@@ -652,7 +652,7 @@ go test ./progress -run "TestProgressFormat" -count=1
 
 预期：第一个测试失败，因为 `widgetMatch` 当前不支持 `.`。
 
-- [ ] **Step 4: 修改 widget 正则**
+- [x] **Step 4: 修改 widget 正则**
 
 在 `progress/progress.go` 将：
 
@@ -668,7 +668,7 @@ var widgetMatch = regexp.MustCompile(`{@([\w_]+)(?::([^}]+))?}`)
 
 不修改 unknown token 默认行为。
 
-- [ ] **Step 5: 验证 Task 4**
+- [x] **Step 5: 验证 Task 4**
 
 运行：
 
@@ -679,7 +679,7 @@ go test ./progress
 
 预期：新增 tests 和 `progress` 包测试通过。
 
-- [ ] **Step 6: 提交 Task 4**
+- [x] **Step 6: 提交 Task 4**
 
 运行：
 

@@ -13,8 +13,8 @@ import (
 	"github.com/gookit/color"
 )
 
-// use for match like "{@bar}" "{@percent:3s}"
-var widgetMatch = regexp.MustCompile(`{@([\w_]+)(?::([\w-]+))?}`)
+// use for match like "{@bar}" "{@percent:3s}" "{@name:.20s}"
+var widgetMatch = regexp.MustCompile(`{@([\w_]+)(?::([^}]+))?}`)
 
 var widgetAliases = map[string]string{
 	"eta": "remaining",

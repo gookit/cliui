@@ -172,6 +172,27 @@ func TestProgressSupportsWidgetAlias(t *testing.T) {
 	is.NotNil(p.Handler("eta"))
 }
 
+func TestProgressFormatSupportsAlignmentAndTruncation(t *testing.T) {
+	is := assert.New(t)
+	p := New()
+	p.SetFormat("{@name:-8s}|{@name:.3s}|{@percent:5s}|{@missing:.2s}")
+	p.SetMessage("name", "abcdef")
+	p.Start()
+
+	is.Eq("abcdef  |abc|  0.0|{@missing:.2s}", p.Line())
+}
+
+func TestProgressFormatKeepsExistingWidgetFormats(t *testing.T) {
+	is := assert.New(t)
+	p := New()
+	p.SetFormat("{@percent:4s}|{@estimated:-7s}")
+	p.Start()
+
+	line := p.Line()
+	is.Contains(line, " 0.0")
+	is.Contains(line, "unknown")
+}
+
 func TestProgressTreatsNegativeMaxStepsAsUnknown(t *testing.T) {
 	is := assert.New(t)
 
