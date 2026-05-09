@@ -304,6 +304,12 @@ if !progress.IsTerminal(os.Stderr) {
 }
 ```
 
+You can also use the convenience method:
+
+```go
+mp.UseAutoRenderMode()
+```
+
 Available modes:
 
 - `RenderDynamic`: default mode for interactive terminals, refreshing a multi-line progress block in place.

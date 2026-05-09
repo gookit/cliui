@@ -352,6 +352,31 @@ func TestIsTerminalReturnsFalseForRegularFile(t *testing.T) {
 	is.False(IsTerminal(file))
 }
 
+func TestMultiProgressUseAutoRenderModeUsesPlainForBuffer(t *testing.T) {
+	is := assert.New(t)
+	mp := NewMulti()
+	mp.Writer = new(bytes.Buffer)
+
+	mp.UseAutoRenderMode()
+
+	is.Eq(RenderPlain, mp.RenderMode)
+}
+
+func TestMultiProgressUseAutoRenderModeUsesPlainForRegularFile(t *testing.T) {
+	is := assert.New(t)
+	file, err := os.CreateTemp("", "cliui-progress-render-mode-*")
+	is.NoErr(err)
+	defer os.Remove(file.Name())
+	defer file.Close()
+
+	mp := NewMulti()
+	mp.Writer = file
+
+	mp.UseAutoRenderMode()
+
+	is.Eq(RenderPlain, mp.RenderMode)
+}
+
 func TestMultiProgressHideAndShow(t *testing.T) {
 	is := assert.New(t)
 	buf := new(bytes.Buffer)

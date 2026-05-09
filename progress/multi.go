@@ -195,6 +195,17 @@ func (mp *MultiProgress) writer() io.Writer {
 	return cutypes.Output
 }
 
+// UseAutoRenderMode selects dynamic rendering for terminals and plain
+// rendering for non-interactive writers.
+func (mp *MultiProgress) UseAutoRenderMode() {
+	if IsTerminal(mp.writer()) {
+		mp.RenderMode = RenderDynamic
+		return
+	}
+
+	mp.RenderMode = RenderPlain
+}
+
 func (mp *MultiProgress) update(event updateEvent, fn func() bool) {
 	mp.updateBar(event, nil, fn)
 }

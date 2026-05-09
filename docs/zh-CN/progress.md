@@ -322,6 +322,12 @@ if !progress.IsTerminal(os.Stderr) {
 }
 ```
 
+也可以直接使用便捷方法：
+
+```go
+mp.UseAutoRenderMode()
+```
+
 可选模式：
 
 - `RenderDynamic`：默认模式，适合交互终端，多行进度原地刷新。
