@@ -6,6 +6,8 @@
 
 **架构：** 在 `MultiProgress` 内保留现有 dynamic renderer 作为默认行为，新增 plain/disabled 渲染分支但不改变 standalone `Progress` 的输出模型。动态管理通过 `Progress` 内部 hidden/removed 状态和 manager 锁完成；状态 helper 复用现有 message、finishManaged 和 update 路径，不引入业务状态机。
 
+**关键约束：** 先重构 renderer 和 manager update 事件语义，再实现 plain/disabled 和动态管理。`RenderPlain` 不能靠布尔参数控制输出；使用 `updateEvent` 明确区分普通进度、关键状态和终态。`removed` 判断必须在 manager 锁内完成，避免并发下载路径出现 race。
+
 **技术栈：** Go，标准库 `fmt` / `io` / `os` / `regexp` / `time`，现有 `progress` 包测试和中英文文档。
 
 ---
@@ -38,7 +40,9 @@
 
 - 修改：`progress/multi.go`
   - 增加 `RenderMode` 类型和 `MultiProgress.RenderMode`。
+  - 增加 `updateEvent` 类型，替代模糊的 plain 输出布尔参数。
   - 将现有 ANSI 多行刷新明确为 dynamic renderer。
+  - 抽出 dynamic block 移动、清理和渲染 helper。
   - 增加 plain/disabled 渲染分支。
   - 增加 `Hide()` / `Show()` / `Remove()`。
   - 调整 `Len()` / `VisibleLen()`。
@@ -66,7 +70,7 @@
 
 ---
 
-### Task 1: RenderMode 基础模型
+### Task 1: Renderer 结构和 RenderMode 基础模型
 
 **Files:**
 - Modify: `progress/multi.go`
@@ -128,11 +132,46 @@ RenderMode RenderMode
 
 默认零值 `RenderDynamic` 保持现有行为。
 
-- [ ] **Step 4: 保持 dynamic 分支走现有 refresh**
+- [ ] **Step 4: 重构 dynamic renderer**
 
-当前 `refreshLocked()` 行为就是 dynamic renderer。先不要拆太多函数，只保证新增字段后现有测试继续通过。
+将当前 `refreshLocked()` 的 ANSI 多行逻辑移动到：
 
-- [ ] **Step 5: 验证 Task 1**
+```go
+func (mp *MultiProgress) refreshDynamicLocked()
+```
+
+`refreshLocked()` 暂时只分发默认 dynamic 分支：
+
+```go
+func (mp *MultiProgress) refreshLocked() {
+	switch mp.RenderMode {
+	default:
+		mp.refreshDynamicLocked()
+	}
+}
+```
+
+- [ ] **Step 5: 抽出 dynamic block helper**
+
+在 `progress/multi.go` 中抽出：
+
+```go
+func (mp *MultiProgress) moveToBlockStartLocked()
+func (mp *MultiProgress) clearRenderedBlockLocked()
+func (mp *MultiProgress) renderDynamicLinesLocked(lines []string)
+func (mp *MultiProgress) currentLinesLocked() []string
+```
+
+实现要求：
+
+- `moveToBlockStartLocked()` 使用 `lastLines` 移动到旧 block 起点。
+- `clearRenderedBlockLocked()` 使用 `lastLines` 清理完整旧 block。
+- `renderDynamicLinesLocked(lines)` 渲染传入行并更新 `rendered` / `lastLines`。
+- `currentLinesLocked()` 基于当前可见 bars 生成 `Line()` 文本；Task 1 暂时所有 bars 都可见。
+
+这一步是为了后续 hide/remove 时能清理旧 block 多余行，避免残留。
+
+- [ ] **Step 6: 验证 Task 1**
 
 运行：
 
@@ -143,20 +182,20 @@ go test ./progress
 
 预期：新增测试和 `progress` 包测试通过。
 
-- [ ] **Step 6: 提交 Task 1**
+- [ ] **Step 7: 提交 Task 1**
 
 运行：
 
 ```bash
 git add progress/multi.go progress/multi_test.go
-git commit -m "feat(progress): add multi progress render mode"
+git commit -m "refactor(progress): prepare multi progress render modes"
 ```
 
 预期：如果当前会话允许提交，commit 成功。
 
 ---
 
-### Task 2: RenderPlain 和 RenderDisabled
+### Task 2: UpdateEvent、RenderPlain 和 RenderDisabled
 
 **Files:**
 - Modify: `progress/multi.go`
@@ -213,7 +252,61 @@ func TestMultiProgressRenderPlainAdvanceDoesNotPrint(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3: 添加 RenderDisabled 的失败测试**
+- [ ] **Step 3: 添加 RenderPlain Reset 输出关键事件的失败测试**
+
+在 `progress/multi_test.go` 添加：
+
+```go
+func TestMultiProgressRenderPlainResetPrintsKeyState(t *testing.T) {
+	is := assert.New(t)
+	buf := new(bytes.Buffer)
+	mp := NewMulti()
+	mp.Writer = buf
+	mp.RenderMode = RenderPlain
+
+	p := mp.New(10)
+	p.SetFormat("{@name} {@percent}%")
+	p.SetMessage("name", "fd")
+	mp.Start()
+	size := buf.Len()
+
+	p.Reset(20)
+	p.SetMessage("name", "bat")
+
+	out := buf.String()[size:]
+	is.Contains(out, "fd 0.0%")
+	is.NotContains(out, "\x1B[")
+}
+```
+
+说明：`Reset()` 是关键状态事件，plain mode 应输出该 bar 的当前行；后续 `SetMessage()` 不要求立即输出。
+
+- [ ] **Step 4: 添加 RenderPlain 下 Progress.Finish 输出且 manager Finish 不重复输出的失败测试**
+
+在 `progress/multi_test.go` 添加：
+
+```go
+func TestMultiProgressRenderPlainProgressFinishPrintsOnce(t *testing.T) {
+	is := assert.New(t)
+	buf := new(bytes.Buffer)
+	mp := NewMulti()
+	mp.Writer = buf
+	mp.RenderMode = RenderPlain
+
+	p := mp.New(2)
+	p.SetFormat("{@message} {@percent}%")
+	mp.Start()
+	p.Finish("done")
+	afterProgressFinish := strings.Count(buf.String(), "done 100.0%")
+	mp.Finish()
+	afterManagerFinish := strings.Count(buf.String(), "done 100.0%")
+
+	is.Eq(1, afterProgressFinish)
+	is.Eq(1, afterManagerFinish)
+}
+```
+
+- [ ] **Step 5: 添加 RenderDisabled 的失败测试**
 
 在 `progress/multi_test.go` 添加：
 
@@ -237,7 +330,7 @@ func TestMultiProgressRenderDisabledSuppressesProgress(t *testing.T) {
 }
 ```
 
-- [ ] **Step 4: 添加 RenderDisabled 仍允许日志输出的失败测试**
+- [ ] **Step 6: 添加 RenderDisabled 仍允许日志输出的失败测试**
 
 在 `progress/multi_test.go` 添加：
 
@@ -262,7 +355,7 @@ func TestMultiProgressRenderDisabledStillPrintsLogs(t *testing.T) {
 }
 ```
 
-- [ ] **Step 5: 运行测试并确认失败**
+- [ ] **Step 7: 运行测试并确认失败**
 
 运行：
 
@@ -272,19 +365,41 @@ go test ./progress -run "TestMultiProgressRender(Plain|Disabled)" -count=1
 
 预期：测试失败，因为 plain/disabled 还没有专用渲染分支。
 
-- [ ] **Step 6: 增加 render mode 判断 helper**
+- [ ] **Step 8: 增加 updateEvent**
 
-在 `progress/multi.go` 增加内部 helper：
+在 `progress/multi.go` 增加：
 
 ```go
-func (mp *MultiProgress) dynamicMode() bool {
-	return mp.RenderMode == RenderDynamic
-}
+type updateEvent int
+
+const (
+	updateSilent updateEvent = iota
+	updateProgress
+	updateKeyState
+	updateFinalState
+)
 ```
 
-如果不想增加 helper，也可以直接 switch `mp.RenderMode`。后续步骤统一按 switch 实现。
+将：
 
-- [ ] **Step 7: 改造 `refreshLocked()`**
+```go
+func (mp *MultiProgress) update(fn func() bool)
+```
+
+改成：
+
+```go
+func (mp *MultiProgress) update(event updateEvent, fn func() bool)
+```
+
+事件规则：
+
+- `AdvanceTo()` 使用 `updateProgress`。
+- `Reset()` / `ResetWith()` 使用 `updateKeyState`。
+- `Progress.Finish()` 使用 `updateFinalState`。
+- setter/message/widget 更新使用 `updateKeyState`，但 plain mode 可以选择不立即输出，避免频繁日志；实现时以 `Reset()` 和 final events 为 plain 输出重点。
+
+- [ ] **Step 9: 改造 `refreshLocked()` mode 分发**
 
 将 `refreshLocked()` 改成按 mode 分发：
 
@@ -301,13 +416,7 @@ func (mp *MultiProgress) refreshLocked() {
 }
 ```
 
-把当前 ANSI 实现移动到：
-
-```go
-func (mp *MultiProgress) refreshDynamicLocked()
-```
-
-新增：
+新增或完善：
 
 ```go
 func (mp *MultiProgress) refreshPlainLocked()
@@ -321,32 +430,34 @@ plain refresh 行为：
 - 不输出任何 ANSI 控制符。
 - 不设置 `rendered = true`。
 
-- [ ] **Step 8: 调整 update 路径**
+- [ ] **Step 10: 调整 update 事件处理**
 
-在 `MultiProgress.update()` 中，当 `RenderMode == RenderPlain` 时：
+`MultiProgress.update(event, fn)` 的行为：
 
-- 状态仍更新。
-- 不因为 `Advance()` 等普通更新自动输出。
-- 只有 `Refresh()`、`Start()`、`Reset()`、`Finish()`、后续 `Done/Fail/Skip()` 这类关键事件输出。
+- 先在锁内执行 `changed := fn()`。
+- `changed == false` 直接返回。
+- `RenderDisabled`：不输出。
+- `RenderDynamic`：按现有逻辑刷新或 dirty。
+- `RenderPlain`：
+  - `updateProgress`：不输出。
+  - `updateKeyState`：只对 `Reset()` 这类调用方明确需要的事件输出当前 bar 行；如果实现无法识别具体 bar，允许调用方通过专用 `updateBar(event, p, fn)` 传入 bar。
+  - `updateFinalState`：输出当前 bar 行。
 
-第一版实现可用简单规则：
-
-- `update()` 在 `RenderPlain` 下只标记 dirty，不立即刷新。
-- `Refresh()` 显式输出。
-- `Start()` 仍输出初始行。
-- `Finish()` 输出最终行。
-
-为满足 `Reset()` 输出新任务行，需要在 `Progress.Reset()` 托管路径中通过 manager 专用方法输出 plain 行。新增内部方法：
+推荐实现：
 
 ```go
-func (mp *MultiProgress) updateAndMaybePrint(fn func() bool, printPlain bool)
+func (mp *MultiProgress) update(event updateEvent, fn func() bool) {
+	mp.updateBar(event, nil, fn)
+}
+
+func (mp *MultiProgress) updateBar(event updateEvent, p *Progress, fn func() bool) {
+	// holds mp.mu, applies fn, then render behavior based on mode/event.
+}
 ```
 
-或者更简单：在第二阶段先不让 `Reset()` 自动输出，修改设计和测试只要求 `Refresh()` 输出。若要完全遵守设计，使用 `updateAndMaybePrint`。
+`Progress.Reset()`、`Progress.Finish()`、后续 status helper 走 `updateBar(..., p, ...)`，plain mode 才能只输出相关 bar。
 
-本计划要求遵守设计：`Reset()` 在 plain mode 输出新任务行。
-
-- [ ] **Step 9: 调整 `Start()` / `Finish()` / `RunExclusive()`**
+- [ ] **Step 11: 调整 `Start()` / `Finish()` / `RunExclusive()`**
 
 `Start()`：
 
@@ -357,7 +468,7 @@ func (mp *MultiProgress) updateAndMaybePrint(fn func() bool, printPlain bool)
 `Finish()`：
 
 - `RenderDynamic`：现有行为。
-- `RenderPlain`：输出当前所有 bar 行，不额外使用 ANSI。
+- `RenderPlain`：只结束 manager 生命周期，不重复输出全部最终行。
 - `RenderDisabled`：不输出 progress。
 
 `RunExclusive()`：
@@ -366,13 +477,13 @@ func (mp *MultiProgress) updateAndMaybePrint(fn func() bool, printPlain bool)
 - `RenderPlain`：直接执行 `fn(mp.writer())`，不自动 redraw。
 - `RenderDisabled`：直接执行 `fn(mp.writer())`。
 
-- [ ] **Step 10: AutoRefresh 与 render mode 交互**
+- [ ] **Step 12: AutoRefresh 与 render mode 交互**
 
 `Start()` 只有在 `RenderMode == RenderDynamic && AutoRefresh` 时启动 ticker。
 
 `update()` 在 `RenderPlain` / `RenderDisabled` 下不启动或依赖 auto refresh 输出。
 
-- [ ] **Step 11: 验证 Task 2**
+- [ ] **Step 13: 验证 Task 2**
 
 运行：
 
@@ -383,7 +494,7 @@ go test ./progress
 
 预期：新增 tests 和 `progress` 包测试通过。
 
-- [ ] **Step 12: 提交 Task 2**
+- [ ] **Step 14: 提交 Task 2**
 
 运行：
 
@@ -466,13 +577,7 @@ func IsTerminal(w io.Writer) bool {
 }
 ```
 
-如果当前 `go.mod` 没有 `golang.org/x/term`，先检查项目是否已有间接依赖。若没有，运行：
-
-```bash
-go get golang.org/x/term
-```
-
-然后确认 `go.mod` / `go.sum` 变化只来自该依赖。
+项目当前已经依赖 `golang.org/x/term`，直接复用该依赖，不需要新增 go.mod/go.sum 变更。
 
 - [ ] **Step 5: 验证 Task 3**
 
@@ -614,27 +719,21 @@ func TestMultiProgressHideAndShow(t *testing.T) {
 	mp.Hide(p2)
 	is.Eq(2, mp.Len())
 	is.Eq(1, mp.VisibleLen())
+	buf.Reset()
 	mp.Refresh()
-	is.NotContains(lastProgressOutput(buf.String()), " two")
+	is.Contains(buf.String(), " one")
+	is.NotContains(buf.String(), " two")
 
 	mp.Show(p2)
 	is.Eq(2, mp.Len())
 	is.Eq(2, mp.VisibleLen())
+	buf.Reset()
 	mp.Refresh()
 	is.Contains(buf.String(), " two")
 }
 ```
 
-同时在 test 文件中添加 helper：
-
-```go
-func lastProgressOutput(out string) string {
-	if idx := strings.LastIndex(out, "\x1B[2K"); idx >= 0 {
-		return out[idx:]
-	}
-	return out
-}
-```
+这个测试通过 `buf.Reset(); mp.Refresh()` 检查新一次刷新输出，避免从历史 ANSI buffer 中截取最后一个清行导致误判。
 
 - [ ] **Step 2: 添加 Remove 失败测试**
 
@@ -659,25 +758,55 @@ func TestMultiProgressRemove(t *testing.T) {
 	p2.Advance()
 	p2.SetMessage("message", " removed")
 	p2.Finish()
+	buf.Reset()
 	mp.Refresh()
 
 	out := buf.String()
 	is.Contains(out, " one")
-	is.NotContains(lastProgressOutput(out), " removed")
+	is.NotContains(out, " removed")
 }
 ```
 
-- [ ] **Step 3: 运行测试并确认失败**
+- [ ] **Step 3: 添加 dynamic 行数减少时清理旧 block 的失败测试**
+
+在 `progress/multi_test.go` 添加：
+
+```go
+func TestMultiProgressHideClearsStaleDynamicLines(t *testing.T) {
+	is := assert.New(t)
+	buf := new(bytes.Buffer)
+	mp := NewMulti()
+	mp.Writer = buf
+
+	p1 := mp.New(1)
+	p1.SetMessage("message", " one")
+	p2 := mp.New(1)
+	p2.SetMessage("message", " two")
+	mp.Start()
+
+	buf.Reset()
+	mp.Hide(p2)
+	out := buf.String()
+
+	is.Contains(out, "\x1B[2K")
+	is.Contains(out, " one")
+	is.NotContains(out, " two")
+}
+```
+
+这个测试要求 hide/remove 导致可见行减少时，dynamic renderer 清理旧 block，不能留下旧的第二行。
+
+- [ ] **Step 4: 运行测试并确认失败**
 
 运行：
 
 ```bash
-go test ./progress -run "TestMultiProgress(HideAndShow|Remove)" -count=1
+go test ./progress -run "TestMultiProgress(HideAndShow|Remove|HideClearsStaleDynamicLines)" -count=1
 ```
 
 预期：编译失败，因为 `Hide()` / `Show()` / `Remove()` 不存在。
 
-- [ ] **Step 4: 给 `Progress` 增加内部状态**
+- [ ] **Step 5: 给 `Progress` 增加内部状态**
 
 在 `Progress` 结构体增加：
 
@@ -686,7 +815,7 @@ hidden  bool
 removed bool
 ```
 
-- [ ] **Step 5: 实现 visible bar helper**
+- [ ] **Step 6: 实现 visible bar helper**
 
 在 `progress/multi.go` 增加：
 
@@ -698,7 +827,7 @@ func (mp *MultiProgress) visibleBarsLocked() []*Progress
 
 `refreshDynamicLocked()` 和 `refreshPlainLocked()` 都改用 visible bars。
 
-- [ ] **Step 6: 实现 Hide / Show**
+- [ ] **Step 7: 实现 Hide / Show**
 
 在 `progress/multi.go` 添加：
 
@@ -713,10 +842,10 @@ func (mp *MultiProgress) Show(p *Progress)
 - 只处理 `p != nil && p.manager == mp && !p.removed`。
 - `Hide()` 设置 `p.hidden = true`。
 - `Show()` 设置 `p.hidden = false`。
-- dynamic mode 下刷新或 auto refresh dirty。
+- dynamic mode 下刷新或 auto refresh dirty；如果可见行数减少，必须使用 `clearRenderedBlockLocked()` 清理旧 block。
 - plain/disabled mode 下不自动输出。
 
-- [ ] **Step 7: 实现 Remove**
+- [ ] **Step 8: 实现 Remove**
 
 在 `progress/multi.go` 添加：
 
@@ -732,9 +861,9 @@ func (mp *MultiProgress) Remove(p *Progress)
 - 对 remaining bars 重建 `index`。
 - 设置 `p.removed = true`。
 - 保留 `p.manager = mp`，让后续 update 能 no-op，不退化成 standalone 输出。
-- dynamic mode 下刷新或 auto refresh dirty。
+- dynamic mode 下刷新或 auto refresh dirty；如果可见行数减少，必须清理旧 block。
 
-- [ ] **Step 8: 让 removed progress 更新 no-op**
+- [ ] **Step 9: 让 removed progress 更新 no-op**
 
 调整 `Progress` 的托管更新路径：
 
@@ -756,6 +885,7 @@ func (mp *MultiProgress) Remove(p *Progress)
 共同规则：
 
 ```go
+// must run while holding mp.mu
 if p.removed {
 	return
 }
@@ -763,24 +893,26 @@ if p.removed {
 
 对于返回 `*Progress` 的方法，直接返回 `p`。
 
-- [ ] **Step 9: 调整 Len / VisibleLen**
+不要在未持有 `mp.mu` 时读取 `p.removed`。这些方法的 managed 分支应先进入 `mp.update(...)` 或 `mp.updateBar(...)`，在 closure 中检查 `p.removed` 并返回 `false`。
+
+- [ ] **Step 10: 调整 Len / VisibleLen**
 
 `Len()` 返回 `len(mp.bars)`。
 
 `VisibleLen()` 返回 `len(mp.visibleBarsLocked())`。
 
-- [ ] **Step 10: 验证 Task 5**
+- [ ] **Step 11: 验证 Task 5**
 
 运行：
 
 ```bash
-go test ./progress -run "TestMultiProgress(HideAndShow|Remove)" -count=1
+go test ./progress -run "TestMultiProgress(HideAndShow|Remove|HideClearsStaleDynamicLines)" -count=1
 go test ./progress
 ```
 
 预期：新增 tests 和 `progress` 包测试通过。
 
-- [ ] **Step 11: 提交 Task 5**
+- [ ] **Step 12: 提交 Task 5**
 
 运行：
 
@@ -873,17 +1005,41 @@ func TestProgressStatusHelpersManaged(t *testing.T) {
 }
 ```
 
-- [ ] **Step 4: 运行测试并确认失败**
+- [ ] **Step 4: 添加 RenderPlain status helper 输出测试**
+
+在 `progress/progress_test.go` 添加：
+
+```go
+func TestProgressStatusHelpersRenderPlainPrintFinalState(t *testing.T) {
+	is := assert.New(t)
+	buf := new(bytes.Buffer)
+	mp := NewMulti()
+	mp.Writer = buf
+	mp.RenderMode = RenderPlain
+
+	p := mp.New(5)
+	p.SetFormat("{@message}|{@status}|{@current}/{@max}")
+	mp.Start()
+	size := buf.Len()
+	p.Fail("network failed")
+
+	out := buf.String()[size:]
+	is.Contains(out, "network failed|failed|0/5")
+	is.NotContains(out, "\x1B[")
+}
+```
+
+- [ ] **Step 5: 运行测试并确认失败**
 
 运行：
 
 ```bash
-go test ./progress -run "TestProgress(Done|FailAndSkip|StatusHelpersManaged)" -count=1
+go test ./progress -run "TestProgress(Done|FailAndSkip|StatusHelpersManaged|StatusHelpersRenderPlain)" -count=1
 ```
 
 预期：编译失败，因为 `Done()` / `Fail()` / `Skip()` 不存在。
 
-- [ ] **Step 5: 实现内部 status helper**
+- [ ] **Step 6: 实现内部 status helper**
 
 在 `progress/progress.go` 增加：
 
@@ -898,8 +1054,10 @@ func (p *Progress) finishStatus(status string, complete bool, message ...string)
 - 如果 `complete == true`，推进到 `MaxSteps`；`MaxSteps == 0` 时设置为当前 step。
 - 设置 `message` 和 `status` messages。
 - 通过 manager update 路径刷新或标记 dirty。
+- managed 模式下 removed 判断必须在 manager 锁内执行。
+- `RenderPlain` 下应作为 `updateFinalState` 输出当前 bar 行。
 
-- [ ] **Step 6: 实现 Done / Fail / Skip**
+- [ ] **Step 7: 实现 Done / Fail / Skip**
 
 添加：
 
@@ -921,18 +1079,12 @@ func (p *Progress) Skip(message ...string)
 - `Fail()` 调用 `finishStatus("failed", false, message...)`。
 - `Skip()` 调用 `finishStatus("skipped", false, message...)`。
 
-- [ ] **Step 7: RenderPlain 交互**
-
-如果 Task 2 已实现 plain mode 的关键事件输出，`Done()` / `Fail()` / `Skip()` 在 `RenderPlain` 下应该输出当前行。
-
-如果实现中使用 `updateAndMaybePrint`，这些 helper 需要走 `printPlain=true`。
-
 - [ ] **Step 8: 验证 Task 6**
 
 运行：
 
 ```bash
-go test ./progress -run "TestProgress(Done|FailAndSkip|StatusHelpersManaged)" -count=1
+go test ./progress -run "TestProgress(Done|FailAndSkip|StatusHelpersManaged|StatusHelpersRenderPlain)" -count=1
 go test ./progress
 ```
 
@@ -1062,12 +1214,16 @@ git commit -m "docs(progress): document followup progress enhancements"
 - `go test ./...` 通过，或只存在已记录且与本次改动无关的失败。
 - 默认 `MultiProgress` 行为仍是 dynamic ANSI 多行刷新。
 - `RenderPlain` 不输出 ANSI 控制符，且不会因每次 `Advance()` 刷屏。
+- `RenderPlain` 下 `Reset()` 输出关键状态行。
+- `RenderPlain` 下 `Progress.Finish()` / status helper 输出终态行，`MultiProgress.Finish()` 不重复输出全部 bar。
 - `RenderDisabled` 不输出 progress，但安全日志 API 仍输出日志。
 - `IsTerminal()` 对 `bytes.Buffer` 和普通文件返回 false。
 - `{@name:-12s}`、`{@name:.20s}`、`{@percent:5s}` 生效。
 - unknown token 继续原样保留。
 - `Hide()` / `Show()` / `Remove()` 正确影响渲染和 `VisibleLen()`。
+- dynamic mode 下隐藏或移除导致行数减少时，旧 block 底部不会残留已隐藏/已移除行。
 - `Remove()` 后迟到的 progress 更新 no-op，不 panic，不写 standalone 输出。
+- `removed` 判断在 manager 锁内执行，避免并发访问数据竞争。
 - `Done()` / `Fail()` / `Skip()` 更新状态和 message，不直接输出额外日志。
 - 中英文文档包含新增 API 和推荐用法。
 
@@ -1079,4 +1235,5 @@ git commit -m "docs(progress): document followup progress enhancements"
 - 不让 `Progress` standalone 行为依赖 `RenderMode`。
 - 不让 `RenderPlain` 在每次 `Advance()` 自动输出。
 - 不让 `Remove()` 后的 progress 退化成 standalone 输出。
-- 如果引入 `golang.org/x/term`，确认 `go.mod` / `go.sum` 变化合理。
+- 不在未持有 manager 锁时读取 managed progress 的 `removed` 状态。
+- `golang.org/x/term` 已存在于 `go.mod`，实现 `IsTerminal()` 时直接复用，不主动改依赖。

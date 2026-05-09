@@ -106,13 +106,53 @@ RenderMode RenderMode
 
 - `Start()`：输出当前已注册 progress 的初始行。
 - `Reset()`：输出该 bar 的新任务行。
-- `Finish()` / `Done()` / `Fail()` / `Skip()`：输出最终状态行。
+- `Progress.Finish()` / `Done()` / `Fail()` / `Skip()`：输出该 bar 的最终状态行。
 - `RunExclusive()` / `Println()` / `Printf()`：正常输出日志。
 - `Refresh()`：调用方显式要求时输出所有可见 bar 当前行。
 
 `AutoRefresh` 在 `RenderPlain` 下不启动后台 ticker，或者 ticker 不产生输出。plain mode 的重点是事件输出，不是持续刷新。
 
 `Progress.Advance()` 在 `RenderPlain` 下仍更新内部状态，但默认不输出。
+
+`MultiProgress.Finish()` 在 `RenderPlain` 下只结束 manager 生命周期，不默认重复输出所有 bar。需要输出快照时，调用方使用显式 `Refresh()`。这样 plain output 是事件流，不会在每个 bar 已完成输出后又在 manager 收尾时重复打印全部最终行。
+
+#### UpdateEvent
+
+第二阶段需要把托管状态更新从单个 `bool` 语义升级为显式事件语义。第一阶段已有：
+
+```go
+func (mp *MultiProgress) update(fn func() bool)
+```
+
+后续改为：
+
+```go
+type updateEvent int
+
+const (
+	updateSilent updateEvent = iota
+	updateProgress
+	updateKeyState
+	updateFinalState
+)
+
+func (mp *MultiProgress) update(event updateEvent, fn func() bool)
+```
+
+事件语义：
+
+- `updateSilent`：只更新内部状态，不触发渲染。
+- `updateProgress`：普通进度推进，例如 `Advance()`。
+- `updateKeyState`：关键状态变化，例如 `Reset()`、format/message 变化、hide/show/remove。
+- `updateFinalState`：终态变化，例如 `Progress.Finish()`、`Done()`、`Fail()`、`Skip()`。
+
+render mode 对事件的处理：
+
+- `RenderDynamic`：`updateProgress`、`updateKeyState`、`updateFinalState` 都刷新或标记 dirty。
+- `RenderPlain`：`updateProgress` 只更新状态；`updateKeyState` 和 `updateFinalState` 输出相关行；`Refresh()` 显式输出所有可见行。
+- `RenderDisabled`：所有事件只更新状态，不输出 progress。
+
+这样可以避免使用 `updateAndMaybePrint(fn, printPlain)` 这类布尔参数。布尔参数无法表达“这是普通进度、关键状态还是终态”，后续会让 plain mode、status helper 和动态管理的语义变得隐式且脆弱。
 
 #### RenderDisabled
 
@@ -228,6 +268,21 @@ removed bool
 
 `Remove()` 后也不应该退化成 standalone progress 输出，否则会破坏当前终端区域。
 
+removed 判断必须在 manager 锁内完成。`Progress.Advance()`、`SetMessage()`、`Finish()` 等方法可能由多个 goroutine 调用；如果在未持有 `mp.mu` 时直接读取 `p.removed`，会和 `Remove()` 写入该字段形成数据竞争。
+
+推荐模式：
+
+```go
+p.manager.update(updateProgress, func() bool {
+	if p.removed {
+		return false
+	}
+	return p.applyStep(step)
+})
+```
+
+standalone progress 不会进入 removed 状态；removed 是 managed progress 的内部状态。
+
 #### VisibleLen
 
 第一阶段 `VisibleLen()` 与 `Len()` 相同。第三阶段后：
@@ -292,6 +347,20 @@ bar.SetMessage("extra", "chunks:5")
 - `RenderDynamic`：hide/show/remove 后刷新 block 或标记 dirty。
 - `RenderPlain`：hide/show 默认不输出；remove 默认不输出；done/fail/skip 输出最终状态行。
 - `RenderDisabled`：hide/show/remove/done/fail/skip 只更新状态，不输出 progress。
+
+#### Dynamic block 清理
+
+`Hide()` / `Remove()` 会让可见行数减少。dynamic renderer 不能只按新的 visible bars 重绘，否则旧 block 底部可能留下已隐藏或已移除的行。
+
+dynamic renderer 需要拆出可复用的 block 操作：
+
+```go
+func (mp *MultiProgress) moveToBlockStartLocked()
+func (mp *MultiProgress) clearRenderedBlockLocked()
+func (mp *MultiProgress) renderDynamicLinesLocked(lines []string)
+```
+
+当本次可见行数小于上次 `lastLines`，或调用方明确执行 hide/remove 时，先清除旧 block，再渲染新 block。`clearRenderedBlockLocked()` 应该使用 `lastLines` 清理完整旧区域，而不是只清理当前 visible 行数。
 
 ### 第四阶段：ByteTracker / ConcurrentWriter
 
@@ -363,6 +432,8 @@ func NewByteTrackerWithInterval(p *Progress, interval time.Duration) *ByteTracke
 - `RenderPlain` 不输出 ANSI 光标上移和清行。
 - `RenderPlain` 下 `Advance()` 不刷屏，`Refresh()` 输出当前可见行。
 - `RenderPlain` 下 `Reset()` 输出新任务行。
+- `RenderPlain` 下 `Progress.Finish()` 输出该 bar 最终行。
+- `RenderPlain` 下 `MultiProgress.Finish()` 不重复输出全部最终行。
 - `RenderDisabled` 下 `Start()` / `Refresh()` / `Finish()` 不输出 progress。
 - `RenderDisabled` 下 `Println()` / `Printf()` 仍输出日志。
 
@@ -386,6 +457,7 @@ TTY 检测测试：
 - `Hide()` 后渲染行数减少，`VisibleLen()` 变化。
 - `Show()` 后重新参与渲染。
 - `Remove()` 后 `Len()` 和 `VisibleLen()` 变化。
+- dynamic mode 下 `Hide()` / `Remove()` 会清理旧 block 底部残留行。
 - `Remove()` 后 `Advance()` / `SetMessage()` / `Finish()` no-op，不写 standalone 输出。
 - auto refresh 模式下 hide/show/remove 只标记 dirty。
 
@@ -409,19 +481,21 @@ TTY 检测测试：
 
 第二阶段：
 
-1. 增加 `RenderMode` 类型和 `MultiProgress.RenderMode` 字段。
-2. 将当前 `refreshLocked()` 明确作为 dynamic renderer。
-3. 增加 plain/disabled 分支。
-4. 增加 `IsTerminal()`。
-5. 增强 format token 正则。
-6. 更新中英文文档。
+1. 先重构 renderer：`refreshLocked()` 只做 mode dispatch，现有 ANSI 逻辑移动到 `refreshDynamicLocked()`。
+2. 抽出 dynamic block 操作：`moveToBlockStartLocked()`、`clearRenderedBlockLocked()`、`renderDynamicLinesLocked()`。
+3. 增加 `updateEvent`，让 manager update 明确区分普通进度、关键状态和终态。
+4. 增加 `RenderMode` 类型和 `MultiProgress.RenderMode` 字段。
+5. 增加 plain/disabled 分支。
+6. 增加 `IsTerminal()`。
+7. 增强 format token 正则。
+8. 更新中英文文档。
 
 第三阶段：
 
 1. 增加 hidden/removed 内部状态。
 2. 实现 `Hide()` / `Show()` / `Remove()`。
 3. 调整 `Len()` / `VisibleLen()`。
-4. 让 update 路径识别 removed progress 并 no-op。
+4. 让 update 路径在 manager 锁内识别 removed progress 并 no-op。
 5. 实现 `Done()` / `Fail()` / `Skip()`。
 6. 更新中英文文档。
 
