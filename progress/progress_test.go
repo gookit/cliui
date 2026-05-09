@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -272,6 +273,58 @@ func TestByteTrackerAddIgnoresNonPositiveValues(t *testing.T) {
 	tracker.Close()
 
 	is.Eq(int64(0), p.Step())
+}
+
+func TestByteTrackerConcurrentAdd(t *testing.T) {
+	is := assert.New(t)
+	p := New(1000)
+	p.Out = new(bytes.Buffer)
+	p.Start()
+
+	tracker := NewByteTrackerWithInterval(p, time.Hour)
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 100; j++ {
+				tracker.Add(1)
+			}
+		}()
+	}
+	wg.Wait()
+	tracker.Close()
+
+	is.Eq(int64(1000), p.Step())
+}
+
+func TestByteTrackerCloseIsIdempotent(t *testing.T) {
+	is := assert.New(t)
+	p := New(10)
+	p.Out = new(bytes.Buffer)
+	p.Start()
+
+	tracker := NewByteTrackerWithInterval(p, time.Hour)
+	tracker.Add(2)
+	tracker.Close()
+	tracker.Close()
+
+	is.Eq(int64(2), p.Step())
+}
+
+func TestByteTrackerFlushesOnInterval(t *testing.T) {
+	is := assert.New(t)
+	p := New(10)
+	p.Out = new(bytes.Buffer)
+	p.Start()
+
+	tracker := NewByteTrackerWithInterval(p, 10*time.Millisecond)
+	defer tracker.Close()
+
+	tracker.Add(4)
+	time.Sleep(40 * time.Millisecond)
+
+	is.Eq(int64(4), p.Step())
 }
 
 func TestProgressReset(t *testing.T) {

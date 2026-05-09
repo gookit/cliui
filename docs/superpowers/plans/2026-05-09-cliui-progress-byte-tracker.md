@@ -266,7 +266,7 @@ git commit -m "feat(progress): add byte tracker"
 - Modify: `progress/byte_tracker.go`
 - Modify: `progress/progress_test.go`
 
-- [ ] **Step 1: 添加并发 Add 测试**
+- [x] **Step 1: 添加并发 Add 测试**
 
 在 `progress/progress_test.go` 添加：
 
@@ -297,7 +297,7 @@ func TestByteTrackerConcurrentAdd(t *testing.T) {
 
 同时给 `progress/progress_test.go` 增加 `sync` import。
 
-- [ ] **Step 2: 添加 Close 幂等测试**
+- [x] **Step 2: 添加 Close 幂等测试**
 
 在 `progress/progress_test.go` 添加：
 
@@ -317,7 +317,7 @@ func TestByteTrackerCloseIsIdempotent(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3: 添加 interval flush 测试**
+- [x] **Step 3: 添加 interval flush 测试**
 
 在 `progress/progress_test.go` 添加：
 
@@ -338,7 +338,7 @@ func TestByteTrackerFlushesOnInterval(t *testing.T) {
 }
 ```
 
-- [ ] **Step 4: 运行测试并确认失败或发现缺陷**
+- [x] **Step 4: 运行测试并确认失败或发现缺陷**
 
 运行：
 
@@ -348,7 +348,7 @@ go test ./progress -run "TestByteTracker(ConcurrentAdd|CloseIsIdempotent|Flushes
 
 预期：如果 Task 1 的最小实现未正确处理幂等 Close，`TestByteTrackerCloseIsIdempotent` 可能失败或 deadlock；如果已经通过，继续执行 Step 5 做清理。
 
-- [ ] **Step 5: 修正 Close 幂等和锁顺序**
+- [x] **Step 5: 修正 Close 幂等和锁顺序**
 
 确保 `Close()` 满足：
 
@@ -381,7 +381,7 @@ func (t *ByteTracker) Close() {
 
 如果需要保证“Close 后 Add no-op 且不会丢掉 Close 前已经进入 pending 的数据”，`Add()` 必须在同一把 `mu` 下检查 `closed` 并累加 pending。
 
-- [ ] **Step 6: 验证 Task 2**
+- [x] **Step 6: 验证 Task 2**
 
 运行：
 
@@ -392,7 +392,7 @@ go test ./progress
 
 预期：所有 ByteTracker 测试和 `progress` 包测试通过。
 
-- [ ] **Step 7: 提交 Task 2**
+- [x] **Step 7: 提交 Task 2**
 
 运行：
 
