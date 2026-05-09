@@ -406,6 +406,38 @@ func TestMultiProgressRemove(t *testing.T) {
 	is.NotContains(out, " removed")
 }
 
+func TestMultiProgressRemoveBeforeStartMakesUpdatesNoop(t *testing.T) {
+	is := assert.New(t)
+	buf := new(bytes.Buffer)
+	mp := NewMulti()
+	mp.Writer = buf
+
+	p := mp.New(3)
+	mp.Remove(p)
+
+	is.Eq(0, mp.Len())
+	is.Eq(0, mp.VisibleLen())
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Fatalf("removed progress update should be no-op, got panic: %v", r)
+			}
+		}()
+
+		p.Start()
+		p.Advance()
+		p.AdvanceTo(2)
+		p.Reset(5)
+		p.SetMessage("message", " removed")
+		p.Finish("done")
+		p.Done()
+		p.Fail()
+		p.Skip()
+		p.Display()
+	}()
+	is.Eq("", buf.String())
+}
+
 func TestMultiProgressHideClearsStaleDynamicLines(t *testing.T) {
 	is := assert.New(t)
 	buf := new(bytes.Buffer)

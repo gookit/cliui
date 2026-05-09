@@ -433,8 +433,6 @@ func (p *Progress) reset(maxSteps ...int64) {
 
 // Advance specified step size. default is 1
 func (p *Progress) Advance(steps ...int64) {
-	p.checkStart()
-
 	var step int64 = 1
 	if len(steps) > 0 && steps[0] > 0 {
 		step = steps[0]
@@ -442,25 +440,27 @@ func (p *Progress) Advance(steps ...int64) {
 
 	if p.manager != nil {
 		p.manager.updateBar(updateProgress, p, func() bool {
+			p.checkStart()
 			return p.applyStep(p.step + step)
 		})
 		return
 	}
 
+	p.checkStart()
 	p.AdvanceTo(p.step + step)
 }
 
 // AdvanceTo specified number of steps
 func (p *Progress) AdvanceTo(step int64) {
-	p.checkStart()
-
 	if p.manager != nil {
 		p.manager.updateBar(updateProgress, p, func() bool {
+			p.checkStart()
 			return p.applyStep(step)
 		})
 		return
 	}
 
+	p.checkStart()
 	if p.applyStep(step) {
 		p.display()
 	}
@@ -490,16 +490,16 @@ func (p *Progress) applyStep(step int64) bool {
 // Finish the progress output.
 // if provide finish message, will delete progress bar then print the message.
 func (p *Progress) Finish(message ...string) {
-	p.checkStart()
-
 	if p.manager != nil {
 		p.manager.updateBar(updateFinalState, p, func() bool {
+			p.checkStart()
 			p.finishManaged(message...)
 			return true
 		})
 		return
 	}
 
+	p.checkStart()
 	p.finishedAt = time.Now()
 
 	if p.MaxSteps == 0 {
@@ -676,16 +676,16 @@ func (p *Progress) finishManaged(message ...string) {
 }
 
 func (p *Progress) finishStatus(status string, complete bool, message ...string) {
-	p.checkStart()
-
 	if p.manager != nil {
 		p.manager.updateBar(updateFinalState, p, func() bool {
+			p.checkStart()
 			p.applyStatus(status, complete, message...)
 			return true
 		})
 		return
 	}
 
+	p.checkStart()
 	p.applyStatus(status, complete, message...)
 	p.display()
 	fmt.Fprintln(p.out())
