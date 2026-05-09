@@ -1114,7 +1114,7 @@ git commit -m "feat(progress): add progress status helpers"
 - Verify: `progress/multi_test.go`
 - Verify: `progress/progress_test.go`
 
-- [ ] **Step 1: 更新中文文档**
+- [x] **Step 1: 更新中文文档**
 
 在 `docs/zh-CN/progress.md` 的 `Multi Progress` 部分补充：
 
@@ -1142,7 +1142,7 @@ format 示例：
 bar.SetFormat("{@slot} {@name:-12s} {@name:.20s} {@percent:5s}%")
 ```
 
-- [ ] **Step 2: 更新英文文档**
+- [x] **Step 2: 更新英文文档**
 
 在 `docs/progress.md` 添加对应英文说明。
 
@@ -1155,7 +1155,7 @@ bar.SetFormat("{@slot} {@name:-12s} {@name:.20s} {@percent:5s}%")
 - dynamic bar management
 - status helpers
 
-- [ ] **Step 3: 运行 progress 测试**
+- [x] **Step 3: 运行 progress 测试**
 
 运行：
 
@@ -1165,7 +1165,7 @@ go test ./progress
 
 预期：`progress` 包测试全部通过。
 
-- [ ] **Step 4: 运行全仓库测试**
+- [x] **Step 4: 运行全仓库测试**
 
 运行：
 
@@ -1175,7 +1175,7 @@ go test ./...
 
 预期：全部测试通过。如果无关包失败，记录失败 package 和关键错误文本，再判断是否与本次改动相关。
 
-- [ ] **Step 5: 检查 diff 范围**
+- [x] **Step 5: 检查 diff 范围**
 
 运行：
 
@@ -1195,7 +1195,7 @@ git diff --name-only
 - `docs/progress.md`
 - `docs/superpowers/plans/2026-05-09-cliui-progress-followup-enhancement.md`
 
-- [ ] **Step 6: 提交 Task 7**
+- [x] **Step 6: 提交 Task 7**
 
 运行：
 

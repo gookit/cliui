@@ -310,6 +310,24 @@ func main() {
 [=================>----------]  62%(50/80)  test
 ```
 
+### 渲染模式和 TTY 检测
+
+`MultiProgress` 默认使用 `RenderDynamic`，通过 ANSI 控制符在同一个终端 block 中动态刷新多行。非交互终端、CI 日志或重定向输出中可以切换到 `RenderPlain`，避免输出 ANSI 控制符。
+
+```go
+mp := progress.NewMulti()
+mp.Writer = os.Stderr
+if !progress.IsTerminal(os.Stderr) {
+	mp.RenderMode = progress.RenderPlain
+}
+```
+
+可选模式：
+
+- `RenderDynamic`：默认模式，适合交互终端，多行进度原地刷新。
+- `RenderPlain`：输出普通文本行，不使用 ANSI；`Advance()` 不会高频刷屏，`Start()`、`Refresh()`、`Reset()`、`Progress.Finish()` 和状态 helper 会输出关键状态。
+- `RenderDisabled`：完全关闭 progress 渲染，但 `Println()`、`Printf()`、`RunExclusive()` 仍会写出日志。
+
 ### 自动刷新和节流
 
 `MultiProgress` 默认在托管 `Progress` 状态变化时同步刷新。下载、复制等高频更新场景可以开启 `AutoRefresh`，让 `Advance()`、`SetMessage()`、`Reset()` 等操作只标记 dirty，由后台 ticker 按 `RefreshInterval` 刷新。
@@ -344,6 +362,18 @@ bar.SetMessages(map[string]string{
 
 `Reset()` 会重置当前步数、百分比、开始时间和完成时间，但不会让 bar 离开 `MultiProgress`。需要一次性修改多个字段时可以使用 `ResetWith()`。
 
+### 动态管理 progress bar
+
+运行中可以隐藏、恢复或移除托管的 progress bar：
+
+```go
+mp.Hide(bar)   // 暂时不渲染，仍保留在 manager 中
+mp.Show(bar)   // 恢复渲染
+mp.Remove(bar) // 从 manager 列表移除，后续 bar 更新会被忽略
+```
+
+`Len()` 返回当前 manager 中仍保留的 bar 数量，`VisibleLen()` 返回当前可见 bar 数量。`Remove()` 后该 `Progress` 不会退化成 standalone 输出，迟到的 `Advance()`、`SetMessage()` 或 `Finish()` 调用会被忽略。
+
 ### 安全日志输出
 
 多行 progress 正在渲染时，不要直接向同一个 writer 输出普通日志。使用 `RunExclusive()`、`Println()` 或 `Printf()` 可以先移开当前 progress block，输出日志后再恢复渲染。
@@ -356,6 +386,19 @@ mp.RunExclusive(func(w io.Writer) {
 	fmt.Fprintf(w, "checksum verified with %s\n", sum)
 })
 ```
+
+### 状态 helper
+
+`Done()`、`Fail()`、`Skip()` 可以用统一方式结束 progress，并更新 `{@status}` 和 `{@message}`：
+
+```go
+bar.SetFormat("{@name:-12s} {@status} {@percent:5s}%")
+bar.Done()
+bar.Fail("network failed")
+bar.Skip()
+```
+
+默认 message 分别是 `done`、`failed`、`skipped`。`Done()` 会推进到最大进度，`Fail()` 和 `Skip()` 保持当前进度。
 
 ### 状态查询
 
@@ -409,6 +452,14 @@ FullFormat = "{@percent:4s}%({@current}/{@max}) {@elapsed:7s}/{@estimated:-7s} {
 DefBarFormat  = "{@bar} {@percent:4s}%({@current}/{@max}){@message}"
 FullBarFormat = "{@bar} {@percent:4s}%({@current}/{@max}) {@elapsed:7s}/{@estimated:-7s} {@memory:6s}"
 ```
+
+格式 token 支持 Go 字符串格式宽度、左对齐和截断：
+
+```go
+bar.SetFormat("{@slot} {@name:-12s} {@name:.20s} {@percent:5s}%")
+```
+
+unknown token 会继续原样保留，便于发现拼写错误或保留给上层 renderer 处理。
 
 示例：
 
@@ -481,6 +532,7 @@ func LoadingBar(chars []rune, maxSteps ...int64) *Progress
 func New(maxSteps ...int64) *Progress
 func NewMulti() *MultiProgress
 func NewWithConfig(fn func(p *Progress), maxSteps ...int64) *Progress
+func IsTerminal(w io.Writer) bool
 func RoundTrip(char rune, charNumAndBoxWidth ...int) *Progress
 func RoundTripBar(char rune, charNumAndBoxWidth ...int) *Progress
 func SpinnerBar(chars []rune, maxSteps ...int64) *Progress

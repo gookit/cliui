@@ -292,6 +292,24 @@ Output preview:
 [=================>----------]  62%(50/80)  test
 ```
 
+### Render Modes And TTY Detection
+
+`MultiProgress` uses `RenderDynamic` by default. It refreshes several lines in one terminal block with ANSI control sequences. For non-interactive terminals, CI logs, or redirected output, use `RenderPlain` to avoid ANSI output.
+
+```go
+mp := progress.NewMulti()
+mp.Writer = os.Stderr
+if !progress.IsTerminal(os.Stderr) {
+	mp.RenderMode = progress.RenderPlain
+}
+```
+
+Available modes:
+
+- `RenderDynamic`: default mode for interactive terminals, refreshing a multi-line progress block in place.
+- `RenderPlain`: writes plain text lines without ANSI controls. `Advance()` does not print on every update; `Start()`, `Refresh()`, `Reset()`, `Progress.Finish()`, and status helpers print key states.
+- `RenderDisabled`: disables progress rendering, while `Println()`, `Printf()`, and `RunExclusive()` still write logs.
+
 ### Auto Refresh And Throttling
 
 By default, `MultiProgress` refreshes synchronously when a managed `Progress` changes state. For high-frequency updates such as downloads or copies, enable `AutoRefresh` so `Advance()`, `SetMessage()`, `Reset()`, and similar operations only mark the manager dirty. A background ticker refreshes the block at `RefreshInterval`.
@@ -326,6 +344,18 @@ bar.SetMessages(map[string]string{
 
 `Reset()` clears the current step, percent, start time, and finish time, but keeps the bar attached to its `MultiProgress`. Use `ResetWith()` when several fields should be changed in one managed update.
 
+### Dynamic Bar Management
+
+You can hide, show, or remove managed progress bars while the manager is running:
+
+```go
+mp.Hide(bar)   // stop rendering this bar, but keep it managed
+mp.Show(bar)   // render it again
+mp.Remove(bar) // remove it from the manager; later bar updates are ignored
+```
+
+`Len()` returns the number of bars still held by the manager, and `VisibleLen()` returns the number currently rendered. After `Remove()`, the `Progress` does not fall back to standalone output; late `Advance()`, `SetMessage()`, or `Finish()` calls are ignored.
+
 ### Exclusive Logging
 
 Do not write normal logs directly to the same writer while a multi-line progress block is active. Use `RunExclusive()`, `Println()`, or `Printf()` to clear the current progress block, write the log, and redraw the block.
@@ -338,6 +368,19 @@ mp.RunExclusive(func(w io.Writer) {
 	fmt.Fprintf(w, "checksum verified with %s\n", sum)
 })
 ```
+
+### Status Helpers
+
+`Done()`, `Fail()`, and `Skip()` provide a consistent way to finish a progress bar and update `{@status}` and `{@message}`:
+
+```go
+bar.SetFormat("{@name:-12s} {@status} {@percent:5s}%")
+bar.Done()
+bar.Fail("network failed")
+bar.Skip()
+```
+
+The default messages are `done`, `failed`, and `skipped`. `Done()` advances to the maximum progress, while `Fail()` and `Skip()` keep the current step.
 
 ### State Queries
 
@@ -391,6 +434,14 @@ FullFormat = "{@percent:4s}%({@current}/{@max}) {@elapsed:7s}/{@estimated:-7s} {
 DefBarFormat  = "{@bar} {@percent:4s}%({@current}/{@max}){@message}"
 FullBarFormat = "{@bar} {@percent:4s}%({@current}/{@max}) {@elapsed:7s}/{@estimated:-7s} {@memory:6s}"
 ```
+
+Format tokens support Go string width, left alignment, and truncation:
+
+```go
+bar.SetFormat("{@slot} {@name:-12s} {@name:.20s} {@percent:5s}%")
+```
+
+Unknown tokens are still preserved as-is, which helps catch typos or reserve them for a higher-level renderer.
 
 Example:
 
@@ -463,6 +514,7 @@ func LoadingBar(chars []rune, maxSteps ...int64) *Progress
 func New(maxSteps ...int64) *Progress
 func NewMulti() *MultiProgress
 func NewWithConfig(fn func(p *Progress), maxSteps ...int64) *Progress
+func IsTerminal(w io.Writer) bool
 func RoundTrip(char rune, charNumAndBoxWidth ...int) *Progress
 func RoundTripBar(char rune, charNumAndBoxWidth ...int) *Progress
 func SpinnerBar(chars []rune, maxSteps ...int64) *Progress
