@@ -156,7 +156,9 @@ Env
 
 ### Table
 
-Use `show/table` when you need a tabular layout:
+Use `show/table` when command output needs aligned columns, such as user lists, process summaries, package results, or deployment reports.
+
+Basic table:
 
 ```go
 tb := table.New("Users")
@@ -176,6 +178,79 @@ Users
 | 1  | Tom  |
 | 2  | Jane |
 +----+------+
+```
+
+Rows can also be loaded in batches. `SetRows()` accepts common data shapes such as `[][]any`, `[]map[string]any`, and slices of structs:
+
+```go
+type Package struct {
+	Name    string `json:"name"`
+	Version string `json:"version"`
+	Status  string `json:"status"`
+}
+
+rows := []Package{
+	{Name: "fd", Version: "10.2.0", Status: "installed"},
+	{Name: "bat", Version: "0.25.0", Status: "pending"},
+}
+
+tb := table.New("Packages")
+tb.SetRows(rows)
+tb.Println()
+```
+
+For simple two-dimensional data, set headers first and pass a slice of rows:
+
+```go
+tb := table.New("Jobs")
+tb.SetHeads("Name", "Status", "Duration")
+tb.SetRows([][]any{
+	{"build", "ok", "12s"},
+	{"test", "failed", "31s"},
+})
+tb.Println()
+```
+
+Table styles and borders are configurable:
+
+```go
+tb := table.New("Release",
+	table.WithStyle(table.StyleRounded),
+	table.WithBorderFlags(table.BorderAll),
+	table.WithShowRowNumber(true),
+)
+tb.SetHeads("Package", "Status")
+tb.AddRow("cliui", "ready")
+tb.AddRow("docs", "updated")
+tb.Println()
+```
+
+Built-in styles include `StyleSimple`, `StyleMySql`, `StyleMarkdown`, `StyleBold`, `StyleBoldBorder`, `StyleRounded`, `StyleDouble`, and `StyleMinimal`.
+
+For long text, configure column width and overflow behavior:
+
+```go
+tb := table.New("Tasks")
+tb.SetHeads("Task", "Description")
+tb.AddRow("download", "Fetch archive from mirror and verify checksum")
+tb.AddRow("extract", "Unpack files into the selected destination")
+tb.WithOptions(
+	table.WithColumnWidths(12, 32),
+	table.WithColMaxWidth(32),
+	table.WithOverflowFlag(table.OverflowWrap),
+)
+tb.Println()
+```
+
+Use `OverflowCut` to truncate long content, or `OverflowWrap` to wrap it across multiple display lines. Use `WithSortColumn(index, ascending)` to sort rows by a column:
+
+```go
+tb := table.New("Results")
+tb.SetHeads("Name", "Status")
+tb.AddRow("test", "failed")
+tb.AddRow("build", "ok")
+tb.WithOptions(table.WithSortColumn(0, true))
+tb.Println()
 ```
 
 ### JSON

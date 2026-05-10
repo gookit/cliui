@@ -156,7 +156,9 @@ Env
 
 ### Table
 
-需要表格布局时，可以使用 `show/table`：
+命令输出需要按列对齐时，可以使用 `show/table`，例如用户列表、进程摘要、包处理结果或部署报告。
+
+基础表格：
 
 ```go
 tb := table.New("Users")
@@ -176,6 +178,79 @@ Users
 | 1  | Tom  |
 | 2  | Jane |
 +----+------+
+```
+
+也可以批量加载行数据。`SetRows()` 支持常见数据形态，例如 `[][]any`、`[]map[string]any` 和结构体切片：
+
+```go
+type Package struct {
+	Name    string `json:"name"`
+	Version string `json:"version"`
+	Status  string `json:"status"`
+}
+
+rows := []Package{
+	{Name: "fd", Version: "10.2.0", Status: "installed"},
+	{Name: "bat", Version: "0.25.0", Status: "pending"},
+}
+
+tb := table.New("Packages")
+tb.SetRows(rows)
+tb.Println()
+```
+
+对于简单二维数据，可以先设置表头，再传入行切片：
+
+```go
+tb := table.New("Jobs")
+tb.SetHeads("Name", "Status", "Duration")
+tb.SetRows([][]any{
+	{"build", "ok", "12s"},
+	{"test", "failed", "31s"},
+})
+tb.Println()
+```
+
+表格样式和边框可以配置：
+
+```go
+tb := table.New("Release",
+	table.WithStyle(table.StyleRounded),
+	table.WithBorderFlags(table.BorderAll),
+	table.WithShowRowNumber(true),
+)
+tb.SetHeads("Package", "Status")
+tb.AddRow("cliui", "ready")
+tb.AddRow("docs", "updated")
+tb.Println()
+```
+
+内置样式包括 `StyleSimple`、`StyleMySql`、`StyleMarkdown`、`StyleBold`、`StyleBoldBorder`、`StyleRounded`、`StyleDouble` 和 `StyleMinimal`。
+
+长文本可以配置列宽和溢出策略：
+
+```go
+tb := table.New("Tasks")
+tb.SetHeads("Task", "Description")
+tb.AddRow("download", "Fetch archive from mirror and verify checksum")
+tb.AddRow("extract", "Unpack files into the selected destination")
+tb.WithOptions(
+	table.WithColumnWidths(12, 32),
+	table.WithColMaxWidth(32),
+	table.WithOverflowFlag(table.OverflowWrap),
+)
+tb.Println()
+```
+
+`OverflowCut` 会截断过长内容，`OverflowWrap` 会把内容换行显示。需要按列排序时，可以使用 `WithSortColumn(index, ascending)`：
+
+```go
+tb := table.New("Results")
+tb.SetHeads("Name", "Status")
+tb.AddRow("test", "failed")
+tb.AddRow("build", "ok")
+tb.WithOptions(table.WithSortColumn(0, true))
+tb.Println()
 ```
 
 ### JSON

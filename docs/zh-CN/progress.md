@@ -423,6 +423,35 @@ bar.Skip()
 - `Len() int`
 - `VisibleLen() int`
 
+### 可运行 Demo
+
+`examples` 目录中提供了可直接运行的 progress 示例。这些示例不会进行真实网络下载，内部通过内存数据、定时器和 goroutine 模拟任务进度。
+
+固定 worker slot 和安全日志示例：
+
+```bash
+go run ./examples/progress-multi-demo
+```
+
+render mode 示例：
+
+```bash
+go run ./examples/progress-render-mode-demo auto
+go run ./examples/progress-render-mode-demo dynamic
+go run ./examples/progress-render-mode-demo plain
+go run ./examples/progress-render-mode-demo disabled
+```
+
+`auto` 会在交互终端中选择 `RenderDynamic`，在非交互 writer 中选择 `RenderPlain`。`plain` 适合 CI 日志和重定向输出，`disabled` 会关闭 progress 渲染但保留日志输出。
+
+byte tracker 和 concurrent writer 示例：
+
+```bash
+go run ./examples/progress-byte-tracker-demo
+```
+
+该示例同时展示了多个模拟 chunk worker 调用 `ByteTracker.Add()`，以及 `NewConcurrentWriterWithInterval()` 搭配 `io.Copy()` 处理内存 reader 的用法。
+
 ## Progress Bar
 
 ### 内置 Widgets

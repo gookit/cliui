@@ -405,6 +405,35 @@ The default messages are `done`, `failed`, and `skipped`. `Done()` advances to t
 - `Len() int`
 - `VisibleLen() int`
 
+### Runnable Demos
+
+The `examples` directory contains runnable progress demos. They do not perform real network downloads; all work is simulated with in-memory data, timers, and goroutines.
+
+Fixed worker slot and safe logging demo:
+
+```bash
+go run ./examples/progress-multi-demo
+```
+
+Render mode demo:
+
+```bash
+go run ./examples/progress-render-mode-demo auto
+go run ./examples/progress-render-mode-demo dynamic
+go run ./examples/progress-render-mode-demo plain
+go run ./examples/progress-render-mode-demo disabled
+```
+
+`auto` selects `RenderDynamic` for interactive terminals and `RenderPlain` for non-interactive writers. `plain` is useful for CI logs and redirected output. `disabled` suppresses progress rendering while keeping log output.
+
+Byte tracker and concurrent writer demo:
+
+```bash
+go run ./examples/progress-byte-tracker-demo
+```
+
+This demo shows both `ByteTracker.Add()` from simulated chunk workers and `NewConcurrentWriterWithInterval()` with `io.Copy()` over an in-memory reader.
+
 ## Progress Bar
 
 ### Internal Widgets
