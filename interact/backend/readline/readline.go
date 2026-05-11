@@ -96,16 +96,23 @@ func (s *Session) Render(view backend.View) error {
 		}
 	}
 
-	for i, line := range view.Lines {
+	renderedLines := len(view.Lines)
+	if s.rendered > renderedLines {
+		renderedLines = s.rendered
+	}
+
+	for i := 0; i < renderedLines; i++ {
 		fmt.Fprint(s.out, "\x1B[2K")
-		fmt.Fprint(s.out, line)
-		if i < len(view.Lines)-1 {
+		if i < len(view.Lines) {
+			fmt.Fprint(s.out, view.Lines[i])
+		}
+		if i < renderedLines-1 {
 			fmt.Fprint(s.out, "\n")
 		}
 	}
 
 	if view.CursorRow >= 0 && view.CursorRow < len(view.Lines) {
-		moveUp := len(view.Lines) - 1 - view.CursorRow
+		moveUp := renderedLines - 1 - view.CursorRow
 		if moveUp > 0 {
 			fmt.Fprintf(s.out, "\x1B[%dA", moveUp)
 		}

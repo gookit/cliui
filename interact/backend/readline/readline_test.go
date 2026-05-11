@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/gookit/cliui/interact/backend"
@@ -53,6 +54,22 @@ func TestSession_RenderTogglesCursorVisibility(t *testing.T) {
 	err = s.Render(backend.View{Lines: []string{"Choose"}, HideCursor: false})
 	is.Nil(err)
 	is.Contains(buf.String(), "\x1B[?25h")
+}
+
+func TestSession_RenderClearsStaleLinesWhenViewShrinks(t *testing.T) {
+	is := assert.New(t)
+
+	buf := new(bytes.Buffer)
+	s := &Session{out: buf}
+
+	err := s.Render(backend.View{Lines: []string{"one", "two", "three", "four"}})
+	is.Nil(err)
+
+	err = s.Render(backend.View{Lines: []string{"one", "two"}})
+	is.Nil(err)
+
+	is.Eq(8, strings.Count(buf.String(), "\x1B[2K"))
+	is.Eq(2, s.rendered)
 }
 
 func TestSession_CloseRestoresHiddenCursor(t *testing.T) {
