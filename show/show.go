@@ -2,7 +2,6 @@
 package show
 
 import (
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"text/tabwriter"
@@ -66,12 +65,7 @@ func JSON(v any, prefixAndIndent ...string) int {
 		}
 	}
 
-	bs, err := json.MarshalIndent(v, prefix, indent)
-	if err != nil {
-		panic(err)
-	}
-
-	_, _ = fmt.Fprintln(cutypes.Output, string(bs))
+	NewPrettyJSON(v, prefix, indent).Println()
 	return OK
 }
 

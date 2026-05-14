@@ -2,12 +2,14 @@ package show_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"testing"
 
 	"github.com/gookit/cliui/cutypes"
 	"github.com/gookit/cliui/show"
 	"github.com/gookit/cliui/show/lists"
+	"github.com/gookit/color"
 	"github.com/gookit/goutil/testutil/assert"
 )
 
@@ -136,4 +138,43 @@ func TestAnyData(t *testing.T) {
 			is.NotPanics(cs.run)
 		})
 	}
+}
+
+func TestPrettyJSON_String(t *testing.T) {
+	is := assert.New(t)
+
+	data := map[string]any{
+		"ok":    true,
+		"age":   int64(18),
+		"count": uint(9),
+		"score": 99.5,
+		"name":  "tom",
+	}
+
+	pj := show.NewPrettyJSON(data)
+	out := pj.String()
+
+	is.Contains(out, `<info>"ok"</>`)
+	is.Contains(out, `<success>true</>`)
+	is.Contains(out, `<warning>18</>`)
+	is.Contains(out, `<warning>9</>`)
+	is.Contains(out, `<warning>99.5</>`)
+	is.NotContains(out, `<warning>"tom"</>`)
+
+	bs, err := json.MarshalIndent(data, "", "    ")
+	is.NoErr(err)
+	is.Eq(string(bs), color.ClearTag(out))
+}
+
+func TestJSONPrintsPrettyJSON(t *testing.T) {
+	is := assert.New(t)
+	buf := new(bytes.Buffer)
+	cutypes.SetOutput(buf)
+	defer cutypes.ResetOutput()
+
+	code := show.JSON(map[string]any{"ok": true})
+
+	is.Eq(show.OK, code)
+	is.Contains(buf.String(), "\x1b[")
+	is.Contains(color.ClearCode(buf.String()), `"ok": true`)
 }
