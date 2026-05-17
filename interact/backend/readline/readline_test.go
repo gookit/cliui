@@ -72,6 +72,18 @@ func TestSession_RenderClearsStaleLinesWhenViewShrinks(t *testing.T) {
 	is.Eq(2, s.rendered)
 }
 
+func TestSession_RenderUsesCarriageReturnAfterNewline(t *testing.T) {
+	is := assert.New(t)
+
+	buf := new(bytes.Buffer)
+	s := &Session{out: buf}
+
+	err := s.Render(backend.View{Lines: []string{"one", "two"}})
+	is.Nil(err)
+
+	is.Contains(buf.String(), "\x1B[2Kone\r\n\x1B[2Ktwo")
+}
+
 func TestSession_CloseRestoresHiddenCursor(t *testing.T) {
 	is := assert.New(t)
 

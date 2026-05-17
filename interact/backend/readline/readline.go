@@ -107,7 +107,7 @@ func (s *Session) Render(view backend.View) error {
 			fmt.Fprint(s.out, view.Lines[i])
 		}
 		if i < renderedLines-1 {
-			fmt.Fprint(s.out, "\n")
+			fmt.Fprint(s.out, "\r\n")
 		}
 	}
 
