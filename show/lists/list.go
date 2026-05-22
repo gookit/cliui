@@ -3,8 +3,8 @@ package lists
 import (
 	"reflect"
 
-	"github.com/gookit/color"
 	"github.com/gookit/cliui/show/showcom"
+	"github.com/gookit/color"
 	"github.com/gookit/goutil/arrutil"
 	"github.com/gookit/goutil/maputil"
 	"github.com/gookit/goutil/strutil"
@@ -12,6 +12,8 @@ import (
 
 // Options for List, Lists
 type Options struct {
+	// TagName struct tag name for parsing struct fields. default: json
+	TagName string
 	// IgnoreEmpty ignore empty value item. default: true
 	IgnoreEmpty bool
 	// UpperFirst upper first char for the item.value. default: false
@@ -35,6 +37,7 @@ type ListOpFunc = OptionFunc
 // NewOptions instance
 func NewOptions() *Options {
 	return &Options{
+		TagName:  "json",
 		SepChar:  " ",
 		KeyStyle: "info",
 		// more
@@ -106,7 +109,7 @@ func (l *List) Format() {
 		buf.WriteString(color.WrapTag(title, l.Opts.TitleStyle) + "\n")
 	}
 
-	items := NewItems(l.data) // build items
+	items := NewItemsWithOptions(l.data, l.Opts) // build items
 	keyWidth := items.KeyMaxWidth(l.Opts.KeyWidth)
 
 	if keyWidth < l.Opts.KeyMinWidth {

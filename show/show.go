@@ -76,6 +76,7 @@ func ATitle(titleText string, fns ...title.OptionFunc) {
 
 // ListOption alias for lists.Options. for compatible
 type ListOption = lists.Options
+type ListOptions = lists.Options
 type ListOpFunc = lists.OptionFunc
 
 // NewList create a List instance. options see: Options

@@ -27,13 +27,18 @@ type Items struct {
 	// raw data
 	data any
 	// inner context
-	itemType string // see ItemMap, ItemList
+	itemType    string // see ItemMap, ItemList
 	rowNumber   int
 	keyMaxWidth int
 }
 
 // NewItems create an Items for data.
 func NewItems(data any) *Items {
+	return NewItemsWithOptions(data, NewOptions())
+}
+
+// NewItemsWithOptions create an Items with custom options.
+func NewItemsWithOptions(data any, opts *Options) *Items {
 	items := &Items{
 		data:     data,
 		itemType: ItemMap,
@@ -85,7 +90,12 @@ func NewItems(data any) *Items {
 				continue
 			}
 
-			tagName := ft.Tag.Get("json")
+			structTag := "json"
+			if opts != nil && opts.TagName != "" {
+				structTag = opts.TagName
+			}
+
+			tagName := ft.Tag.Get(structTag)
 			if tagName == "" {
 				tagName = ft.Name
 			} else if pos := strings.IndexByte(tagName, ','); pos > 0 {
