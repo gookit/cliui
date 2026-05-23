@@ -37,3 +37,13 @@ func TestList_WithStructTagName(t *testing.T) {
 		assert.Eq(t, "yaml_name", items.List[0].Key)
 	})
 }
+
+func TestList_ArrayFieldIsEmpty(t *testing.T) {
+	type data struct {
+		Names [0]string `json:"names"`
+	}
+
+	l := NewList("", data{})
+
+	assert.NotContains(t, l.String(), "names")
+}

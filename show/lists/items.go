@@ -200,12 +200,16 @@ func (item *Item) IsArray() bool {
 	return item.rftVal.Kind() == reflect.Array || item.rftVal.Kind() == reflect.Slice
 }
 
-// IsEmpty get value is empty: nil, empty string.
+// IsEmpty get value is empty: nil, empty string/map/slice.
 func (item *Item) IsEmpty() bool {
 	switch item.rftVal.Kind() {
 	case reflect.String:
 		return item.rftVal.Len() == 0
-	case reflect.Interface, reflect.Slice, reflect.Ptr:
+	case reflect.Array:
+		return item.rftVal.Len() == 0
+	case reflect.Map, reflect.Slice:
+		return item.rftVal.IsNil() || item.rftVal.Len() == 0
+	case reflect.Interface, reflect.Ptr:
 		return item.rftVal.IsNil()
 	default:
 		return !item.rftVal.IsValid()

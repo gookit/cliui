@@ -79,6 +79,10 @@ type ListOption = lists.Options
 type ListOptions = lists.Options
 type ListOpFunc = lists.OptionFunc
 
+// ListItems and item
+type ListItems = lists.Items
+type ListItem = lists.Item
+
 // NewList create a List instance. options see: Options
 func NewList(title string, data any, fns ...ListOpFunc) *lists.List {
 	return lists.NewList(title, data).WithOptionFns(fns)
