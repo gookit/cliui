@@ -68,6 +68,9 @@ var builtinWidgets = map[string]WidgetFunc{
 	"curSize": func(p *Progress) string { // 当前数值大小，eg "42MB" 文件下载场景
 		return dataSize(p.Progress())
 	},
+	"speed": func(p *Progress) string { // 下载速度，eg "1.00M/s"
+		return dataSpeed(p.Progress(), time.Since(p.StartedAt()))
+	},
 	"percent": func(p *Progress) string {
 		return fmt.Sprintf("%.1f", p.Percent()*100)
 	},
@@ -78,6 +81,14 @@ func dataSize(size int64) string {
 		size = 0
 	}
 	return fmtutil.DataSize(uint64(size))
+}
+
+func dataSpeed(size int64, elapsed time.Duration) string {
+	if size <= 0 || elapsed <= 0 {
+		return "0B/s"
+	}
+
+	return fmtutil.DataSize(uint64(float64(size)/elapsed.Seconds())) + "/s"
 }
 
 // DynamicTextWidget dynamic text message widget for progress bar.

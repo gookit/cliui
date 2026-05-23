@@ -146,6 +146,27 @@ func TestProgressSizeWidgets(t *testing.T) {
 	is.Eq("5.00G", p.Handler("maxSize")(p))
 }
 
+func TestProgressSpeedWidget(t *testing.T) {
+	is := assert.New(t)
+
+	p := Txt(10 << 20)
+	p.Out = new(bytes.Buffer)
+	p.Start()
+
+	handler := p.Handler("speed")
+	is.NotNil(handler)
+	if handler == nil {
+		return
+	}
+
+	is.Eq("0B/s", handler(p))
+
+	p.startedAt = time.Now().Add(-2 * time.Second)
+	p.AdvanceTo(2 << 20)
+
+	is.Eq("1.00M/s", handler(p))
+}
+
 func TestProgressRemainingUsesFractionalRateForByteProgress(t *testing.T) {
 	is := assert.New(t)
 
