@@ -84,6 +84,18 @@ func TestSession_RenderUsesCarriageReturnAfterNewline(t *testing.T) {
 	is.Contains(buf.String(), "\x1B[2Kone\r\n\x1B[2Ktwo")
 }
 
+func TestSession_RenderColorTags(t *testing.T) {
+	is := assert.New(t)
+
+	buf := new(bytes.Buffer)
+	s := &Session{out: buf}
+
+	err := s.Render(backend.View{Lines: []string{"<green>Ready</>"}})
+	is.Nil(err)
+	is.Contains(buf.String(), "\x1b[")
+	is.NotContains(buf.String(), "<green>")
+}
+
 func TestSession_CloseRestoresHiddenCursor(t *testing.T) {
 	is := assert.New(t)
 

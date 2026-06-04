@@ -11,6 +11,7 @@ import (
 
 	"github.com/gookit/cliui/interact/backend"
 	"github.com/gookit/cliui/interact/backend/plain"
+	"github.com/gookit/color"
 	"golang.org/x/term"
 )
 
@@ -104,7 +105,7 @@ func (s *Session) Render(view backend.View) error {
 	for i := 0; i < renderedLines; i++ {
 		fmt.Fprint(s.out, "\x1B[2K")
 		if i < len(view.Lines) {
-			fmt.Fprint(s.out, view.Lines[i])
+			fmt.Fprint(s.out, color.Render(view.Lines[i]))
 		}
 		if i < renderedLines-1 {
 			fmt.Fprint(s.out, "\r\n")

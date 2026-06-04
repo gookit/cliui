@@ -352,37 +352,22 @@ func (c *MultiSelect) view(cursor int, selected map[string]Item, errMsg string, 
 	}
 
 	if len(visible) == 0 {
-		lines = append(lines, "No matches")
+		lines = append(lines, uiTag("yellow", "No matches"))
 	}
 
 	for _, i := range visible {
 		item := c.Items[i]
-		cursorPrefix := " "
-		if i == cursor {
-			cursorPrefix = ">"
-		}
+		prefix := cursorPrefix(i == cursor)
+		_, checked := selected[item.Key]
 
-		check := "[ ]"
-		if _, ok := selected[item.Key]; ok {
-			check = "[x]"
-		}
-
-		line := fmt.Sprintf("%s %s %s) %s", cursorPrefix, check, item.Key, item.Label)
-		if item.Disabled {
-			line += " [disabled]"
-		}
-		lines = append(lines, line)
+		line := fmt.Sprintf("%s %s %s) %s", prefix, checkMark(checked), item.Key, item.Label)
+		lines = append(lines, line+disabledSuffix(item.Disabled))
 	}
 
 	if len(indexes) > 0 {
-		current := c.Items[cursor]
-		currentLine := fmt.Sprintf("Current: %s (%s)", current.Label, current.Key)
-		if current.Disabled {
-			currentLine += " [disabled]"
-		}
-		lines = append(lines, currentLine)
+		lines = append(lines, currentLine(c.Items[cursor]))
 	} else {
-		lines = append(lines, "Current: none")
+		lines = append(lines, uiTag("cyan", "Current:")+" none")
 	}
 
 	var selectedKeys []string
@@ -391,17 +376,9 @@ func (c *MultiSelect) view(cursor int, selected map[string]Item, errMsg string, 
 			selectedKeys = append(selectedKeys, item.Key)
 		}
 	}
-	selectedLine := fmt.Sprintf("Selected(%d): %s", len(selectedKeys), strings.Join(selectedKeys, ", "))
-	if len(selectedKeys) == 0 {
-		selectedLine = "Selected(0): none"
-	}
-	lines = append(lines, selectedLine)
+	lines = append(lines, selectedLine(selectedKeys))
 
-	hint := "Use Up/Down to move, Space to toggle, Enter to confirm"
-	if c.Filterable {
-		hint = "Type to filter, use Up/Down to move, Space to toggle, Enter to confirm"
-	}
-	lines = append(lines, hint)
+	lines = append(lines, multiSelectHint(c.Filterable))
 
 	prompt := "Your choices(comma separated)"
 	if len(c.DefaultKeys) > 0 {
@@ -411,7 +388,7 @@ func (c *MultiSelect) view(cursor int, selected map[string]Item, errMsg string, 
 	lines = append(lines, prompt)
 
 	if errMsg != "" {
-		lines = append(lines, "Error: "+errMsg)
+		lines = append(lines, errorLine(errMsg))
 	}
 
 	return backend.View{

@@ -255,39 +255,24 @@ func (c *Select) view(cursor int, errMsg string, filter filterState, indexes []i
 	}
 
 	if len(visible) == 0 {
-		lines = append(lines, "No matches")
+		lines = append(lines, uiTag("yellow", "No matches"))
 	}
 
 	for _, i := range visible {
 		item := c.Items[i]
-		prefix := " "
-		if i == cursor {
-			prefix = ">"
-		}
+		prefix := cursorPrefix(i == cursor)
 
 		line := fmt.Sprintf("%s %s) %s", prefix, item.Key, item.Label)
-		if item.Disabled {
-			line += " [disabled]"
-		}
-		lines = append(lines, line)
+		lines = append(lines, line+disabledSuffix(item.Disabled))
 	}
 
 	if len(indexes) > 0 {
-		current := c.Items[cursor]
-		currentLine := fmt.Sprintf("Current: %s (%s)", current.Label, current.Key)
-		if current.Disabled {
-			currentLine += " [disabled]"
-		}
-		lines = append(lines, currentLine)
+		lines = append(lines, currentLine(c.Items[cursor]))
 	} else {
-		lines = append(lines, "Current: none")
+		lines = append(lines, uiTag("cyan", "Current:")+" none")
 	}
 
-	hint := "Use Up/Down to move, Enter to confirm, or input item key"
-	if c.Filterable {
-		hint = "Type to filter, use Up/Down to move, Enter to confirm"
-	}
-	lines = append(lines, hint)
+	lines = append(lines, selectHint(c.Filterable))
 
 	prompt := "Your choice"
 	if c.DefaultKey != "" {
@@ -297,7 +282,7 @@ func (c *Select) view(cursor int, errMsg string, filter filterState, indexes []i
 	lines = append(lines, prompt)
 
 	if errMsg != "" {
-		lines = append(lines, "Error: "+errMsg)
+		lines = append(lines, errorLine(errMsg))
 	}
 
 	return backend.View{

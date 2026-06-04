@@ -9,6 +9,7 @@ import (
 	"github.com/gookit/cliui/interact/backend"
 	"github.com/gookit/cliui/interact/backend/fake"
 	"github.com/gookit/cliui/interact/backend/plain"
+	"github.com/gookit/color"
 	"github.com/gookit/goutil/testutil/assert"
 )
 
@@ -453,8 +454,25 @@ func TestSelect_RunWithFakeEvents(t *testing.T) {
 	views := session.Views()
 	is.True(len(views) > 0)
 	last := views[len(views)-1]
-	is.Contains(last.Lines[len(last.Lines)-3], "Current: Beta")
-	is.Contains(last.Lines[len(last.Lines)-2], "Use Up/Down")
+	is.Contains(color.ClearTag(last.Lines[len(last.Lines)-3]), "Current: Beta")
+	is.Contains(color.ClearTag(last.Lines[len(last.Lines)-2]), "Use Up/Down")
+}
+
+func TestSelect_ViewUsesColorTags(t *testing.T) {
+	is := assert.New(t)
+
+	sel := NewSelect("Choose", []Item{
+		{Key: "a", Label: "Alpha", Value: "alpha"},
+		{Key: "b", Label: "Beta", Value: "beta", Disabled: true},
+	})
+
+	view := sel.view(1, "selected option is disabled", filterState{}, []int{0, 1}, terminalSize{})
+
+	is.True(viewContainsLine(view, "  a) Alpha"))
+	is.True(viewContainsLine(view, "<cyan>></> b) Beta <gray>[disabled]</>"))
+	is.True(viewContainsLine(view, "<cyan>Current:</> Beta (<yellow>b</>) <gray>[disabled]</>"))
+	is.True(viewContainsLine(view, "Use <cyan>Up/Down</> to move, <green>Enter</> to confirm, or input <yellow>item key</>"))
+	is.True(viewContainsLine(view, "<red>Error:</> selected option is disabled"))
 }
 
 func TestSelect_RunWithFakePagingKeys(t *testing.T) {
@@ -627,9 +645,25 @@ func TestMultiSelect_RunWithFakeEvents(t *testing.T) {
 	views := session.Views()
 	is.True(len(views) > 0)
 	last := views[len(views)-1]
-	is.Contains(last.Lines[len(last.Lines)-4], "Current: Beta")
-	is.Contains(last.Lines[len(last.Lines)-3], "Selected(2): a, b")
-	is.Contains(last.Lines[len(last.Lines)-2], "Space to toggle")
+	is.Contains(color.ClearTag(last.Lines[len(last.Lines)-4]), "Current: Beta")
+	is.Contains(color.ClearTag(last.Lines[len(last.Lines)-3]), "Selected(2): a, b")
+	is.Contains(color.ClearTag(last.Lines[len(last.Lines)-2]), "Space to toggle")
+}
+
+func TestMultiSelect_ViewUsesColorTags(t *testing.T) {
+	is := assert.New(t)
+
+	sel := NewMultiSelect("Choose", []Item{
+		{Key: "a", Label: "Alpha", Value: "alpha"},
+		{Key: "b", Label: "Beta", Value: "beta"},
+	})
+
+	view := sel.view(0, map[string]Item{"a": sel.Items[0]}, "", filterState{}, []int{0, 1}, terminalSize{})
+
+	is.True(viewContainsLine(view, "<cyan>></> <green>[x]</> a) Alpha"))
+	is.True(viewContainsLine(view, "  <gray>[ ]</> b) Beta"))
+	is.True(viewContainsLine(view, "<green>Selected(1):</> <yellow>a</>"))
+	is.True(viewContainsLine(view, "Use <cyan>Up/Down</> to move, <yellow>Space</> to toggle, <green>Enter</> to confirm"))
 }
 
 func TestMultiSelect_RunWithFakePagingKeys(t *testing.T) {
@@ -785,7 +819,7 @@ func anyViewContainsLine(views []backend.View, line string) bool {
 
 func viewContainsLine(view backend.View, line string) bool {
 	for _, got := range view.Lines {
-		if got == line {
+		if got == line || color.ClearTag(got) == line {
 			return true
 		}
 	}

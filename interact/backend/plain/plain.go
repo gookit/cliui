@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/gookit/cliui/interact/backend"
+	"github.com/gookit/color"
 )
 
 // Backend is a simple line-based backend that works with ordinary IO streams.
@@ -39,7 +40,7 @@ func (s *Session) Render(view backend.View) error {
 		return nil
 	}
 
-	_, err := fmt.Fprintln(s.out, strings.Join(view.Lines, "\n"))
+	_, err := fmt.Fprintln(s.out, color.Render(strings.Join(view.Lines, "\n")))
 	return err
 }
 
