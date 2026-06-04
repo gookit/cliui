@@ -93,20 +93,12 @@ func (c *Confirm) ValidateConfig() error {
 }
 
 func (c *Confirm) view(current bool, errMsg string) backend.View {
-	defVal := "no"
-	if c.Default {
-		defVal = "yes"
-	}
+	line := fmt.Sprintf("%s [%s/%s] (default: %s):", c.Prompt, confirmOption(true), confirmOption(false), confirmOption(c.Default))
+	curr := fmt.Sprintf("%s %s", uiTag("cyan", "Current:"), confirmOption(current))
 
-	line := fmt.Sprintf("%s [yes/no] (default: %s):", c.Prompt, defVal)
-	curr := "Current: no"
-	if current {
-		curr = "Current: yes"
-	}
-
-	view := backend.View{Lines: []string{line, curr}}
+	view := backend.View{Lines: []string{line, curr, confirmHint()}}
 	if errMsg != "" {
-		view.Lines = append(view.Lines, "Error: "+errMsg)
+		view.Lines = append(view.Lines, errorLine(errMsg))
 	}
 
 	return view

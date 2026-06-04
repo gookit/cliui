@@ -32,6 +32,18 @@ func errorLine(msg string) string {
 	return uiTag("red", "Error:") + " " + msg
 }
 
+func confirmOption(val bool) string {
+	if val {
+		return uiTag("green", "yes")
+	}
+	return uiTag("red", "no")
+}
+
+func confirmHint() string {
+	return fmt.Sprintf("Input %s or %s, %s accepts current",
+		uiTag("green", "y/yes"), uiTag("red", "n/no"), uiTag("green", "Enter"))
+}
+
 func selectHint(filterable bool) string {
 	if filterable {
 		return fmt.Sprintf("Type to filter, use %s to move, %s to confirm",

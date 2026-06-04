@@ -289,7 +289,7 @@ func TestConfirm_RunWithIO(t *testing.T) {
 	got, err := cfm.RunWithIO(context.Background(), be, in, out)
 	is.Nil(err)
 	is.True(got)
-	is.Contains(out.String(), "Continue [yes/no]")
+	is.Contains(color.ClearCode(out.String()), "Continue [yes/no]")
 }
 
 func TestConfirm_RunWithDefault(t *testing.T) {
@@ -320,6 +320,18 @@ func TestConfirm_RunWithFakeEvents(t *testing.T) {
 
 	session := be.LastSession()
 	is.True(len(session.Views()) > 0)
+}
+
+func TestConfirm_ViewUsesColorTags(t *testing.T) {
+	is := assert.New(t)
+
+	cfm := NewConfirm("Continue", true)
+	view := cfm.view(true, "please input yes or no")
+
+	is.True(viewContainsLine(view, "Continue [<green>yes</>/<red>no</>] (default: <green>yes</>):"))
+	is.True(viewContainsLine(view, "<cyan>Current:</> <green>yes</>"))
+	is.True(viewContainsLine(view, "Input <green>y/yes</> or <red>n/no</>, <green>Enter</> accepts current"))
+	is.True(viewContainsLine(view, "<red>Error:</> please input yes or no"))
 }
 
 func TestConfirm_KeepsInvalidInputErrorUntilNextInput(t *testing.T) {
