@@ -39,11 +39,12 @@ func (c *Select) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader
 		size := initialTerminalSize(session)
 		filter := filterState{}
 		cursor := c.defaultIndex()
+		keyInput := ""
 		errMsg := ""
 		for {
 			indexes := c.filteredIndexes(filter)
 			cursor = c.normalizeCursor(cursor, indexes)
-			if err := session.Render(c.view(cursor, errMsg, filter, indexes, size)); err != nil {
+			if err := session.Render(c.view(cursor, errMsg, filter, indexes, size, keyInput)); err != nil {
 				return nil, err
 			}
 
@@ -60,22 +61,40 @@ func (c *Select) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader
 				continue
 			}
 
-			errMsg = ""
 			switch ev.Key {
 			case backend.KeyUp, backend.KeyShiftTab:
+				errMsg = ""
 				cursor = c.moveInIndexes(indexes, cursor, -1)
 				continue
 			case backend.KeyDown, backend.KeyTab:
+				errMsg = ""
 				cursor = c.moveInIndexes(indexes, cursor, 1)
 				continue
+			case backend.KeyBackspace:
+				if !c.Filterable && keyInput != "" {
+					runes := []rune(keyInput)
+					keyInput = string(runes[:len(runes)-1])
+					continue
+				}
+			case backend.KeyCtrlU:
+				if !c.Filterable && keyInput != "" {
+					keyInput = ""
+					continue
+				}
 			case backend.KeyPageUp:
+				errMsg = ""
 				cursor = c.firstEnabledIndexIn(indexes)
 				continue
 			case backend.KeyPageDown:
+				errMsg = ""
 				cursor = c.lastEnabledIndexIn(indexes)
 				continue
 			case backend.KeyEnter:
-				if strings.TrimSpace(ev.Text) == "" {
+				key := strings.TrimSpace(ev.Text)
+				if key == "" {
+					key = strings.TrimSpace(keyInput)
+				}
+				if key == "" {
 					if len(indexes) == 0 {
 						errMsg = "no matched option"
 						continue
@@ -87,28 +106,26 @@ func (c *Select) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader
 					}
 					return singleResult(item), nil
 				}
+
+				item, ok := c.findItem(key)
+				if !ok {
+					errMsg = "unknown option"
+					continue
+				}
+				if item.Disabled {
+					errMsg = "selected option is disabled"
+					continue
+				}
+				return singleResult(item), nil
 			}
 
-			if c.Filterable && ev.Key != backend.KeyEnter && filter.Handle(ev) {
+			if c.Filterable && filter.Handle(ev) {
 				continue
 			}
 
-			key := strings.TrimSpace(ev.Text)
-			if key == "" {
-				key = c.DefaultKey
+			if ev.Text != "" {
+				keyInput += ev.Text
 			}
-
-			item, ok := c.findItem(key)
-			if !ok {
-				errMsg = "unknown option"
-				continue
-			}
-			if item.Disabled {
-				errMsg = "selected option is disabled"
-				continue
-			}
-
-			return singleResult(item), nil
 		}
 	})
 }
@@ -240,7 +257,7 @@ func (c *Select) lastEnabledIndexIn(indexes []int) int {
 	return 0
 }
 
-func (c *Select) view(cursor int, errMsg string, filter filterState, indexes []int, size terminalSize) backend.View {
+func (c *Select) view(cursor int, errMsg string, filter filterState, indexes []int, size terminalSize, keyInput string) backend.View {
 	lines := []string{c.Prompt}
 	if c.Filterable {
 		lines = append(lines, fmt.Sprintf("%s: %s", filterPrompt(c.FilterPrompt), filter.Query()))
@@ -279,7 +296,7 @@ func (c *Select) view(cursor int, errMsg string, filter filterState, indexes []i
 		prompt += fmt.Sprintf(" [default:%s]", c.DefaultKey)
 	}
 	prompt += ":"
-	lines = append(lines, prompt)
+	lines = append(lines, prompt+" "+keyInput)
 
 	if errMsg != "" {
 		lines = append(lines, errorLine(errMsg))

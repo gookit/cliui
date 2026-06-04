@@ -471,6 +471,28 @@ func TestSelect_RunWithFakeEvents(t *testing.T) {
 	is.Contains(color.ClearTag(last.Lines[len(last.Lines)-2]), "Use Up/Down")
 }
 
+func TestSelect_RunWithTypedKeyEvents(t *testing.T) {
+	is := assert.New(t)
+
+	be := fake.New(
+		backend.Event{Type: backend.EventKey, Text: "d"},
+		backend.Event{Type: backend.EventKey, Text: "e"},
+		backend.Event{Type: backend.EventKey, Text: "v"},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyEnter},
+	)
+
+	sel := NewSelect("Choose env", []Item{
+		{Key: "dev", Label: "Development", Value: "dev"},
+		{Key: "test", Label: "Testing", Value: "test"},
+		{Key: "prod", Label: "Production", Value: "prod"},
+	})
+
+	got, err := sel.Run(context.Background(), be)
+	is.Nil(err)
+	is.Eq("dev", got.Key)
+	is.True(anyViewContainsLine(be.LastSession().Views(), "Your choice: dev"))
+}
+
 func TestSelect_ViewUsesColorTags(t *testing.T) {
 	is := assert.New(t)
 
@@ -479,7 +501,7 @@ func TestSelect_ViewUsesColorTags(t *testing.T) {
 		{Key: "b", Label: "Beta", Value: "beta", Disabled: true},
 	})
 
-	view := sel.view(1, "selected option is disabled", filterState{}, []int{0, 1}, terminalSize{})
+	view := sel.view(1, "selected option is disabled", filterState{}, []int{0, 1}, terminalSize{}, "")
 
 	is.True(viewContainsLine(view, "  a) Alpha"))
 	is.True(viewContainsLine(view, "<cyan>></> b) Beta <gray>[disabled]</>"))
@@ -516,6 +538,8 @@ func TestSelect_KeepsUnknownOptionErrorUntilNextInput(t *testing.T) {
 
 	be := fake.New(
 		backend.Event{Type: backend.EventKey, Text: "x"},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyEnter},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyCtrlU},
 		backend.Event{Type: backend.EventKey, Key: backend.KeyDown},
 		backend.Event{Type: backend.EventKey, Key: backend.KeyEnter},
 	)
@@ -663,6 +687,32 @@ func TestMultiSelect_RunWithFakeEvents(t *testing.T) {
 	is.Contains(color.ClearTag(last.Lines[len(last.Lines)-2]), "Space to toggle")
 }
 
+func TestMultiSelect_RunWithTypedKeysEvents(t *testing.T) {
+	is := assert.New(t)
+
+	be := fake.New(
+		backend.Event{Type: backend.EventKey, Text: "a"},
+		backend.Event{Type: backend.EventKey, Text: "p"},
+		backend.Event{Type: backend.EventKey, Text: "i"},
+		backend.Event{Type: backend.EventKey, Text: ","},
+		backend.Event{Type: backend.EventKey, Text: "w"},
+		backend.Event{Type: backend.EventKey, Text: "e"},
+		backend.Event{Type: backend.EventKey, Text: "b"},
+		backend.Event{Type: backend.EventKey, Key: backend.KeyEnter},
+	)
+
+	sel := NewMultiSelect("Choose services", []Item{
+		{Key: "api", Label: "API", Value: "api"},
+		{Key: "job", Label: "Job Worker", Value: "job"},
+		{Key: "web", Label: "Web", Value: "web"},
+	})
+
+	got, err := sel.Run(context.Background(), be)
+	is.Nil(err)
+	is.Eq([]string{"api", "web"}, got.Keys)
+	is.True(anyViewContainsLine(be.LastSession().Views(), "Your choices(comma separated): api,web"))
+}
+
 func TestMultiSelect_ViewUsesColorTags(t *testing.T) {
 	is := assert.New(t)
 
@@ -671,7 +721,7 @@ func TestMultiSelect_ViewUsesColorTags(t *testing.T) {
 		{Key: "b", Label: "Beta", Value: "beta"},
 	})
 
-	view := sel.view(0, map[string]Item{"a": sel.Items[0]}, "", filterState{}, []int{0, 1}, terminalSize{})
+	view := sel.view(0, map[string]Item{"a": sel.Items[0]}, "", filterState{}, []int{0, 1}, terminalSize{}, "")
 
 	is.True(viewContainsLine(view, "<cyan>></> <green>[x]</> a) Alpha"))
 	is.True(viewContainsLine(view, "  <gray>[ ]</> b) Beta"))

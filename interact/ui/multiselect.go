@@ -41,11 +41,12 @@ func (c *MultiSelect) RunWithIO(ctx context.Context, be backend.Backend, in io.R
 		filter := filterState{}
 		cursor := c.defaultIndex()
 		selected := c.defaultSelected()
+		keyInput := ""
 		errMsg := ""
 		for {
 			indexes := c.filteredIndexes(filter)
 			cursor = c.normalizeCursor(cursor, indexes)
-			if err := session.Render(c.view(cursor, selected, errMsg, filter, indexes, size)); err != nil {
+			if err := session.Render(c.view(cursor, selected, errMsg, filter, indexes, size, keyInput)); err != nil {
 				return nil, err
 			}
 
@@ -70,6 +71,17 @@ func (c *MultiSelect) RunWithIO(ctx context.Context, be backend.Backend, in io.R
 			case backend.KeyDown, backend.KeyTab:
 				cursor = c.moveInIndexes(indexes, cursor, 1)
 				continue
+			case backend.KeyBackspace:
+				if !c.Filterable && keyInput != "" {
+					runes := []rune(keyInput)
+					keyInput = string(runes[:len(runes)-1])
+					continue
+				}
+			case backend.KeyCtrlU:
+				if !c.Filterable && keyInput != "" {
+					keyInput = ""
+					continue
+				}
 			case backend.KeyPageUp:
 				cursor = c.firstEnabledIndexIn(indexes)
 				continue
@@ -93,7 +105,11 @@ func (c *MultiSelect) RunWithIO(ctx context.Context, be backend.Backend, in io.R
 				}
 				continue
 			case backend.KeyEnter:
-				if strings.TrimSpace(ev.Text) == "" {
+				raw := strings.TrimSpace(ev.Text)
+				if raw == "" {
+					raw = strings.TrimSpace(keyInput)
+				}
+				if raw == "" {
 					if c.Filterable && len(indexes) == 0 {
 						errMsg = "no matched option"
 						continue
@@ -109,31 +125,34 @@ func (c *MultiSelect) RunWithIO(ctx context.Context, be backend.Backend, in io.R
 					}
 					return result, nil
 				}
+
+				keys := c.parseKeys(raw)
+				if len(keys) == 0 {
+					errMsg = "at least one option is required"
+					continue
+				}
+
+				result, resolveErr := c.resolve(keys)
+				if resolveErr != "" {
+					errMsg = resolveErr
+					continue
+				}
+
+				if len(result.Keys) < c.MinSelected {
+					errMsg = fmt.Sprintf("select at least %d option(s)", c.MinSelected)
+					continue
+				}
+
+				return result, nil
 			}
 
-			if c.Filterable && ev.Key != backend.KeyEnter && filter.Handle(ev) {
+			if c.Filterable && filter.Handle(ev) {
 				continue
 			}
 
-			raw := strings.TrimSpace(ev.Text)
-			keys := c.parseKeys(raw)
-			if len(keys) == 0 {
-				errMsg = "at least one option is required"
-				continue
+			if ev.Text != "" {
+				keyInput += ev.Text
 			}
-
-			result, resolveErr := c.resolve(keys)
-			if resolveErr != "" {
-				errMsg = resolveErr
-				continue
-			}
-
-			if len(result.Keys) < c.MinSelected {
-				errMsg = fmt.Sprintf("select at least %d option(s)", c.MinSelected)
-				continue
-			}
-
-			return result, nil
 		}
 	})
 }
@@ -337,7 +356,7 @@ func (c *MultiSelect) resultFromSelected(selected map[string]Item) *Result {
 	return res
 }
 
-func (c *MultiSelect) view(cursor int, selected map[string]Item, errMsg string, filter filterState, indexes []int, size terminalSize) backend.View {
+func (c *MultiSelect) view(cursor int, selected map[string]Item, errMsg string, filter filterState, indexes []int, size terminalSize, keyInput string) backend.View {
 	lines := []string{c.Prompt}
 	if c.Filterable {
 		lines = append(lines, fmt.Sprintf("%s: %s", filterPrompt(c.FilterPrompt), filter.Query()))
@@ -385,7 +404,7 @@ func (c *MultiSelect) view(cursor int, selected map[string]Item, errMsg string, 
 		prompt += fmt.Sprintf(" [default:%s]", strings.Join(c.DefaultKeys, ","))
 	}
 	prompt += ":"
-	lines = append(lines, prompt)
+	lines = append(lines, prompt+" "+keyInput)
 
 	if errMsg != "" {
 		lines = append(lines, errorLine(errMsg))
