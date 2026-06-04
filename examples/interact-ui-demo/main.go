@@ -9,6 +9,7 @@ import (
 	"github.com/gookit/cliui/interact/ui"
 )
 
+// RUN: go run ./examples/interact-ui-demo
 func main() {
 	ctx := context.Background()
 	// readline.New() falls back to the plain backend when stdin is not a TTY.
@@ -29,7 +30,7 @@ func main() {
 	}
 
 	if !ok {
-		fmt.Println("Canceled by user")
+		fmt.Println("User chose no")
 		return
 	}
 
