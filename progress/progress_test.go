@@ -161,10 +161,12 @@ func TestProgressSpeedWidget(t *testing.T) {
 
 	is.Eq("0B/s", handler(p))
 
-	p.startedAt = time.Now().Add(-2 * time.Second)
+	is.Eq("1.00M/s", dataSpeed(2<<20, 2*time.Second))
+
+	p.startedAt = time.Now().Add(-1 * time.Second)
 	p.AdvanceTo(2 << 20)
 
-	is.Eq("1.00M/s", handler(p))
+	is.Contains(handler(p), "M/s")
 }
 
 func TestProgressRemainingUsesFractionalRateForByteProgress(t *testing.T) {

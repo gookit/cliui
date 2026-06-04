@@ -3,7 +3,7 @@ module github.com/gookit/cliui
 go 1.22
 
 require (
-	github.com/gookit/color v1.6.1
+	github.com/gookit/color v1.6.2-0.20260604125953-289d54c4470a
 	github.com/gookit/goutil v0.7.6
 	golang.org/x/term v0.29.0
 )

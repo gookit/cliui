@@ -169,8 +169,13 @@ func TestPrettyJSON_String(t *testing.T) {
 func TestJSONPrintsPrettyJSON(t *testing.T) {
 	is := assert.New(t)
 	buf := new(bytes.Buffer)
+
+	color.ForceColor()
 	cutypes.SetOutput(buf)
-	defer cutypes.ResetOutput()
+	defer func() {
+		cutypes.ResetOutput()
+		color.RevertColorLevel()
+	}()
 
 	code := show.JSON(map[string]any{"ok": true})
 
