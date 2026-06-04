@@ -332,6 +332,7 @@ func TestConfirm_ViewUsesColorTags(t *testing.T) {
 	is.True(viewContainsLine(view, "<cyan>Current:</> <green>yes</>"))
 	is.True(viewContainsLine(view, "Input <green>y/yes</> or <red>n/no</>, <green>Enter</> accepts current"))
 	is.True(viewContainsLine(view, "<red>Error:</> please input yes or no"))
+	is.Eq(len(view.Lines)-1, view.CursorRow)
 }
 
 func TestConfirm_KeepsInvalidInputErrorUntilNextInput(t *testing.T) {

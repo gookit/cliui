@@ -100,6 +100,7 @@ func (c *Confirm) view(current bool, errMsg string) backend.View {
 	if errMsg != "" {
 		view.Lines = append(view.Lines, errorLine(errMsg))
 	}
+	view.CursorRow = len(view.Lines) - 1
 
 	return view
 }
