@@ -6,11 +6,14 @@ import (
 	"testing"
 
 	"github.com/gookit/cliui/interact/backend"
+	"github.com/gookit/color"
 	"github.com/gookit/goutil/testutil/assert"
 )
 
 func TestSession_RenderColorTags(t *testing.T) {
 	is := assert.New(t)
+	color.ForceColor()
+	defer color.RevertColorLevel()
 
 	out := new(bytes.Buffer)
 	sess, err := New().NewSession(strings.NewReader(""), out)

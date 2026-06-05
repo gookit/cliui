@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/gookit/cliui/interact/backend"
+	"github.com/gookit/color"
 	"github.com/gookit/goutil/testutil/assert"
 )
 
@@ -86,6 +87,8 @@ func TestSession_RenderUsesCarriageReturnAfterNewline(t *testing.T) {
 
 func TestSession_RenderColorTags(t *testing.T) {
 	is := assert.New(t)
+	color.ForceColor()
+	defer color.RevertColorLevel()
 
 	buf := new(bytes.Buffer)
 	s := &Session{out: buf}
