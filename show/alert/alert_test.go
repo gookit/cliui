@@ -6,7 +6,7 @@ import (
 
 	"github.com/gookit/cliui/cutypes"
 	"github.com/gookit/cliui/show/alert"
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 )
 
 func TestErrorPrintsBanner(t *testing.T) {

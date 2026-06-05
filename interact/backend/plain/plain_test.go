@@ -7,7 +7,7 @@ import (
 
 	"github.com/gookit/cliui/interact/backend"
 	"github.com/gookit/color"
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 )
 
 func TestSession_RenderColorTags(t *testing.T) {

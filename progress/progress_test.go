@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/gookit/cliui"
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 )
 
 func TestProgress_Display(t *testing.T) {

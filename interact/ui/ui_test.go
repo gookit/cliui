@@ -10,7 +10,7 @@ import (
 	"github.com/gookit/cliui/interact/backend/fake"
 	"github.com/gookit/cliui/interact/backend/plain"
 	"github.com/gookit/color"
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 )
 
 func TestValidateItems(t *testing.T) {

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/gookit/cliui/cutypes"
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 )
 
 func TestProgress_Line(t *testing.T) {

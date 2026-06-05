@@ -10,7 +10,7 @@ import (
 	"github.com/gookit/cliui/show"
 	"github.com/gookit/cliui/show/lists"
 	"github.com/gookit/color"
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 )
 
 func TestList(t *testing.T) {

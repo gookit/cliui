@@ -21,7 +21,7 @@ gookit/goutil is a comprehensive Go utility library providing 800+ functions acr
 
 ### Testing and Validation
 - Tests complete in ~24 seconds. NEVER CANCEL test runs - use timeout of 60+ minutes
-- Use `github.com/gookit/goutil/testutil/assert` for assertions in tests
+- Use `github.com/gookit/goutil/x/assert` for assertions in tests
 - For multiple test cases in one function, use `t.Run()` pattern
 - **VALIDATION REQUIREMENT**: Always test changes with a comprehensive validation scenario
 
@@ -40,7 +40,7 @@ gookit/goutil is a comprehensive Go utility library providing 800+ functions acr
 
 ### Debug and Testing
 - **`dump`** - Value printing with auto-wrap and call location
-- **`testutil/assert`** - Common assertion functions for testing
+- **`x/assert`** - Common assertion functions for testing
 - **`errorx`** - Enhanced error handling with stacktrace
 
 ### Extra Tools
@@ -168,7 +168,7 @@ strutil.PadLeft("hi", "0", 5)               // "000hi"
 
 ### Testing patterns
 ```go
-import "github.com/gookit/goutil/testutil/assert"
+import "github.com/gookit/goutil/x/assert"
 
 func TestExample(t *testing.T) {
     assert.Eq(t, expected, actual)
@@ -202,7 +202,7 @@ func TestExample(t *testing.T) {
 - Example files in package `_examples/` directories (may need formatting)
 
 ### Testing
-- Use `github.com/gookit/goutil/testutil/assert` for assertions
+- Use `github.com/gookit/goutil/x/assert` for assertions
 - Multiple test cases use `t.Run()` pattern
 - Test coverage is tracked and reported to coveralls
 - Coverage files (*.cov) should not be committed - add to .gitignore if needed

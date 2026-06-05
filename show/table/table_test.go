@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/gookit/cliui/show/table"
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 	"github.com/gookit/goutil/x/ccolor"
 )
 

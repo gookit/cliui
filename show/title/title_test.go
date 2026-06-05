@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/gookit/color"
 	"github.com/gookit/cliui/show/title"
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/color"
+	"github.com/gookit/goutil/x/assert"
 )
 
 // ExampleBorderTop 演示顶部边框

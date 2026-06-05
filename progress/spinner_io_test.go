@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/gookit/cliui"
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 )
 
 func TestSpinnerUsesCustomOutput(t *testing.T) {
