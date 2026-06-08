@@ -9,6 +9,7 @@ import (
 	"github.com/gookit/color"
 	"github.com/gookit/goutil/comdef"
 	"github.com/gookit/goutil/strutil"
+	"github.com/gookit/goutil/x/termenv"
 )
 
 // Title 在终端中打印标题行
@@ -17,6 +18,8 @@ type Title struct {
 	Options
 	Prefix string
 	Title  string
+
+	widthSet bool
 }
 
 // New Title instance
@@ -24,7 +27,7 @@ func New(title string, fns ...OptionFunc) *Title {
 	t := &Title{
 		Title: title,
 		Options: Options{
-			Width:       80,
+			Width:       DefaultWidth,
 			PaddingChar: symbols.Equal,
 			// Indent: 2,
 			Align: comdef.Left,
@@ -73,9 +76,10 @@ func (t *Title) Format() {
 	t.InitBuffer()
 
 	// 计算实际可用宽度（减去缩进）
-	availableWidth := t.Width - t.Indent
+	width := t.resolveWidth()
+	availableWidth := width - t.Indent
 	if availableWidth <= 0 {
-		availableWidth = t.Width
+		availableWidth = width
 	}
 
 	// 根据对齐方式处理标题
@@ -103,6 +107,25 @@ func (t *Title) Format() {
 		content = t.renderWithBorder(content, availableWidth)
 	}
 	t.Buf.WriteString(content)
+}
+
+func (t *Title) resolveWidth() int {
+	if t.Width > 0 && (t.widthSet || t.Width != DefaultWidth || t.PercentWidth <= 0) {
+		return t.Width
+	}
+
+	if t.PercentWidth > 0 {
+		termWidth, _ := termenv.GetTermSize()
+		if termWidth > 0 {
+			percent := t.PercentWidth
+			if percent > 100 {
+				percent = 100
+			}
+			return termWidth * percent / 100
+		}
+	}
+
+	return DefaultWidth
 }
 
 // renderWithBorder 添加边框处理

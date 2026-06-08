@@ -2,10 +2,12 @@ package title_test
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/gookit/cliui/show/title"
 	"github.com/gookit/color"
+	"github.com/gookit/goutil/strutil"
 	"github.com/gookit/goutil/testutil"
 	"github.com/gookit/goutil/x/assert"
 )
@@ -83,4 +85,38 @@ func TestTitle_ShowNew(t *testing.T) {
 	s := buf.ResetAndGet()
 	assert.StrContains(t, s, "Project State")
 	assert.StrNotContains(t, s, "Global State")
+}
+
+func TestTitle_WithPercentWidth(t *testing.T) {
+	testutil.MockEnvValues(map[string]string{"COLUMNS": "100", "LINES": "24"}, func() {
+		t.Run("DefaultWidth", func(t *testing.T) {
+			tl := title.New("Default Width", title.WithBorderBottom())
+
+			s := tl.Render()
+
+			assert.Eq(t, title.DefaultWidth, tl.Width)
+			assert.Eq(t, title.DefaultWidth, titleBorderWidth(s))
+		})
+
+		t.Run("PercentWidth", func(t *testing.T) {
+			tl := title.New("Percent Width", title.WithPercentWidth(50), title.WithBorderBottom())
+
+			s := tl.Render()
+
+			assert.Eq(t, 50, titleBorderWidth(s))
+		})
+
+		t.Run("WidthFirst", func(t *testing.T) {
+			tl := title.New("Fixed Width", title.WithPercentWidth(50), title.WithWidth(30), title.WithBorderBottom())
+
+			s := tl.Render()
+
+			assert.Eq(t, 30, titleBorderWidth(s))
+		})
+	})
+}
+
+func titleBorderWidth(s string) int {
+	lines := strings.Split(color.ClearTag(s), "\n")
+	return strutil.TextWidth(lines[len(lines)-1])
 }
