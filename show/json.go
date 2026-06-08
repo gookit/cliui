@@ -24,9 +24,9 @@ type PrettyJSON struct {
 func NewPrettyJSON(v ...any) *PrettyJSON {
 	pj := &PrettyJSON{
 		Indent:      "    ",
-		KeyStyle:    "info",
-		BoolStyle:   "success",
-		NumberStyle: "warning",
+		KeyStyle:    "green",
+		BoolStyle:   "mga",
+		NumberStyle: "ylw",
 	}
 	if len(v) > 0 {
 		pj.Data = v[0]
