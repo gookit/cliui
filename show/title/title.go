@@ -53,6 +53,7 @@ func (t *Title) WithOptionFns(fns []OptionFunc) *Title {
 // SetTitle set title text
 func (t *Title) SetTitle(title string) *Title {
 	t.Title = title
+	t.ResetFormat()
 	return t
 }
 

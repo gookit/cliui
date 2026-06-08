@@ -77,6 +77,9 @@ func (b *Base) SetOutput(out io.Writer) { b.Out = out }
 // SetBuffer field
 func (b *Base) SetBuffer(buf *bytes.Buffer) { b.Buf = buf }
 
+// ResetFormat marks the cached formatted output as stale.
+func (b *Base) ResetFormat() { b.formatted = false }
+
 // InitBuffer instance
 func (b *Base) InitBuffer() {
 	if b.Buf == nil {

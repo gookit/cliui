@@ -6,6 +6,7 @@ import (
 
 	"github.com/gookit/cliui/show/title"
 	"github.com/gookit/color"
+	"github.com/gookit/goutil/testutil"
 	"github.com/gookit/goutil/x/assert"
 )
 
@@ -63,4 +64,23 @@ func TestTitleRender(t *testing.T) {
 	content = t5.Render()
 	assert.NotEmpty(t, content)
 	color.Println(content)
+}
+
+func TestTitle_ShowNew(t *testing.T) {
+	buf := testutil.NewBuffer()
+
+	tl := title.New("", func(t *title.Title) {
+		t.Width = 40
+		t.PaddingLR = false
+		t.ShowBorder = true
+	})
+	tl.SetOutput(buf)
+
+	tl.ShowNew("Global State")
+	assert.StrContains(t, buf.ResetAndGet(), "Global State")
+
+	tl.ShowNew("Project State")
+	s := buf.ResetAndGet()
+	assert.StrContains(t, s, "Project State")
+	assert.StrNotContains(t, s, "Global State")
 }
