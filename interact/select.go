@@ -48,12 +48,43 @@ type Select struct {
 //	r := s.Run()
 //	key := r.KeyString() // "1"
 //	val := r.String() // "beijing"
-func NewSelect(title string, items any) *Select {
-	return &Select{
+func NewSelect(title string, items any, fns ...func(*Select)) *Select {
+	s := &Select{
 		Out:     cutypes.Output,
 		Title:   title,
 		Options: items,
 	}
+
+	// apply option funcs
+	return s.With(fns...)
+}
+
+// With apply option funcs
+func (s *Select) With(fns ...func(*Select)) *Select {
+	// apply option funcs
+	for _, fn := range fns {
+		fn(s)
+	}
+	return s
+}
+
+// EnableMulti select
+func (s *Select) EnableMulti() *Select {
+	s.MultiSelect = true
+	return s
+}
+
+// Run select and receive use input answer
+func (s *Select) Run() *SelectResult {
+	keys := s.prepare()
+	// render to console
+	s.render(keys)
+
+	// if enable MultiSelect
+	if s.MultiSelect {
+		return s.selectMulti()
+	}
+	return s.selectOne()
 }
 
 func (s *Select) prepare() (keys []string) {
@@ -242,25 +273,6 @@ DoSelect:
 	}
 
 	return newSelectResult(keys, values)
-}
-
-// EnableMulti select
-func (s *Select) EnableMulti() *Select {
-	s.MultiSelect = true
-	return s
-}
-
-// Run select and receive use input answer
-func (s *Select) Run() *SelectResult {
-	keys := s.prepare()
-	// render to console
-	s.render(keys)
-
-	// if enable MultiSelect
-	if s.MultiSelect {
-		return s.selectMulti()
-	}
-	return s.selectOne()
 }
 
 func (s *Select) out() io.Writer {

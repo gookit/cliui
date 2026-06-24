@@ -44,6 +44,42 @@ func TestSelectUsesInstanceOutput(t *testing.T) {
 	is.Eq("", globalOut.String())
 }
 
+func TestSelectOneKeyReturnsSelectedKey(t *testing.T) {
+	is := assert.New(t)
+
+	in := strings.NewReader("b\n")
+	out := new(bytes.Buffer)
+	cliui.CustomIO(in, out)
+	defer cliui.ResetIO()
+
+	got := interact.SelectOneKey("Choose", map[string]string{
+		"a": "dev",
+		"b": "prod",
+	}, "")
+
+	is.Eq("b", got)
+	is.Contains(out.String(), "Choose")
+}
+
+func TestSelectOneKeyReturnsDefaultKey(t *testing.T) {
+	is := assert.New(t)
+
+	in := strings.NewReader("\n")
+	globalOut := new(bytes.Buffer)
+	cliui.CustomIO(in, globalOut)
+	defer cliui.ResetIO()
+
+	out := new(bytes.Buffer)
+	got := interact.SelectOneKey("Choose", []string{"dev", "prod"}, "1", func(s *interact.Select) {
+		s.Out = out
+		s.DisableQuit = true
+	})
+
+	is.Eq("1", got)
+	is.Contains(out.String(), "default:")
+	is.Eq("", globalOut.String())
+}
+
 func TestQuestionUsesCustomOutput(t *testing.T) {
 	is := assert.New(t)
 

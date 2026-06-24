@@ -154,12 +154,12 @@ func TestPrettyJSON_String(t *testing.T) {
 	pj := show.NewPrettyJSON(data)
 	out := pj.String()
 
-	is.Contains(out, `<info>"ok"</>`)
-	is.Contains(out, `<success>true</>`)
-	is.Contains(out, `<warning>18</>`)
-	is.Contains(out, `<warning>9</>`)
-	is.Contains(out, `<warning>99.5</>`)
-	is.NotContains(out, `<warning>"tom"</>`)
+	is.Contains(out, `<green>"ok"</>`)
+	is.Contains(out, `<mga>true</>`)
+	is.Contains(out, `<ylw>18</>`)
+	is.Contains(out, `<ylw>9</>`)
+	is.Contains(out, `<ylw>99.5</>`)
+	is.NotContains(out, `<ylw>"tom"</>`)
 
 	bs, err := json.MarshalIndent(data, "", "    ")
 	is.NoErr(err)

@@ -5,23 +5,6 @@ import (
 	"github.com/gookit/color"
 )
 
-// Interactive definition
-type Interactive struct {
-	Name string
-}
-
-// New Interactive instance
-func New(name string) *Interactive {
-	return &Interactive{Name: name}
-}
-
-// Options definition
-type Options struct {
-	Quit bool
-	// default value
-	DefVal string
-}
-
 // Confirm a question, returns bool
 func Confirm(message string, defVal ...bool) bool {
 	color.Fprint(cutypes.Output, message)
@@ -69,7 +52,7 @@ func SingleSelect(title string, options any, defOpt string, allowQuit ...bool) s
 // Map options:
 //
 //	{
-//	   	// option value => option name
+//	   	// option key => option value
 //	   	'a' => 'chengdu',
 //	   	'b' => 'beijing'
 //	}
@@ -77,7 +60,7 @@ func SingleSelect(title string, options any, defOpt string, allowQuit ...bool) s
 // Array options:
 //
 //	{
-//	   // only name, value will use index
+//	   // only value, key will use index
 //	   'chengdu',
 //	   'beijing'
 //	}
@@ -87,16 +70,23 @@ func SelectOne(title string, options any, defOpt string, allowQuit ...bool) stri
 	if len(allowQuit) > 0 {
 		s.DisableQuit = !allowQuit[0]
 	}
-
 	return s.Run().String()
 }
 
-// Checkbox is alias of method MultiSelect()
+// SelectOneKey select one of the options, returns selected option key.
+func SelectOneKey(title string, options any, defOpt string, opFns ...func(*Select)) string {
+	return NewSelect(title, options, opFns...).With(func(s *Select) {
+		s.DefOpt = defOpt
+	}).Run().KeyString()
+}
+
+// Checkbox select multi of the options. is alias of method MultiSelect()
 func Checkbox(title string, options any, defOpts []string, allowQuit ...bool) []string {
 	return MultiSelect(title, options, defOpts, allowQuit...)
 }
 
 // MultiSelect select multi of the options, returns selected option values.
+//
 // like SingleSelect(), but allow select multi option
 func MultiSelect(title string, options any, defOpts []string, allowQuit ...bool) []string {
 	s := &Select{Title: title, Options: options, DefOpts: defOpts, MultiSelect: true}
