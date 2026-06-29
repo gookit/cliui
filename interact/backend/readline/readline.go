@@ -12,6 +12,7 @@ import (
 	"github.com/gookit/cliui/interact/backend"
 	"github.com/gookit/cliui/interact/backend/plain"
 	"github.com/gookit/color"
+	"github.com/gookit/goutil/strutil"
 	"golang.org/x/term"
 )
 
@@ -97,6 +98,7 @@ func (s *Session) Render(view backend.View) error {
 		}
 	}
 
+	currentRows := viewRows(view)
 	renderedLines := len(view.Lines)
 	if s.rendered > renderedLines {
 		renderedLines = s.rendered
@@ -113,7 +115,7 @@ func (s *Session) Render(view backend.View) error {
 	}
 
 	if view.CursorRow >= 0 && view.CursorRow < len(view.Lines) {
-		moveUp := renderedLines - 1 - view.CursorRow
+		moveUp := currentRows - 1 - cursorScreenRow(view)
 		if moveUp > 0 {
 			fmt.Fprintf(s.out, "\x1B[%dA", moveUp)
 		}
@@ -123,8 +125,34 @@ func (s *Session) Render(view backend.View) error {
 		}
 	}
 
-	s.rendered = len(view.Lines)
+	s.rendered = currentRows
 	return nil
+}
+
+func viewRows(view backend.View) int {
+	if view.Width <= 0 {
+		return len(view.Lines)
+	}
+
+	rows := 0
+	for _, line := range view.Lines {
+		width := strutil.TextWidth(color.ClearTag(line))
+		rows += 1 + (width-1)/view.Width
+	}
+	return rows
+}
+
+func cursorScreenRow(view backend.View) int {
+	if view.Width <= 0 {
+		return view.CursorRow
+	}
+
+	row := 0
+	for _, line := range view.Lines[:view.CursorRow] {
+		width := strutil.TextWidth(color.ClearTag(line))
+		row += 1 + (width-1)/view.Width
+	}
+	return row + view.CursorColumn/view.Width
 }
 
 // ReadEvent reads and normalizes one terminal event.

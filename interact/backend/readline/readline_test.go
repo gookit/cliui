@@ -73,6 +73,22 @@ func TestSession_RenderClearsStaleLinesWhenViewShrinks(t *testing.T) {
 	is.Eq(2, s.rendered)
 }
 
+func TestSession_RenderTracksWrappedRows(t *testing.T) {
+	is := assert.New(t)
+
+	buf := new(bytes.Buffer)
+	s := &Session{out: buf}
+
+	err := s.Render(backend.View{Lines: []string{"one", strings.Repeat("x", 11)}, CursorRow: 1, Width: 10})
+	is.Nil(err)
+	is.Eq(3, s.rendered)
+
+	buf.Reset()
+	err = s.Render(backend.View{Lines: []string{"one", "two"}, CursorRow: 1, Width: 10})
+	is.Nil(err)
+	is.Contains(buf.String(), "\x1B[2A")
+}
+
 func TestSession_RenderUsesCarriageReturnAfterNewline(t *testing.T) {
 	is := assert.New(t)
 
