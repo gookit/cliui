@@ -127,7 +127,7 @@ func CustomBar(width int, cs BarChars, maxSteps ...int64) *Progress {
 
 // RandomBarStyle get random bar style
 func RandomBarStyle() BarChars {
-	return BarStyles[rand.IntN(len(BarStyles)-1)]
+	return BarStyles[rand.IntN(len(BarStyles))]
 }
 
 /*************************************************************

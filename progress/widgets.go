@@ -5,6 +5,7 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gookit/goutil/x/fmtutil"
@@ -45,11 +46,7 @@ var builtinWidgets = map[string]WidgetFunc{
 
 		return fmtutil.HowLongAgo(int64(estimated))
 	},
-	"memory": func(p *Progress) string { // Memory consumption
-		mem := new(runtime.MemStats)
-		runtime.ReadMemStats(mem)
-		return fmtutil.DataSize(mem.Sys)
-	},
+	"memory": memoryWidget,
 	"max": func(p *Progress) string { // 最大值数值，eg 1502 计数场景
 		return fmt.Sprint(p.MaxSteps)
 	},
@@ -74,6 +71,29 @@ var builtinWidgets = map[string]WidgetFunc{
 	"percent": func(p *Progress) string {
 		return fmt.Sprintf("%.1f", p.Percent()*100)
 	},
+}
+
+// memory cache. runtime.ReadMemStats stops the world, so the value is cached
+// for a short interval instead of being read on every render frame.
+var memStatsCache struct {
+	sync.Mutex
+	at   time.Time
+	size string
+}
+
+func memoryWidget(_ *Progress) string { // Memory consumption
+	memStatsCache.Lock()
+	defer memStatsCache.Unlock()
+
+	if time.Since(memStatsCache.at) < time.Second {
+		return memStatsCache.size
+	}
+
+	mem := new(runtime.MemStats)
+	runtime.ReadMemStats(mem)
+	memStatsCache.at = time.Now()
+	memStatsCache.size = fmtutil.DataSize(mem.Sys)
+	return memStatsCache.size
 }
 
 func dataSize(size int64) string {
@@ -211,7 +231,11 @@ func roundTripTextBuilder(char rune, charNum, boxWidth int) func() string {
 			bar += strings.Repeat(" ", position)
 		}
 
-		bar += cursor + strings.Repeat(" ", boxWidth-position-charNum)
+		padding := boxWidth - position - charNum
+		if padding < 0 {
+			padding = 0
+		}
+		bar += cursor + strings.Repeat(" ", padding)
 
 		if direction { // left <-
 			if position <= 0 { // begin ->

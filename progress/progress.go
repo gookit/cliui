@@ -305,12 +305,18 @@ func (p *Progress) AddWidgets(widgets map[string]WidgetFunc) {
 }
 
 func (p *Progress) addWidget(name string, handler WidgetFunc) {
+	if p.Widgets == nil {
+		p.Widgets = make(map[string]WidgetFunc)
+	}
 	if _, ok := p.Widgets[name]; !ok {
 		p.Widgets[name] = handler
 	}
 }
 
 func (p *Progress) setWidget(name string, handler WidgetFunc) {
+	if p.Widgets == nil {
+		p.Widgets = make(map[string]WidgetFunc)
+	}
 	p.Widgets[name] = handler
 }
 
@@ -413,7 +419,8 @@ func (p *Progress) ResetWith(fn func(p *Progress)) {
 func (p *Progress) reset(maxSteps ...int64) {
 	p.step = 0
 	p.percent = 0.0
-	p.started = true
+	// keep the current started state, so Reset before Start does not make
+	// Start panic with "already started".
 	p.firstRun = true
 	p.startedAt = time.Now()
 	p.finishedAt = time.Time{}
@@ -560,6 +567,12 @@ func (p *Progress) display() {
 // This is useful if you wish to write some output while a progress bar is running.
 // Call display() to show the progress bar again.
 func (p *Progress) Destroy() {
+	// managed bars are rendered as a block by MultiProgress; writing here
+	// would bypass the manager writer and corrupt its line accounting.
+	if p.manager != nil {
+		return
+	}
+
 	if p.Overwrite {
 		p.render("")
 	}

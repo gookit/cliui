@@ -30,7 +30,7 @@ func GetCharTheme(index int) rune {
 
 // RandomCharTheme get
 func RandomCharTheme() rune {
-	return CharThemes[rand.IntN(len(CharThemes)-1)]
+	return CharThemes[rand.IntN(len(CharThemes))]
 }
 
 // CharsThemes collection. can use for LoadingBar, LoadingSpinner
@@ -73,7 +73,7 @@ func GetCharsTheme(index int) []rune {
 
 // RandomCharsTheme get
 func RandomCharsTheme() []rune {
-	return CharsThemes[rand.IntN(len(CharsThemes)-1)]
+	return CharsThemes[rand.IntN(len(CharsThemes))]
 }
 
 func normalizeMaxSteps(maxSteps int64) int64 {

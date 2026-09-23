@@ -41,7 +41,7 @@ func Spinner(speed time.Duration) *SpinnerFactory {
 		// color: color.Normal.Sprint,
 		lock: &sync.RWMutex{},
 		// writer:   os.Stdout,
-		stopCh: make(chan struct{}, 1),
+		// stopCh is created per Start call.
 	}
 }
 
@@ -128,17 +128,28 @@ func (s *SpinnerFactory) prepare(format []string) {
 
 // Start run spinner
 func (s *SpinnerFactory) Start(format ...string) {
+	if s.Builder == nil {
+		panic("spinner: field SpinnerFactory.Builder must be setting")
+	}
+
+	s.lock.Lock()
 	if s.active {
+		s.lock.Unlock()
 		return
 	}
 
-	s.active = true
 	s.prepare(format)
+	s.active = true
+	// create a fresh stop channel on every start, so a stale signal from a
+	// previous Stop can never stop the new run.
+	s.stopCh = make(chan struct{})
+	stopCh := s.stopCh
+	s.lock.Unlock()
 
 	go func() {
 		for {
 			select {
-			case <-s.stopCh:
+			case <-stopCh:
 				return
 			default:
 				s.lock.Lock()
@@ -157,20 +168,26 @@ func (s *SpinnerFactory) Start(format ...string) {
 
 // Stop run spinner
 func (s *SpinnerFactory) Stop(finalMsg ...string) {
+	s.lock.Lock()
 	if !s.active {
+		s.lock.Unlock()
 		return
 	}
 
-	s.lock.Lock()
 	s.active = false
+	stopCh := s.stopCh
+	s.stopCh = nil
 	fmt.Fprint(s.out(), "\x0D\x1B[2K")
 
 	if len(finalMsg) > 0 {
 		fmt.Fprintln(s.out(), finalMsg[0])
 	}
-
-	s.stopCh <- struct{}{}
 	s.lock.Unlock()
+
+	// close outside the lock; the render goroutine observes it and exits.
+	if stopCh != nil {
+		close(stopCh)
+	}
 }
 
 // Restart will stop and start the spinner
@@ -181,6 +198,8 @@ func (s *SpinnerFactory) Restart() {
 
 // Active status
 func (s *SpinnerFactory) Active() bool {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 	return s.active
 }
 
