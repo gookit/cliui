@@ -31,6 +31,8 @@ type Table struct {
 	// 计算后的列宽
 	colWidths []int
 	headHeight int // 表头高度
+	// rowNumInjected 标记 prepare 是否已注入 "#" 表头与行号单元格
+	rowNumInjected bool
 }
 
 // New create table
@@ -259,8 +261,31 @@ func (t *Table) reset() {
 	// 清空缓冲区
 	t.InitBuffer()
 	t.colWidths = nil
+	t.headHeight = 0
+
+	// 撤销上次 prepare 注入的 "#" 表头与行号单元格，保证 Format 幂等
+	// （否则每次 Format 都会多出一列）
+	if t.rowNumInjected {
+		if len(t.Heads) > 0 && t.Heads[0].String() == "#" {
+			t.Heads = t.Heads[1:]
+		}
+		for _, row := range t.Rows {
+			if len(row.Cells) > 0 {
+				row.Cells = row.Cells[1:]
+			}
+		}
+		t.rowNumInjected = false
+	}
+
+	for _, head := range t.Heads {
+		head.init = false
+		head.width = 0
+		head.height = 0
+	}
 
 	for _, row := range t.Rows {
+		row.init = false
+		row.Height = 0
 		for _, cell := range row.Cells {
 			cell.init = false
 			cell.width = 0
@@ -294,6 +319,7 @@ func (t *Table) prepare() {
 	// 如果需要显示行号，在表头前添加 "#"
 	if t.opts.ShowRowNumber {
 		t.PrependHead("#")
+		t.rowNumInjected = true
 	}
 
 	// 计算列数 + init Rows,Cells
@@ -412,8 +438,8 @@ func (t *Table) formatHeader() {
 			}
 
 			if i < len(t.colWidths) {
-				// 使用 strutil.Resize 来对齐表头内容
-				resized := strutil.Resize(headStr, t.colWidths[i], opts.Alignment)
+				// 使用显示宽度对齐表头内容，与表体保持一致（避免多字节被按字节截断）
+				resized := strutil.Utf8Resize(headStr, t.colWidths[i], opts.Alignment)
 				// 应用颜色（优先使用 FirstColor 给第一列）
 				if i == 0 && opts.FirstColor != "" {
 					// 表头第一列使用 FirstColor
