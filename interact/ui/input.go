@@ -51,6 +51,9 @@ func (c *Input) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader,
 			if ev.Type == backend.EventInterrupt || ev.Key == backend.KeyCtrlC || ev.Key == backend.KeyEsc {
 				return "", ErrAborted
 			}
+			if ev.Type == backend.EventResize {
+				continue
+			}
 
 			errMsg = ""
 			switch ev.Key {
@@ -110,6 +113,19 @@ func (c *Input) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader,
 					buf = append(buf[:cursor], buf[cursor+1:]...)
 				}
 				continue
+			case backend.KeyTab:
+				// Tab is not a submit key; ignore it.
+				continue
+			case backend.KeySpace:
+				// readline delivers space as a key event without text.
+				text := []rune{' '}
+				if cursor >= len(buf) {
+					buf = append(buf, text...)
+				} else {
+					buf = append(buf[:cursor], append(text, buf[cursor:]...)...)
+				}
+				cursor++
+				continue
 			case backend.KeyEnter:
 				val := strings.TrimSpace(ev.Text)
 				// event-driven backend submits current buffer on enter.
@@ -141,19 +157,10 @@ func (c *Input) RunWithIO(ctx context.Context, be backend.Backend, in io.Reader,
 				continue
 			}
 
-			val := strings.TrimSpace(ev.Text)
-			if val == "" {
-				val = c.Default
-			}
-
-			if c.Validate != nil {
-				if err := c.Validate(val); err != nil {
-					errMsg = err.Error()
-					continue
-				}
-			}
-
-			return val, nil
+			// Any other key event without text is ignored. Submission only
+			// happens on Enter, so empty events (Tab, resize, ...) can no
+			// longer silently submit the default value.
+			continue
 		}
 	})
 }

@@ -47,6 +47,9 @@ func (c *Confirm) RunWithIO(ctx context.Context, be backend.Backend, in io.Reade
 			if ev.Type == backend.EventInterrupt || ev.Key == backend.KeyCtrlC || ev.Key == backend.KeyEsc {
 				return false, ErrAborted
 			}
+			if ev.Type == backend.EventResize {
+				continue
+			}
 
 			errMsg = ""
 			switch ev.Key {
@@ -69,7 +72,9 @@ func (c *Confirm) RunWithIO(ctx context.Context, be backend.Backend, in io.Reade
 			text := strings.ToLower(strings.TrimSpace(ev.Text))
 			switch text {
 			case "":
-				return current, nil
+				// empty text on a non-enter key (Tab, space, resize, ...) must
+				// not accept the current value; only Enter does that.
+				continue
 			case "y", "yes":
 				return true, nil
 			case "n", "no":
