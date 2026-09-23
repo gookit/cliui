@@ -4,9 +4,16 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
-var codeMatch = regexp.MustCompile(`(:\w+:)`)
+// allow names with letters, digits, '_', '-' and '+', e.g. :+1:, :e-mail:
+var codeMatch = regexp.MustCompile(`(:[\w+-]+:)`)
+
+var (
+	unicodeExprRe = regexp.MustCompile("\\[[\\\\u0-9a-zA-Z]+\\]")
+	unicodeTrimRe = regexp.MustCompile("\\[\\\\u|]")
+)
 
 // Emoji is alias of the GetByName()
 func Emoji(name string) string {
@@ -71,13 +78,9 @@ func Render(str string) string {
 //
 //	emoji := FromUnicode("\U0001f496")
 func FromUnicode(s string) string {
-	// emoji表情的数据表达式
-	re := regexp.MustCompile("\\[[\\\\u0-9a-zA-Z]+\\]")
-	// 提取emoji数据表达式
-	reg := regexp.MustCompile("\\[\\\\u|]")
-	src := re.FindAllString(s, -1)
+	src := unicodeExprRe.FindAllString(s, -1)
 	for i := 0; i < len(src); i++ {
-		e := reg.ReplaceAllString(src[i], "")
+		e := unicodeTrimRe.ReplaceAllString(src[i], "")
 		p, err := strconv.ParseInt(e, 16, 32)
 		if err == nil {
 			s = strings.Replace(s, src[i], string(rune(p)), -1)
@@ -98,7 +101,13 @@ func FromUnicode(s string) string {
 //	unicode := ToUnicode("💖", "\U000") // "\U0001f496"
 //	fmt.Print(unicode) // "💖"
 func ToUnicode(emoji string, prefix ...string) string {
-	code := strconv.FormatInt(int64(emoji[0]), 16)
+	if emoji == "" {
+		return ""
+	}
+
+	// decode the first rune, not the first byte, so multi-byte emoji work.
+	r, _ := utf8.DecodeRuneInString(emoji)
+	code := strconv.FormatInt(int64(r), 16)
 
 	if len(prefix) > 0 {
 		return prefix[0] + code
@@ -112,21 +121,7 @@ func ToUnicode(emoji string, prefix ...string) string {
 //
 //	str := Decode("a msg [\u1f496]")
 func Decode(s string) string {
-	// emoji表情的数据表达式
-	re := regexp.MustCompile("\\[[\\\\u0-9a-zA-Z]+\\]")
-	// 提取emoji数据表达式
-	reg := regexp.MustCompile("\\[\\\\u|]")
-	src := re.FindAllString(s, -1)
-
-	for i := 0; i < len(src); i++ {
-		e := reg.ReplaceAllString(src[i], "")
-		p, err := strconv.ParseInt(e, 16, 32)
-		if err == nil {
-			s = strings.Replace(s, src[i], string(rune(p)), -1)
-		}
-	}
-
-	return s
+	return FromUnicode(s)
 }
 
 // Encode a string, convert emoji chat to unicode string
