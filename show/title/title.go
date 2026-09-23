@@ -155,11 +155,12 @@ func (t *Title) renderLeft(width int) string {
 
 	if t.PaddingLR {
 		// 填充左右: CHAR Title CHAR
-		if titleLen >= width-2 {
-			return string(t.PaddingChar) + " " + t.title()
+		// 需要左右各一个空格 + 左右填充字符，宽度不足时退化为标题本身
+		if titleLen+3 > width {
+			return t.title()
 		}
 
-		remaining := width - titleLen - 2
+		remaining := width - titleLen - 3
 		rightChars := make([]rune, remaining)
 		for i := range rightChars {
 			rightChars[i] = t.PaddingChar
@@ -227,7 +228,12 @@ func (t *Title) renderRight(width int) string {
 
 	if t.PaddingLR {
 		// 填充左右: CHAR Title CHAR
-		remaining := width - titleLen - 2
+		// 需要左右各一个空格 + 左右填充字符，宽度不足时退化为标题本身
+		if titleLen+3 > width {
+			return t.title()
+		}
+
+		remaining := width - titleLen - 3
 		leftChars := make([]rune, remaining)
 		for i := range leftChars {
 			leftChars[i] = t.PaddingChar
