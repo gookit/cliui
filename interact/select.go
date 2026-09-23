@@ -112,12 +112,13 @@ func (s *Select) prepare() (keys []string) {
 
 		sort.Strings(keys) // sort
 	case map[string]string:
-		s.valMap = optsData
-		keys = make([]string, len(optsData))
-		i := 0
-		for v := range optsData {
-			keys[i] = v
-			i++
+		// clone into an internal map: a "quit" entry may be injected later,
+		// which must not modify the caller's map.
+		s.valMap = make(map[string]string, len(optsData))
+		keys = make([]string, 0, len(optsData))
+		for k, v := range optsData {
+			s.valMap[k] = v
+			keys = append(keys, k)
 		}
 
 		sort.Strings(keys) // sort
