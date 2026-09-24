@@ -25,7 +25,6 @@ type InputParam struct {
 	runFn   func() (val string, err error)
 	// Value for input
 	val structs.Value
-	err error
 }
 
 // NewInputParam instance
@@ -92,16 +91,14 @@ func (p *InputParam) SetValidFn(fn func(val string) error) {
 
 // Run param and get user input
 func (p *InputParam) Run() (err error) {
-	if p.runFn != nil {
-		val, err := p.runFn()
-		if err != nil {
-			return err
-		}
-
-		err = p.Set(val)
-	} else {
-		err = errorx.Raw("please implement me")
+	if p.runFn == nil {
+		return errorx.Raw("please implement me")
 	}
 
-	return err
+	val, err := p.runFn()
+	if err != nil {
+		return err
+	}
+
+	return p.Set(val)
 }

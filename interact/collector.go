@@ -24,7 +24,6 @@ type Collector struct {
 	// input parameters
 	ps  map[string]InputParameter
 	ret maputil.Data
-	err error
 
 	ns []string
 }

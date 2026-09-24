@@ -728,15 +728,6 @@ func (r *Row) Init(opts *Options) {
 	}
 }
 
-// reset the row context info
-func (r *Row) reset() {
-	for _, cell := range r.Cells {
-		cell.init = false
-		cell.width = 0
-		cell.height = 0
-	}
-}
-
 // Cell represents a column in a row
 type Cell struct {
 	// Width custom set width of the cell.

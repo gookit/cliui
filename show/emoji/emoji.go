@@ -11,8 +11,8 @@ import (
 var codeMatch = regexp.MustCompile(`(:[\w+-]+:)`)
 
 var (
-	unicodeExprRe = regexp.MustCompile("\\[[\\\\u0-9a-zA-Z]+\\]")
-	unicodeTrimRe = regexp.MustCompile("\\[\\\\u|]")
+	unicodeExprRe = regexp.MustCompile(`\[[\\u0-9a-zA-Z]+\]`)
+	unicodeTrimRe = regexp.MustCompile(`\[\\u|]`)
 )
 
 // Emoji is alias of the GetByName()
@@ -127,7 +127,7 @@ func Decode(s string) string {
 // Encode a string, convert emoji chat to unicode string
 func Encode(s string) string {
 	var sb strings.Builder
-	for _, r := range []rune(s) {
+	for _, r := range s {
 		if len(string(r)) == 4 { // is unicode emoji char
 			code := strconv.FormatInt(int64(r), 16)
 			sb.WriteString(`[\u` + code + `]`)
