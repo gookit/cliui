@@ -71,3 +71,34 @@ func TestTable_OverflowWrapWrapsLongLine(t *testing.T) {
 	is.Contains(out, "ijklmnop")
 	is.NotContains(out, "abcdefghijklmnop")
 }
+
+// D1: []map[string]string rows go through reflection and must not panic.
+func TestTable_SetRowsMapStringValues(t *testing.T) {
+	is := assert.New(t)
+
+	tb := table.New("", table.WithBorderFlags(table.BorderAll))
+	tb.SetHeads("Name", "Role")
+	tb.SetRows([]map[string]string{
+		{"Name": "tom", "Role": "admin"},
+		{"Name": "jane", "Role": "user"},
+	})
+
+	out := ccolor.ClearCode(tb.String())
+	is.Contains(out, "tom")
+	is.Contains(out, "admin")
+	is.Contains(out, "jane")
+}
+
+// D3: mutating the table must invalidate the cached formatted output.
+func TestTable_StringReflectsLaterMutation(t *testing.T) {
+	is := assert.New(t)
+
+	tb := table.New("", table.WithBorderFlags(table.BorderAll))
+	tb.SetHeads("Name").AddRow("first")
+	is.Contains(tb.String(), "first")
+
+	tb.AddRow("second")
+	second := tb.String()
+	is.Contains(second, "second")
+	is.Contains(second, "first")
+}

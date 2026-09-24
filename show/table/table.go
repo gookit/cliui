@@ -48,18 +48,21 @@ func (t *Table) WithOptions(fns ...OptionFunc) *Table {
 	for _, fn := range fns {
 		fn(t.opts)
 	}
+	t.ResetFormat()
 	return t
 }
 
 // WithStyle set table style
 func (t *Table) WithStyle(style Style) *Table {
 	t.opts.Style = style
+	t.ResetFormat()
 	return t
 }
 
 // ConfigStyle config the table style
 func (t *Table) ConfigStyle(fn func(s *Style)) *Table {
 	fn(&t.opts.Style)
+	t.ResetFormat()
 	return t
 }
 
@@ -73,12 +76,14 @@ func (t *Table) SetHeads(names ...string) *Table {
 	for _, name := range names {
 		t.AddHead(name)
 	}
+	t.ResetFormat()
 	return t
 }
 
 // AddHead add head column to table
 func (t *Table) AddHead(name string) *Table {
 	t.Heads = append(t.Heads, NewCell(name))
+	t.ResetFormat()
 	return t
 }
 
@@ -99,12 +104,14 @@ func (t *Table) AddRow(cols ...any) *Table {
 	}
 
 	t.Rows = append(t.Rows, tr)
+	t.ResetFormat()
 	return t
 }
 
 // SetRows to table
 func (t *Table) SetRows(rs any) *Table {
 	t.Rows = nil // 清空现有行
+	t.ResetFormat()
 
 	switch v := rs.(type) {
 	case [][]any:
@@ -172,9 +179,21 @@ func (t *Table) setRowsByReflect(rv reflect.Value) {
 					}
 				}
 
+				keyType := elem.Type().Key()
 				rowData := make([]any, len(t.Heads))
 				for i, head := range t.Heads {
-					mapVal := elem.MapIndex(reflect.ValueOf(head))
+					// look up by the head name, converted to the map key type
+					keyVal := reflect.ValueOf(head.String())
+					if !keyVal.Type().AssignableTo(keyType) {
+						if keyVal.Type().ConvertibleTo(keyType) {
+							keyVal = keyVal.Convert(keyType)
+						} else {
+							rowData[i] = ""
+							continue
+						}
+					}
+
+					mapVal := elem.MapIndex(keyVal)
 					if mapVal.IsValid() {
 						rowData[i] = mapVal.Interface()
 					} else {
