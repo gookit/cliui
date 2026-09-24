@@ -27,13 +27,3 @@ func NewWriter(output io.Writer) *Writer {
 func (w *Writer) Write(p []byte) (n int, err error) {
 	return w.out.Write(p)
 }
-
-// Print data to io.Writer
-func (w *Writer) Print() {
-
-}
-
-// Flush data to io.Writer
-func (w *Writer) Flush() error {
-	return nil
-}

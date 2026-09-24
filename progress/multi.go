@@ -206,10 +206,6 @@ func (mp *MultiProgress) UseAutoRenderMode() {
 	mp.RenderMode = RenderPlain
 }
 
-func (mp *MultiProgress) update(event updateEvent, fn func() bool) {
-	mp.updateBar(event, nil, fn)
-}
-
 func (mp *MultiProgress) updateBar(event updateEvent, p *Progress, fn func() bool) {
 	mp.mu.Lock()
 	defer mp.mu.Unlock()

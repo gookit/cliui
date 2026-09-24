@@ -23,15 +23,6 @@ var widgetAliases = map[string]string{
 // WidgetFunc handler func for progress widget
 type WidgetFunc func(p *Progress) string
 
-// Progresser progress interface
-type Progresser interface {
-	Start(maxSteps ...int64)
-	Advance(steps ...int64)
-	AdvanceTo(step int64)
-	Finish(msg ...string)
-	Bound() any
-}
-
 // Progress definition
 // Refer:
 //
