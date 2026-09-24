@@ -119,7 +119,8 @@ func GetHiddenInput(message string, trimmed bool) (string, error) {
 	// like *nix, git-bash ...
 	if envutil.HasShellEnv("sh") {
 		// COMMAND: sh -c 'read -p "Enter Password:" -s user_input && echo $user_input'
-		cmd := fmt.Sprintf(`'read -p "%s" -s user_input && echo $user_input'`, message)
+		shMsg := strings.ReplaceAll(message, "'", `'\''`)
+		cmd := fmt.Sprintf(`'read -p "%s" -s user_input && echo $user_input'`, shMsg)
 		input, err = cliutil.ShellExec(cmd)
 		if err != nil {
 			return "", err
@@ -128,8 +129,9 @@ func GetHiddenInput(message string, trimmed bool) (string, error) {
 		fmt.Fprintln(cutypes.Output) // new line
 		hasResult = true
 	} else if envutil.IsWin() { // at windows cmd.exe
-		// create a temp VB script file
-		vbFile, err := os.CreateTemp("", "cliui-pwd")
+		// create a temp VB script file. cscript picks its engine by extension,
+		// so the .vbs suffix is required.
+		vbFile, err := os.CreateTemp("", "cliui-pwd-*.vbs")
 		if err != nil {
 			return "", err
 		}
@@ -139,8 +141,11 @@ func GetHiddenInput(message string, trimmed bool) (string, error) {
 			_ = os.Remove(vbFile.Name())
 		}()
 
-		script := fmt.Sprintf(`wscript.echo(InputBox("%s", "", "password here"))`, message)
-		_, _ = vbFile.WriteString(script)
+		vbMsg := strings.ReplaceAll(message, `"`, `""`)
+		script := fmt.Sprintf(`wscript.echo(InputBox("%s", "", "password here"))`, vbMsg)
+		if _, err = vbFile.WriteString(script); err != nil {
+			return "", err
+		}
 		hasResult = true
 
 		// exec VB script
