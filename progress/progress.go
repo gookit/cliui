@@ -1,5 +1,10 @@
 // Package progress provide terminal progress bar display.
 // Such as: `Txt`, `Bar`, `Loading`, `RoundTrip`, `DynamicText` ...
+//
+// Concurrency: Progress and MultiProgress are NOT safe for concurrent use by
+// multiple goroutines. For a managed bar, update it through its MultiProgress
+// (Advance, SetMessage, Reset, ...) from a single goroutine; do not call
+// Progress methods directly from several goroutines at once.
 package progress
 
 import (
