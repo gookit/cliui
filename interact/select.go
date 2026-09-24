@@ -2,6 +2,7 @@ package interact
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"sort"
@@ -75,8 +76,12 @@ func (s *Select) EnableMulti() *Select {
 }
 
 // Run select and receive use input answer
-func (s *Select) Run() *SelectResult {
-	keys := s.prepare()
+func (s *Select) Run() (*SelectResult, error) {
+	keys, err := s.prepare()
+	if err != nil {
+		return nil, err
+	}
+
 	// render to console
 	s.render(keys)
 
@@ -87,10 +92,10 @@ func (s *Select) Run() *SelectResult {
 	return s.selectOne()
 }
 
-func (s *Select) prepare() (keys []string) {
+func (s *Select) prepare() (keys []string, err error) {
 	s.Title = strings.TrimSpace(s.Title)
 	if s.Title == "" || s.Options == nil {
-		exitWithErr("(interact.Select) must provide title and options data")
+		return nil, errors.New("(interact.Select) must provide title and options data")
 	}
 
 	s.valMap = make(map[string]string)
@@ -136,7 +141,7 @@ func (s *Select) prepare() (keys []string) {
 			handleArrItem(i, v)
 		}
 	default:
-		exitWithErr("(interact.Select) invalid options data for select")
+		return nil, errors.New("(interact.Select) invalid options data for select")
 	}
 
 	// format some field data
@@ -144,7 +149,7 @@ func (s *Select) prepare() (keys []string) {
 	if len(s.DefOpts) > 0 {
 		s.DefOpts = arrutil.StringsFilter(s.DefOpts)
 	}
-	return
+	return keys, nil
 }
 
 // Render select and options to terminal
@@ -167,7 +172,7 @@ func (s *Select) render(keys []string) {
 	buf = nil
 }
 
-func (s *Select) selectOne() *SelectResult {
+func (s *Select) selectOne() (*SelectResult, error) {
 	var has bool
 	var defVal string
 	tipsText := "Your choice: "
@@ -176,7 +181,7 @@ func (s *Select) selectOne() *SelectResult {
 	if s.DefOpt != "" {
 		defVal, has = s.valMap[s.DefOpt]
 		if !has {
-			exitWithErr("(interact.Select) default option '%s' don't exists", s.DefOpt)
+			return nil, fmt.Errorf("(interact.Select) default option '%s' don't exists", s.DefOpt)
 		}
 
 		defMsg := fmt.Sprintf("[default:%s]", color.Green.Render(s.DefOpt))
@@ -184,14 +189,14 @@ func (s *Select) selectOne() *SelectResult {
 	}
 
 DoSelect:
-	key, err := internal.ReadLineWithOutput(tipsText, s.out())
-	if err != nil {
-		exitWithErr("(interact.Select) %s", err.Error())
+	key, readErr := internal.ReadLineWithOutput(tipsText, s.out())
+	if readErr != nil {
+		return nil, fmt.Errorf("(interact.Select) %w", readErr)
 	}
 
 	if key == "" { // empty input
 		if s.DefOpt != "" { // has default option
-			return newSelectResult(s.DefOpt, defVal)
+			return newSelectResult(s.DefOpt, defVal), nil
 		}
 		goto DoSelect // retry ...
 	}
@@ -205,14 +210,14 @@ DoSelect:
 
 	// quit select.
 	if !s.DisableQuit && key == "q" {
-		exitWithMsg(OK, "\n  Quit,ByeBye")
+		return nil, ErrQuit
 	}
 
-	return newSelectResult(key, val)
+	return newSelectResult(key, val), nil
 }
 
 // for enable MultiSelect
-func (s *Select) selectMulti() *SelectResult {
+func (s *Select) selectMulti() (*SelectResult, error) {
 	var defValues []string
 	hasDefault := len(s.DefOpts) > 0
 	tipsText := "Your choice(multi use <magenta>,</> separate): "
@@ -223,7 +228,7 @@ func (s *Select) selectMulti() *SelectResult {
 			if key = strings.TrimSpace(key); key != "" {
 				val, has := s.valMap[key]
 				if !has {
-					exitWithErr("(interact.Select) default option '%s' don't exists", key)
+					return nil, fmt.Errorf("(interact.Select) default option '%s' don't exists", key)
 				}
 
 				defOpts = append(defOpts, key)
@@ -241,16 +246,16 @@ func (s *Select) selectMulti() *SelectResult {
 	}
 
 DoSelect:
-	ans, err := internal.ReadLineWithOutput(tipsText, s.out())
-	if err != nil {
-		exitWithErr("(interact.Select) %s", err.Error())
+	ans, readErr := internal.ReadLineWithOutput(tipsText, s.out())
+	if readErr != nil {
+		return nil, fmt.Errorf("(interact.Select) %w", readErr)
 	}
 
 	keys := strutil.ToSlice(ans, ",")
 	if len(keys) == 0 { // empty input
 		// has default options
 		if hasDefault {
-			return newSelectResult(s.DefOpts, defValues)
+			return newSelectResult(s.DefOpts, defValues), nil
 		}
 
 		goto DoSelect // retry ...
@@ -269,11 +274,11 @@ DoSelect:
 
 		// quit select.
 		if !s.DisableQuit && k == "q" {
-			exitWithMsg(OK, "\n  Quit,ByeBye")
+			return nil, ErrQuit
 		}
 	}
 
-	return newSelectResult(keys, values)
+	return newSelectResult(keys, values), nil
 }
 
 func (s *Select) out() io.Writer {

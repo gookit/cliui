@@ -15,7 +15,8 @@ func TestSelectDoesNotMutateCallerMap(t *testing.T) {
 	s := NewSelect("Your city", opts)
 	s.Out = new(bytes.Buffer)
 
-	keys := s.prepare()
+	keys, err := s.prepare()
+	is.NoErr(err)
 	s.render(keys)
 
 	_, hasQuit := opts["q"]

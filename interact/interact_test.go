@@ -18,7 +18,8 @@ func TestSelectUsesCustomOutput(t *testing.T) {
 	cliui.CustomIO(in, out)
 	defer cliui.ResetIO()
 
-	got := interact.SelectOne("Choose", []string{"dev", "prod"}, "")
+	got, err := interact.SelectOne("Choose", []string{"dev", "prod"}, "")
+	is.NoErr(err)
 
 	is.Eq("dev", got)
 	is.Contains(out.String(), "Choose")
@@ -36,7 +37,8 @@ func TestSelectUsesInstanceOutput(t *testing.T) {
 	out := new(bytes.Buffer)
 	sel := interact.NewSelect("Choose", []string{"dev", "prod"})
 	sel.Out = out
-	got := sel.Run()
+	got, err := sel.Run()
+	is.NoErr(err)
 
 	is.Eq("dev", got.String())
 	is.Contains(out.String(), "Choose")
@@ -52,10 +54,11 @@ func TestSelectOneKeyReturnsSelectedKey(t *testing.T) {
 	cliui.CustomIO(in, out)
 	defer cliui.ResetIO()
 
-	got := interact.SelectOneKey("Choose", map[string]string{
+	got, err := interact.SelectOneKey("Choose", map[string]string{
 		"a": "dev",
 		"b": "prod",
 	}, "")
+	is.NoErr(err)
 
 	is.Eq("b", got)
 	is.Contains(out.String(), "Choose")
@@ -70,10 +73,11 @@ func TestSelectOneKeyReturnsDefaultKey(t *testing.T) {
 	defer cliui.ResetIO()
 
 	out := new(bytes.Buffer)
-	got := interact.SelectOneKey("Choose", []string{"dev", "prod"}, "1", func(s *interact.Select) {
+	got, err := interact.SelectOneKey("Choose", []string{"dev", "prod"}, "1", func(s *interact.Select) {
 		s.Out = out
 		s.DisableQuit = true
 	})
+	is.NoErr(err)
 
 	is.Eq("1", got)
 	is.Contains(out.String(), "default:")
@@ -88,7 +92,8 @@ func TestQuestionUsesCustomOutput(t *testing.T) {
 	cliui.CustomIO(in, out)
 	defer cliui.ResetIO()
 
-	got := interact.NewQuestion("Your name?").Run()
+	got, err := interact.NewQuestion("Your name?").Run()
+	is.NoErr(err)
 
 	is.Eq("tom", got.String())
 	is.Contains(out.String(), "Your name?")
@@ -106,7 +111,8 @@ func TestQuestionUsesInstanceOutput(t *testing.T) {
 	out := new(bytes.Buffer)
 	q := interact.NewQuestion("Your name?")
 	q.Out = out
-	got := q.Run()
+	got, err := q.Run()
+	is.NoErr(err)
 
 	is.Eq("tom", got.String())
 	is.Contains(out.String(), "Your name?")

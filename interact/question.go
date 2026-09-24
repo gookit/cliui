@@ -1,6 +1,7 @@
 package interact
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -40,22 +41,26 @@ func NewQuestion(q string, defVal ...string) *Question {
 }
 
 // Run and returns value
-func (q *Question) Run() *Value {
-	q.render()
+func (q *Question) Run() (*Value, error) {
+	if err := q.render(); err != nil {
+		return nil, err
+	}
 
 DoASK:
 	ans, err := internal.ReadLineWithOutput("A: ", q.out())
 	if err != nil {
-		exitWithErr("(interact.Question) %s", err.Error())
+		return nil, fmt.Errorf("(interact.Question) %w", err)
 	}
 
 	// don't input
 	if ans == "" {
 		if q.DefVal != "" { // has default value
-			return &Value{V: q.DefVal}
+			return &Value{V: q.DefVal}, nil
 		}
 
-		q.checkErrTimes()
+		if err := q.checkErrTimes(); err != nil {
+			return nil, err
+		}
 		fmt.Fprintln(q.out(), color.Error.Render("A value is required."))
 		goto DoASK
 	}
@@ -63,44 +68,47 @@ DoASK:
 	// has validator func
 	if q.Func != nil {
 		if err := q.Func(ans); err != nil {
-			q.checkErrTimes()
+			if err := q.checkErrTimes(); err != nil {
+				return nil, err
+			}
 			fmt.Fprintln(q.out(), color.Error.Render(err.Error()))
 			goto DoASK
 		}
 	}
 
-	return &Value{V: ans}
+	return &Value{V: ans}, nil
 }
 
-func (q *Question) render() {
+func (q *Question) render() error {
 	q.Q = strings.TrimSpace(q.Q)
 	if q.Q == "" {
-		exitWithErr("(interact.Question) must provide question message")
+		return errors.New("(interact.Question) must provide question message")
 	}
 
 	var defMsg string
 
 	q.DefVal = strings.TrimSpace(q.DefVal)
 	if q.DefVal != "" {
-		defMsg = fmt.Sprintf("[default:%s]", color.Green.Render(q.DefVal))
+		defMsg = fmt.Sprintf(" [default:%s]", color.Green.Render(q.DefVal))
 	}
 
 	// print question
 	fmt.Fprintf(q.out(), "%s%s\n", color.Comment.Render(q.Q), defMsg)
+	return nil
 }
 
-func (q *Question) checkErrTimes() {
+func (q *Question) checkErrTimes() error {
 	if q.MaxTimes <= 0 {
-		return
+		return nil
 	}
 
 	// limit error times
 	if q.MaxTimes == q.errTimes {
-		times := color.Magenta.Render(q.MaxTimes)
-		exitWithMsg(0, "\n  You've entered incorrectly", times, "times. Bye!")
+		return fmt.Errorf("%w: entered incorrectly %d times", ErrMaxAttempts, q.MaxTimes)
 	}
 
 	q.errTimes++
+	return nil
 }
 
 func (q *Question) out() io.Writer {

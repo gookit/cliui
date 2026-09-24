@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/gookit/cliui/cutypes"
 	"github.com/gookit/cliui/internal"
@@ -47,7 +48,8 @@ func ReadFirst(question string) (string, error) {
 		return "", err
 	}
 
-	return string(answer[0]), err
+	r, _ := utf8.DecodeRuneInString(answer)
+	return string(r), err
 }
 
 // AnswerIsYes check user inputted answer is right
@@ -55,9 +57,9 @@ func ReadFirst(question string) (string, error) {
 // Usage:
 //
 //	fmt.Print("are you OK?")
-//	ok := AnswerIsYes()
-//	ok := AnswerIsYes(true)
-func AnswerIsYes(defVal ...bool) bool {
+//	ok, err := AnswerIsYes()
+//	ok, err := AnswerIsYes(true)
+func AnswerIsYes(defVal ...bool) (bool, error) {
 	mark := " [yes|no]: "
 	if len(defVal) > 0 {
 		var defShow string
@@ -70,27 +72,24 @@ func AnswerIsYes(defVal ...bool) bool {
 		mark = fmt.Sprintf(" [yes|no](default <cyan>%s</>): ", defShow)
 	}
 
-	// _, err := fmt.Scanln(&answer)
-	// _, err := fmt.Scan(&answer)
 	fChar, err := ReadFirst(mark)
 	if err != nil {
-		panic(err)
+		return false, err
 	}
 
 	if len(fChar) > 0 {
-		fChar := strings.ToLower(fChar)
-		if fChar == "y" {
-			return true
-		}
-		if fChar == "n" {
-			return false
+		switch strings.ToLower(fChar) {
+		case "y":
+			return true, nil
+		case "n":
+			return false, nil
 		}
 	} else if len(defVal) > 0 { // has default value
-		return defVal[0]
+		return defVal[0], nil
 	}
 
 	_, _ = fmt.Fprint(cutypes.Output, "Please try again")
-	return AnswerIsYes()
+	return AnswerIsYes(defVal...)
 }
 
 // ReadPassword from terminal

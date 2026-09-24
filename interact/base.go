@@ -2,11 +2,8 @@
 package interact
 
 import (
-	"fmt"
-	"os"
+	"errors"
 
-	"github.com/gookit/cliui/cutypes"
-	"github.com/gookit/color"
 	"github.com/gookit/goutil/structs"
 )
 
@@ -15,6 +12,13 @@ const (
 	OK = 0
 	// ERR error exit code
 	ERR = 2
+)
+
+var (
+	// ErrQuit is returned when the user chooses to quit an interaction.
+	ErrQuit = errors.New("interact: user quit")
+	// ErrMaxAttempts is returned when the max input attempts is exceeded.
+	ErrMaxAttempts = errors.New("interact: max attempts exceeded")
 )
 
 // ComOptions struct
@@ -77,17 +81,3 @@ func (sv *SelectResult) WithKey(key any) *SelectResult {
 	return sv
 }
 
-/*************************************************************
- * helper methods
- *************************************************************/
-
-func exitWithErr(format string, v ...any) {
-	prefix := color.RenderString(color.Error.Code(), "ERROR: ")
-	fmt.Fprintf(cutypes.Output, prefix+format+"\n", v...)
-	os.Exit(ERR)
-}
-
-func exitWithMsg(exitCode int, messages ...any) {
-	fmt.Fprintln(cutypes.Output, messages...)
-	os.Exit(exitCode)
-}
