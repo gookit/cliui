@@ -116,8 +116,14 @@ title.New("Deploy", func(o *title.Options) { o.Width = 40 })
 - `interact`：`internal.ReadLineWithOutput` 改为每个输入流复用一个 `bufio.Reader`，避免一次性管道/文件里的后续行被丢弃。
 - `interact`：`GetHiddenInput` 的 Windows 临时脚本改为 `.vbs` 后缀（`cscript` 依赖扩展名），并对 VB 双引号与 sh 单引号做转义、检查写入错误。
 
-## 仍未处理
+## 后续补充（四）
 
-- `progress`：`Progress.started`/`manager` 的无锁读写竞态；`Finish` 与 `Done/Fail/Skip` 的输出不一致。
-- `show/table`：`SortColumn` 按字符串排序（数字列字典序）；单元格含 color 标签时宽度测量未剔除标签。
-- `interact`：`readline` 的 `ctx` 仍只在阻塞前检查、终端恢复无信号保护；`GetHiddenInput` 的 Windows `InputBox` 仍明文显示。
+- `progress`：`Start` 对受管 bar 不再无锁读取 `p.started`，改由 `manager.startProgress` 在锁内校验；`Finish` 增加“已结束则直接返回”保护，避免重复换行；`GetCharTheme(0)`/`GetCharsTheme(0)` 现在返回索引 0 的主题（此前会随机）。
+- `show/table`：`SortColumn` 在两列都是数字时按数值排序（此前 `"10" < "9"` 的字典序）。
+
+## 仍未处理（有意保留）
+
+- `progress`：`Progress.manager` 仍以“Add 后使用”为前提无锁读取；`started` 在只读访问器（`Started()` 等）中未加锁——需引入 `Progress` 级锁并明确与 `MultiProgress` 锁的顺序，属较大改动。
+- `progress`：`Finish(msg)` 按文档语义“删除进度行并打印原始消息”，与 `Done/Fail/Skip` 的格式化输出不同，属既定设计，未改。
+- `show/table`：单元格值含 color 标签时宽度测量未剔除标签（需带标签的 resize 辅助函数，属边界场景）。
+- `interact`：`readline` 的 `ctx` 仍只在阻塞前检查（需平台相关的 read deadline）；终端恢复无信号保护（库内注册全局信号处理有副作用）；`GetHiddenInput` 的 Windows `InputBox` 仍明文显示（需换用 PowerShell `-AsSecureString` 等机制）。
