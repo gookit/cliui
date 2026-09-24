@@ -3,12 +3,64 @@ package interact
 import (
 	"bytes"
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
 	"github.com/gookit/cliui"
 	"github.com/gookit/goutil/x/assert"
 )
+
+// E9: a default value must pass the question validator.
+func TestQuestionValidatesDefaultValue(t *testing.T) {
+	is := assert.New(t)
+
+	cliui.CustomIO(strings.NewReader("\ntom\n"), new(bytes.Buffer))
+	defer cliui.ResetIO()
+
+	q := NewQuestion("Name?", "x")
+	q.Func = func(ans string) error {
+		if ans == "x" {
+			return errors.New("bad default")
+		}
+		return nil
+	}
+
+	got, err := q.Run()
+	is.NoErr(err)
+	is.Eq("tom", got.String())
+}
+
+// E12: StepsRun must stop when the context is cancelled.
+func TestStepsRunStopsOnCancelledContext(t *testing.T) {
+	is := assert.New(t)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	ran := 0
+	s := &StepsRun{Steps: []StepHandler{
+		func(context.Context) error { ran++; return nil },
+	}}
+
+	s.RunContext(ctx)
+	is.Eq(0, ran)
+	is.True(s.Err() != nil)
+}
+
+func TestStepsRunRunsAllSteps(t *testing.T) {
+	is := assert.New(t)
+
+	ran := 0
+	s := &StepsRun{Steps: []StepHandler{
+		func(context.Context) error { ran++; return nil },
+		func(context.Context) error { ran++; return nil },
+	}}
+
+	s.Run()
+	is.Eq(2, ran)
+	is.Nil(s.Err())
+}
 
 func TestPromptReadsLine(t *testing.T) {
 	is := assert.New(t)

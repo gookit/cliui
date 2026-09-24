@@ -28,8 +28,13 @@ type StepsRun struct {
 	Steps []StepHandler
 }
 
-// Run all steps
+// Run all steps with a background context.
 func (s *StepsRun) Run() {
+	s.RunContext(context.Background())
+}
+
+// RunContext runs all steps, stopping early when ctx is cancelled.
+func (s *StepsRun) RunContext(ctx context.Context) {
 	if s.stopped {
 		return
 	}
@@ -40,9 +45,19 @@ func (s *StepsRun) Run() {
 		return
 	}
 
-	ctx := context.Background()
+	if ctx == nil {
+		ctx = context.Background()
+	}
 
 	for i, handler := range s.Steps {
+		if s.stopped {
+			return
+		}
+		if err := ctx.Err(); err != nil {
+			s.err = err
+			return
+		}
+
 		s.current = i
 
 		err := handler(ctx)

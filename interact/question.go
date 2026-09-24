@@ -55,6 +55,16 @@ DoASK:
 	// don't input
 	if ans == "" {
 		if q.DefVal != "" { // has default value
+			// the default value must pass the validator too
+			if q.Func != nil {
+				if err := q.Func(q.DefVal); err != nil {
+					if err := q.checkErrTimes(); err != nil {
+						return nil, err
+					}
+					fmt.Fprintln(q.out(), color.Error.Render(err.Error()))
+					goto DoASK
+				}
+			}
 			return &Value{V: q.DefVal}, nil
 		}
 
