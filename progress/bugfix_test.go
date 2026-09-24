@@ -5,8 +5,26 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gookit/cliui"
 	"github.com/gookit/goutil/x/assert"
 )
+
+// The output stream must be resolved at render time, not at construction.
+func TestProgressUsesOutputAtRenderTime(t *testing.T) {
+	is := assert.New(t)
+
+	p := Txt(10) // created before the output is replaced
+
+	buf := new(bytes.Buffer)
+	cliui.SetOutput(buf)
+	defer cliui.ResetOutput()
+
+	p.Start()
+	p.AdvanceTo(5)
+	p.Finish()
+
+	is.Contains(buf.String(), "50.0%")
+}
 
 // F1: random theme helpers must be able to pick the last element.
 func TestRandomThemeCoversLastElement(t *testing.T) {

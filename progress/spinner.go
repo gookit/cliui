@@ -35,7 +35,8 @@ type SpinnerFactory struct {
 // Spinner instance
 func Spinner(speed time.Duration) *SpinnerFactory {
 	return &SpinnerFactory{
-		Out:    cutypes.Output,
+		// Out is left nil so the writer is resolved from cutypes.Output at
+		// render time; setting it here would snapshot the stream too early.
 		Speed:  speed,
 		Format: "%s",
 		// color: color.Normal.Sprint,
