@@ -22,7 +22,7 @@ var CharThemes = []rune{
 
 // GetCharTheme by index number. if index not exist, will return a random theme
 func GetCharTheme(index int) rune {
-	if index > 0 && len(CharThemes) > index {
+	if index >= 0 && index < len(CharThemes) {
 		return CharThemes[index]
 	}
 	return RandomCharTheme()
@@ -65,7 +65,7 @@ var CharsThemes = [][]rune{
 
 // GetCharsTheme by index number
 func GetCharsTheme(index int) []rune {
-	if index > 0 && len(CharsThemes) > index {
+	if index >= 0 && index < len(CharsThemes) {
 		return CharsThemes[index]
 	}
 	return RandomCharsTheme()

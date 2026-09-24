@@ -328,13 +328,15 @@ func (p *Progress) addWidgets(widgets map[string]WidgetFunc) {
 
 // Start the progress bar
 func (p *Progress) Start(maxSteps ...int64) {
-	if p.started {
-		panic("Progress bar already started")
-	}
-
 	if p.manager != nil {
+		// the manager re-checks the started state under its own lock, so we
+		// avoid an unsynchronized read of p.started here.
 		p.manager.startProgress(p, maxSteps...)
 		return
+	}
+
+	if p.started {
+		panic("Progress bar already started")
 	}
 
 	// init
@@ -499,6 +501,10 @@ func (p *Progress) Finish(message ...string) {
 	}
 
 	p.checkStart()
+	if !p.finishedAt.IsZero() {
+		return // already finished, avoid a duplicated final newline
+	}
+
 	p.finishedAt = time.Now()
 
 	if p.MaxSteps == 0 {

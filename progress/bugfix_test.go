@@ -25,6 +25,16 @@ func TestIsTerminalAcceptsFdWriter(t *testing.T) {
 	is.Eq(IsTerminal(os.Stdout), IsTerminal(fdWriter{os.Stdout.Fd()}))
 }
 
+// F8: an explicit theme index (including 0) must be honored.
+func TestGetThemeByIndex(t *testing.T) {
+	is := assert.New(t)
+
+	is.Eq(CharThemes[0], GetCharTheme(0))
+	is.Eq(CharThemes[1], GetCharTheme(1))
+	is.Eq(string(CharsThemes[0]), string(GetCharsTheme(0)))
+	is.Eq(string(CharsThemes[1]), string(GetCharsTheme(1)))
+}
+
 // D4: refreshing a shorter block must erase the previous rows.
 func TestMultiProgressRefreshClearsShrunkBlock(t *testing.T) {
 	is := assert.New(t)
