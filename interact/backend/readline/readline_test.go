@@ -194,6 +194,20 @@ func TestSession_ReadEventEscapeSequences(t *testing.T) {
 	}
 }
 
+type errWriter struct{}
+
+func (errWriter) Write(p []byte) (int, error) { return 0, errors.New("boom") }
+
+// E8: Render must surface writer errors instead of swallowing them.
+func TestSession_RenderReturnsWriteError(t *testing.T) {
+	is := assert.New(t)
+
+	s := &Session{out: errWriter{}}
+	err := s.Render(backend.View{Lines: []string{"x"}})
+
+	is.True(err != nil)
+}
+
 func TestSession_ReadEventCtrlD(t *testing.T) {
 	is := assert.New(t)
 

@@ -82,19 +82,26 @@ func (s *Session) Render(view backend.View) error {
 		return nil
 	}
 
+	var err error
+	write := func(text string) {
+		if err == nil {
+			_, err = io.WriteString(s.out, text)
+		}
+	}
+
 	if view.HideCursor != s.hidden {
 		if view.HideCursor {
-			fmt.Fprint(s.out, "\x1B[?25l")
+			write("\x1B[?25l")
 		} else {
-			fmt.Fprint(s.out, "\x1B[?25h")
+			write("\x1B[?25h")
 		}
 		s.hidden = view.HideCursor
 	}
 
 	if s.rendered > 0 {
-		fmt.Fprint(s.out, "\r")
+		write("\r")
 		if s.rendered > 1 {
-			fmt.Fprintf(s.out, "\x1B[%dA", s.rendered-1)
+			write(fmt.Sprintf("\x1B[%dA", s.rendered-1))
 		}
 	}
 
@@ -105,28 +112,28 @@ func (s *Session) Render(view backend.View) error {
 	}
 
 	for i := 0; i < renderedLines; i++ {
-		fmt.Fprint(s.out, "\x1B[2K")
+		write("\x1B[2K")
 		if i < len(view.Lines) {
-			fmt.Fprint(s.out, color.Render(view.Lines[i]))
+			write(color.Render(view.Lines[i]))
 		}
 		if i < renderedLines-1 {
-			fmt.Fprint(s.out, "\r\n")
+			write("\r\n")
 		}
 	}
 
 	if view.CursorRow >= 0 && view.CursorRow < len(view.Lines) {
 		moveUp := currentRows - 1 - cursorScreenRow(view)
 		if moveUp > 0 {
-			fmt.Fprintf(s.out, "\x1B[%dA", moveUp)
+			write(fmt.Sprintf("\x1B[%dA", moveUp))
 		}
-		fmt.Fprint(s.out, "\r")
+		write("\r")
 		if view.CursorColumn > 0 {
-			fmt.Fprintf(s.out, "\x1B[%dC", view.CursorColumn)
+			write(fmt.Sprintf("\x1B[%dC", view.CursorColumn))
 		}
 	}
 
 	s.rendered = currentRows
-	return nil
+	return err
 }
 
 func viewRows(view backend.View) int {
