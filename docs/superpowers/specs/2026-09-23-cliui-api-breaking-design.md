@@ -121,9 +121,15 @@ title.New("Deploy", func(o *title.Options) { o.Width = 40 })
 - `progress`：`Start` 对受管 bar 不再无锁读取 `p.started`，改由 `manager.startProgress` 在锁内校验；`Finish` 增加“已结束则直接返回”保护，避免重复换行；`GetCharTheme(0)`/`GetCharsTheme(0)` 现在返回索引 0 的主题（此前会随机）。
 - `show/table`：`SortColumn` 在两列都是数字时按数值排序（此前 `"10" < "9"` 的字典序）。
 
+## 后续补充（五）
+
+- `show/table`：单元格/表头含 gookit color 标签时，宽度测量改用 `color.ClearTag` 后的可见宽度（`displayWidth`），并用 `utf8ResizeTagged` 按可见宽度补空格且保留标签；`OverflowCut` 路径先清标签再截断。
+- `interact`：`GetHiddenInput` 的 Windows 分支从 VB `InputBox`（明文回显）改为 `powershell -NoProfile -Command "Read-Host -AsSecureString ..."` 并转回明文，密码不再回显。
+- `interact`：`readline.Session` 改为单个后台读取 worker 拥有 `s.in`，`ReadEvent` 通过 `select` 响应 `ctx.Done()`；取消后不再起第二个读取者，事件也不会丢失。
+- `progress`：包注释明确说明 `Progress`/`MultiProgress` 非并发安全，受管 bar 应通过 `MultiProgress` 在单 goroutine 内更新。
+
 ## 仍未处理（有意保留）
 
-- `progress`：`Progress.manager` 仍以“Add 后使用”为前提无锁读取；`started` 在只读访问器（`Started()` 等）中未加锁——需引入 `Progress` 级锁并明确与 `MultiProgress` 锁的顺序，属较大改动。
+- `progress`：`Progress.manager` 仍以“Add 后使用”为前提无锁读取；只读访问器未加锁——需引入 `Progress` 级锁并明确与 `MultiProgress` 的锁顺序，属较大改动；已在包注释声明非并发安全。
 - `progress`：`Finish(msg)` 按文档语义“删除进度行并打印原始消息”，与 `Done/Fail/Skip` 的格式化输出不同，属既定设计，未改。
-- `show/table`：单元格值含 color 标签时宽度测量未剔除标签（需带标签的 resize 辅助函数，属边界场景）。
-- `interact`：`readline` 的 `ctx` 仍只在阻塞前检查（需平台相关的 read deadline）；终端恢复无信号保护（库内注册全局信号处理有副作用）；`GetHiddenInput` 的 Windows `InputBox` 仍明文显示（需换用 PowerShell `-AsSecureString` 等机制）。
+- `interact`：`readline` 的终端恢复仍无信号保护（库内注册全局信号处理副作用大，交给调用方 `defer Close()`）。
