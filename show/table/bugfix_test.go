@@ -54,3 +54,20 @@ func TestTable_ChineseHeaderAlignment(t *testing.T) {
 		is.Eq(width, strutil.TextWidth(line))
 	}
 }
+
+// OverflowWrap must actually wrap a too-long single line across rows.
+func TestTable_OverflowWrapWrapsLongLine(t *testing.T) {
+	is := assert.New(t)
+
+	tb := table.New("", table.WithBorderFlags(table.BorderAll))
+	tb.SetHeads("K").AddRow("abcdefghijklmnop")
+	tb.WithOptions(
+		table.WithOverflowFlag(table.OverflowWrap),
+		table.WithColumnWidths(8),
+	)
+
+	out := ccolor.ClearCode(tb.String())
+	is.Contains(out, "abcdefgh")
+	is.Contains(out, "ijklmnop")
+	is.NotContains(out, "abcdefghijklmnop")
+}

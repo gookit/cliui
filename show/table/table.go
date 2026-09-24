@@ -392,6 +392,19 @@ func (t *Table) prepare() {
 		}
 	}
 
+	// 启用换行时，按列宽对超宽单元格内容换行，并重新计算行高
+	if t.opts.OverflowFlag == OverflowWrap {
+		for _, row := range t.Rows {
+			row.Height = 0
+			for _, cell := range row.Cells {
+				cell.wrapLines(t.opts)
+				if cell.height > row.Height {
+					row.Height = cell.height
+				}
+			}
+		}
+	}
+
 	// 保存计算后的列宽到 table 实例
 	t.colWidths = colWidths
 }
@@ -417,7 +430,7 @@ func (t *Table) formatHeader() {
 
 	// 画顶部边框（如果需要）
 	if opts.HasBorderFlag(BorderTop) {
-		t.drawBorderLine(t.Buffer(), style.Border.TopLeft, style.Border.Top, style.Border.TopIntersect, style.Border.TopRight)
+		t.drawBorderLine(t.Buffer(), style.Border.TopLeft, style.Border.Top, style.Border.TopIntersect, style.Border.TopRight, true)
 	}
 
 	showBorderLeft := t.opts.HasBorderFlag(BorderLeft) && style.Border.Left > 0
@@ -467,7 +480,7 @@ func (t *Table) formatHeader() {
 
 		// 画表头分隔线（如果需要）
 		if opts.HasBorderFlag(BorderHeader | BorderRows) {
-			t.drawBorderLine(buf, style.Divider.Left, style.Border.Center, style.Divider.Intersect, style.Divider.Right)
+			t.drawBorderLine(buf, style.Divider.Left, style.Border.Center, style.Divider.Intersect, style.Divider.Right, false)
 			// } else if opts.HasBorderFlag(BorderRows) {
 			// 	t.drawBorderLine(buf, style.Border.Right, style.Border.Center, style.Border.Cell, style.Border.Right)
 		}
@@ -475,7 +488,7 @@ func (t *Table) formatHeader() {
 	} else if len(t.Heads) == 0 && len(t.Rows) > 0 {
 		// 没有表头但有数据，仍可能需要画分隔线
 		if opts.HasBorderFlag(BorderHeader) {
-			t.drawBorderLine(buf, style.Divider.Left, style.Border.Center, style.Divider.Intersect, style.Divider.Right)
+			t.drawBorderLine(buf, style.Divider.Left, style.Border.Center, style.Divider.Intersect, style.Divider.Right, false)
 		}
 	}
 }
@@ -559,7 +572,7 @@ func (t *Table) formatBody() {
 
 		// 画行分隔线（如果需要）
 		if opts.HasBorderFlag(BorderRows) && i < len(t.Rows)-1 {
-			t.drawBorderLine(buf, style.Border.Right, style.Border.Center, style.Divider.Intersect, style.Border.Right)
+			t.drawBorderLine(buf, style.Border.Right, style.Border.Center, style.Divider.Intersect, style.Border.Right, false)
 		}
 
 	}
@@ -573,17 +586,24 @@ func (t *Table) formatFooter() {
 
 	// 画底部边框（如果需要）
 	if opts.HasBorderFlag(BorderBottom) {
-		t.drawBorderLine(buf, style.Border.BottomLeft, style.Border.Bottom, style.Border.BottomIntersect, style.Border.BottomRight)
+		t.drawBorderLine(buf, style.Border.BottomLeft, style.Border.Bottom, style.Border.BottomIntersect, style.Border.BottomRight, true)
 	}
 }
 
-// drawBorderLine draws a borderline with the given characters
-func (t *Table) drawBorderLine(buf *bytes.Buffer, leftChar, centerChar, intersect, rightChar rune) {
+// drawBorderLine draws a borderline with the given characters.
+//
+// When edge is true (a top/bottom border line), the left/right end characters
+// are drawn whenever they are defined, so styles that define distinct corners
+// (e.g. ┏┓╰╮) render them even when BorderLeft/BorderRight are not enabled.
+func (t *Table) drawBorderLine(buf *bytes.Buffer, leftChar, centerChar, intersect, rightChar rune, edge bool) {
 	if leftChar == 0 && rightChar == 0 {
 		return // 如果没有边框字符，则跳过
 	}
 
-	if t.opts.HasBorderFlag(BorderLeft) && leftChar > 0 {
+	drawLeft := leftChar > 0 && (edge || t.opts.HasBorderFlag(BorderLeft))
+	drawRight := rightChar > 0 && (edge || t.opts.HasBorderFlag(BorderRight))
+
+	if drawLeft {
 		buf.WriteRune(leftChar) // 左边
 	}
 
@@ -596,7 +616,7 @@ func (t *Table) drawBorderLine(buf *bytes.Buffer, leftChar, centerChar, intersec
 		}
 	}
 
-	if t.opts.HasBorderFlag(BorderRight) && rightChar > 0 {
+	if drawRight {
 		buf.WriteRune(rightChar) // 右边
 	}
 	buf.WriteByte('\n')
@@ -714,6 +734,59 @@ func (c *Cell) calcWH() {
 		}
 	}
 	c.valWidth = c.width
+}
+
+// wrapLines splits the cell content into lines that fit c.width when
+// OverflowWrap is enabled. It is a no-op for other overflow modes.
+func (c *Cell) wrapLines(opts *Options) {
+	wrap := c.Wrap
+	if wrap == OverflowAuto {
+		wrap = opts.OverflowFlag
+	}
+	if wrap != OverflowWrap {
+		return
+	}
+
+	// c.width is the full column width (including CellPadding), so wrap to the
+	// remaining text area.
+	contentW := c.width - len(opts.CellPadding)*2
+	if contentW < 1 {
+		contentW = c.width
+	}
+	if contentW < 1 || c.valWidth <= contentW {
+		return
+	}
+
+	var lines []string
+	for _, line := range c.lines {
+		lines = append(lines, wrapByWidth(line, contentW)...)
+	}
+	c.lines = lines
+	c.height = len(lines)
+}
+
+// wrapByWidth splits s into chunks whose display width does not exceed width.
+func wrapByWidth(s string, width int) []string {
+	if width <= 0 {
+		return []string{s}
+	}
+
+	lines := make([]string, 0, 1)
+	cur := make([]rune, 0, width)
+	curW := 0
+	for _, r := range s {
+		rw := strutil.RunesWidth([]rune{r})
+		if curW+rw > width && len(cur) > 0 {
+			lines = append(lines, string(cur))
+			cur = cur[:0]
+			curW = 0
+		}
+
+		cur = append(cur, r)
+		curW += rw
+	}
+
+	return append(lines, string(cur))
 }
 
 // String returns the string formatted representation of the cell
