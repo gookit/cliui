@@ -48,6 +48,7 @@ func (t *Title) WithOptionFns(fns []OptionFunc) *Title {
 	for _, fn := range fns {
 		fn(&t.Options)
 	}
+	t.ResetFormat()
 	return t
 }
 

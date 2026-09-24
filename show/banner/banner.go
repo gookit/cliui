@@ -77,6 +77,7 @@ func (b *Banner) WithOptionFns(fns []OptionFunc) *Banner {
 	for _, fn := range fns {
 		fn(&b.Options)
 	}
+	b.ResetFormat()
 	return b
 }
 
@@ -98,6 +99,7 @@ func (b *Banner) WithContents(content any) *Banner {
 		contents = append(contents, fmt.Sprint(content))
 	}
 	b.Contents = contents
+	b.ResetFormat()
 	return b
 }
 

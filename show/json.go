@@ -52,6 +52,7 @@ func (pj *PrettyJSON) Format() {
 		return
 	}
 
+	pj.InitBuffer()
 	pj.Buffer().WriteString(pj.colorize(string(bs)))
 }
 
