@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"unicode/utf8"
 
@@ -129,31 +128,20 @@ func GetHiddenInput(message string, trimmed bool) (string, error) {
 		fmt.Fprintln(cutypes.Output) // new line
 		hasResult = true
 	} else if envutil.IsWin() { // at windows cmd.exe
-		// create a temp VB script file. cscript picks its engine by extension,
-		// so the .vbs suffix is required.
-		vbFile, err := os.CreateTemp("", "cliui-pwd-*.vbs")
+		// PowerShell masks the input; the previous VB InputBox echoed the
+		// password in cleartext. -AsSecureString needs a marshal back to text.
+		psMsg := strings.ReplaceAll(message, "'", "''")
+		script := fmt.Sprintf(
+			`$s = Read-Host -AsSecureString '%s'; [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($s))`,
+			psMsg,
+		)
+
+		input, err = cliutil.ExecCmd("powershell", []string{"-NoProfile", "-Command", script})
 		if err != nil {
 			return "", err
 		}
-		defer func() {
-			// delete file
-			vbFile.Close()
-			_ = os.Remove(vbFile.Name())
-		}()
 
-		vbMsg := strings.ReplaceAll(message, `"`, `""`)
-		script := fmt.Sprintf(`wscript.echo(InputBox("%s", "", "password here"))`, vbMsg)
-		if _, err = vbFile.WriteString(script); err != nil {
-			return "", err
-		}
 		hasResult = true
-
-		// exec VB script
-		// COMMAND: cscript //nologo vbFile.Name()
-		input, err = cliutil.ExecCmd("cscript", []string{"//nologo", vbFile.Name()})
-		if err != nil {
-			return "", err
-		}
 	}
 
 	if hasResult {
