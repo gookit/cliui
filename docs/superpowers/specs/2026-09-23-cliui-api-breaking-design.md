@@ -91,8 +91,11 @@ w, err := show.TabWriter(rows)
 title.New("Deploy", func(o *title.Options) { o.Width = 40 })
 ```
 
-## 未做 / 遗留
+## 后续补充（同批完成）
 
-- `interact.RunFace` 现在与 `Question.Run() (*Value, error)` 不再匹配（仍为 `Run() *Value`），且无人使用；本次未删，建议后续清理。
-- `interact.ComOptions`、`ValidFn`、`ItemFace` 仍为死代码，未删。
-- 非破坏性项（table 换行/边框角、plain/prompt 取消泄漏、readline 控制字节、输出流语义统一）本次不做。
+- 清理遗留死符号：删除 `interact.RunFace`、`interact.ComOptions`、`interact.ItemFace`（`cparam.InputParam.ValidFn` 是字段，保留）。
+- 非破坏性项一并处理：
+  - readline：`Ctrl-D` 触发中断（EOF），其他控制字节不再变成字面文本。
+  - table：top/bottom 边框角字符不再受 `BorderLeft/BorderRight` 限制（新增 `edge` 参数）；`OverflowWrap` 现在会按列宽真正换行。
+  - progress：`Progress`/`SpinnerFactory` 的 `Out` 默认留空，改为渲染时解析 `cutypes.Output`，与 `MultiProgress` 语义一致。
+  - interact：`plain` backend 与 `Prompt` 改为每个输入流复用一个读取 goroutine，取消后不再重复读取或丢失已到达的行。
