@@ -106,3 +106,18 @@ title.New("Deploy", func(o *title.Options) { o.Width = 40 })
 - `show` 缓存失效：`table`、`lists`、`banner`、`title` 的 mutator（Add/Set/With*/Config*）现在会调用 `ResetFormat()`，`String()` 不再返回变更前的旧结果；`List`/`Lists`/`PrettyJSON` 的 `Format` 改为幂等（先 `InitBuffer`），`Lists.Format` 让每个子列表使用独立 buffer。
 - `lists`：key 列填充改用显示宽度（`strutil.Utf8Padding` + `TextWidth`），中文 key 与英文 key 的 value 起始列对齐。
 - `progress`：`MultiProgress` 在可见块变短时先清空旧块再重绘，`Refresh()` 后不再残留多余行。
+
+## 后续补充（三）
+
+- `progress`：`IsTerminal` 除 `*os.File` 外也识别实现了 `Fd() uintptr` 的包装 writer，`UseAutoRenderMode` 不再误判为非终端。
+- `show/alert`：`Render`/`Println` 复用同一个 banner 构造（`newBanner`），去掉重复的选项列表。
+- `readline`：`Render` 不再吞掉写错误，改为返回首个错误。
+- `interact`：`Question.Run` 使用默认值时也会走校验函数；`StepsRun` 新增 `RunContext(ctx)`，在步骤间检查取消（`Run` 委托给它）。
+- `interact`：`internal.ReadLineWithOutput` 改为每个输入流复用一个 `bufio.Reader`，避免一次性管道/文件里的后续行被丢弃。
+- `interact`：`GetHiddenInput` 的 Windows 临时脚本改为 `.vbs` 后缀（`cscript` 依赖扩展名），并对 VB 双引号与 sh 单引号做转义、检查写入错误。
+
+## 仍未处理
+
+- `progress`：`Progress.started`/`manager` 的无锁读写竞态；`Finish` 与 `Done/Fail/Skip` 的输出不一致。
+- `show/table`：`SortColumn` 按字符串排序（数字列字典序）；单元格含 color 标签时宽度测量未剔除标签。
+- `interact`：`readline` 的 `ctx` 仍只在阻塞前检查、终端恢复无信号保护；`GetHiddenInput` 的 Windows `InputBox` 仍明文显示。
