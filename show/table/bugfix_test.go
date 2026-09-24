@@ -89,6 +89,19 @@ func TestTable_SetRowsMapStringValues(t *testing.T) {
 	is.Contains(out, "jane")
 }
 
+// F3: SortColumn must order numeric columns numerically.
+func TestTable_SortColumnNumeric(t *testing.T) {
+	is := assert.New(t)
+
+	tb := table.New("", table.WithBorderFlags(table.BorderAll))
+	tb.SetHeads("N").AddRow("10").AddRow("9").AddRow("2")
+	tb.WithOptions(table.WithSortColumn(0, true))
+
+	out := ccolor.ClearCode(tb.String())
+	is.True(strings.Index(out, "2") < strings.Index(out, "9"))
+	is.True(strings.Index(out, "9") < strings.Index(out, "10"))
+}
+
 // D3: mutating the table must invalidate the cached formatted output.
 func TestTable_StringReflectsLaterMutation(t *testing.T) {
 	is := assert.New(t)

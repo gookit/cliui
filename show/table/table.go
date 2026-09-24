@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/gookit/color"
@@ -317,6 +318,25 @@ func (t *Table) reset() {
 // region Prepare
 //
 
+// compareNumeric compares two cell values as numbers. ok is false when either
+// value is not numeric, so the caller can fall back to string comparison.
+func compareNumeric(a, b string) (cmp int, ok bool) {
+	fa, errA := strconv.ParseFloat(strings.TrimSpace(a), 64)
+	fb, errB := strconv.ParseFloat(strings.TrimSpace(b), 64)
+	if errA != nil || errB != nil {
+		return 0, false
+	}
+
+	switch {
+	case fa < fb:
+		return -1, true
+	case fa > fb:
+		return 1, true
+	default:
+		return 0, true
+	}
+}
+
 func (t *Table) calcColWidth(width, i int) int {
 	// 自定义列宽
 	if len(t.opts.ColumnWidths) > i && t.opts.ColumnWidths[i] > 0 {
@@ -376,6 +396,14 @@ func (t *Table) prepare() {
 
 			valI := t.Rows[i].Cells[sortColIdx].String()
 			valJ := t.Rows[j].Cells[sortColIdx].String()
+
+			// sort numerically when both values are numbers
+			if cmp, ok := compareNumeric(valI, valJ); ok {
+				if t.opts.SortAscending {
+					return cmp < 0
+				}
+				return cmp > 0
+			}
 
 			if t.opts.SortAscending {
 				return valI < valJ
