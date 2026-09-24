@@ -2,12 +2,39 @@ package progress
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/gookit/cliui"
 	"github.com/gookit/goutil/x/assert"
 )
+
+// D4: refreshing a shorter block must erase the previous rows.
+func TestMultiProgressRefreshClearsShrunkBlock(t *testing.T) {
+	is := assert.New(t)
+
+	buf := new(bytes.Buffer)
+	mp := NewMulti()
+	mp.Writer = buf
+
+	p1 := mp.New(10)
+	p2 := mp.New(10)
+	mp.Start() // renders a two-row block
+
+	// shrink the visible set without going through Hide/Remove
+	mp.mu.Lock()
+	p2.hidden = true
+	mp.mu.Unlock()
+
+	buf.Reset()
+	mp.Refresh()
+
+	is.Eq(1, mp.VisibleLen())
+	// 2 clears for the old rows + 1 for the redrawn row
+	is.True(strings.Count(buf.String(), "\x1B[2K") >= 3)
+	_ = p1
+}
 
 // The output stream must be resolved at render time, not at construction.
 func TestProgressUsesOutputAtRenderTime(t *testing.T) {

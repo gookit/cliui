@@ -472,7 +472,13 @@ func (mp *MultiProgress) refreshDynamicLocked() {
 	}
 
 	if mp.rendered {
-		mp.moveToBlockStartLocked()
+		if len(lines) < mp.lastLines {
+			// the new block is shorter: erase the previous block first so no
+			// stale rows remain below the redrawn lines.
+			mp.clearRenderedBlockLocked()
+		} else {
+			mp.moveToBlockStartLocked()
+		}
 	}
 
 	mp.renderDynamicLinesLocked(lines)
