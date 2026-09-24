@@ -42,10 +42,14 @@ func NewPrettyJSON(v ...any) *PrettyJSON {
 }
 
 // Format pretty format JSON with colors.
+//
+// A marshal error is stored on pj.Err instead of panicking; callers such as
+// JSON() read it back and surface it as an error.
 func (pj *PrettyJSON) Format() {
 	bs, err := json.MarshalIndent(pj.Data, pj.Prefix, pj.Indent)
 	if err != nil {
-		panic(err)
+		pj.SetErr(err)
+		return
 	}
 
 	pj.Buffer().WriteString(pj.colorize(string(bs)))

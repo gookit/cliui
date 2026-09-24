@@ -31,14 +31,14 @@ type ShownFace = showcom.ShownFace
 // AnyData format and render any type data.
 func AnyData(title string, v any) {
 	if v == nil {
-		JSON(v)
+		_, _ = JSON(v)
 		return
 	}
 
 	rv := reflect.ValueOf(v)
 	for rv.Kind() == reflect.Ptr || rv.Kind() == reflect.Interface {
 		if rv.IsNil() {
-			JSON(nil)
+			_, _ = JSON(nil)
 			return
 		}
 		rv = rv.Elem()
@@ -48,12 +48,15 @@ func AnyData(title string, v any) {
 	case reflect.Map, reflect.Struct, reflect.Slice, reflect.Array:
 		AList(title, rv.Interface())
 	default:
-		JSON(v)
+		_, _ = JSON(v)
 	}
 }
 
-// JSON print pretty JSON data
-func JSON(v any, prefixAndIndent ...string) int {
+// JSON print pretty JSON data.
+//
+// It returns show.OK on success, or show.ERR with the marshal error when the
+// value cannot be encoded as JSON.
+func JSON(v any, prefixAndIndent ...string) (int, error) {
 	prefix := ""
 	indent := "    "
 
@@ -65,8 +68,12 @@ func JSON(v any, prefixAndIndent ...string) int {
 		}
 	}
 
-	NewPrettyJSON(v, prefix, indent).Println()
-	return OK
+	pj := NewPrettyJSON(v, prefix, indent)
+	pj.Println()
+	if pj.Err != nil {
+		return ERR, pj.Err
+	}
+	return OK, nil
 }
 
 // ATitle create a Title instance and print. options see: TitleOption
@@ -133,14 +140,14 @@ func Banner(content any, fns ...banner.OptionFunc) {
 //		"123\t12345\t1234567\t123456789\t."
 //	})
 //	w.Flush()
-func TabWriter(rows []string) *tabwriter.Writer {
+func TabWriter(rows []string) (*tabwriter.Writer, error) {
 	w := tabwriter.NewWriter(cutypes.Output, 0, 4, 2, ' ', tabwriter.Debug)
 
 	for _, row := range rows {
 		if _, err := fmt.Fprintln(w, row); err != nil {
-			panic(err)
+			return w, err
 		}
 	}
 
-	return w
+	return w, nil
 }

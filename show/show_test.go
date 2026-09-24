@@ -77,7 +77,10 @@ func TestTabWriter(t *testing.T) {
 		"aaaa\tbbbb\taligned\t",
 	}
 
-	err := show.TabWriter(ss).Flush()
+	w, err := show.TabWriter(ss)
+	is.NoErr(err)
+
+	err = w.Flush()
 	is.NoErr(err)
 }
 
@@ -177,9 +180,23 @@ func TestJSONPrintsPrettyJSON(t *testing.T) {
 		color.RevertColorLevel()
 	}()
 
-	code := show.JSON(map[string]any{"ok": true})
+	code, err := show.JSON(map[string]any{"ok": true})
+	is.NoErr(err)
 
 	is.Eq(show.OK, code)
 	is.Contains(buf.String(), "\x1b[")
 	is.Contains(color.ClearCode(buf.String()), `"ok": true`)
+}
+
+func TestJSONReturnsErrorInsteadOfPanic(t *testing.T) {
+	is := assert.New(t)
+	buf := new(bytes.Buffer)
+	cutypes.SetOutput(buf)
+	defer cutypes.ResetOutput()
+
+	// a func value cannot be marshaled to JSON
+	code, err := show.JSON(func() {})
+
+	is.Eq(show.ERR, code)
+	is.True(err != nil)
 }
