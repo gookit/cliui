@@ -2,6 +2,7 @@ package progress
 
 import (
 	"bytes"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -9,6 +10,20 @@ import (
 	"github.com/gookit/cliui"
 	"github.com/gookit/goutil/x/assert"
 )
+
+type fdWriter struct{ fd uintptr }
+
+func (w fdWriter) Write(p []byte) (int, error) { return len(p), nil }
+func (w fdWriter) Fd() uintptr                 { return w.fd }
+
+// E1: IsTerminal must recognize any writer exposing an Fd() method.
+func TestIsTerminalAcceptsFdWriter(t *testing.T) {
+	is := assert.New(t)
+
+	is.False(IsTerminal(nil))
+	is.False(IsTerminal(new(bytes.Buffer)))
+	is.Eq(IsTerminal(os.Stdout), IsTerminal(fdWriter{os.Stdout.Fd()}))
+}
 
 // D4: refreshing a shorter block must erase the previous rows.
 func TestMultiProgressRefreshClearsShrunkBlock(t *testing.T) {
