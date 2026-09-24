@@ -318,6 +318,31 @@ func (t *Table) reset() {
 // region Prepare
 //
 
+// displayWidth is the visible width of s, ignoring gookit/color tags.
+func displayWidth(s string) int {
+	return strutil.Utf8Width(color.ClearTag(s))
+}
+
+// utf8ResizeTagged pads s to width using its visible width, keeping any color
+// tags in the output. It never truncates.
+func utf8ResizeTagged(s string, width int, align strutil.PosFlag) string {
+	w := displayWidth(s)
+	if w >= width {
+		return s
+	}
+
+	pad := strings.Repeat(" ", width-w)
+	switch align {
+	case strutil.PosRight:
+		return pad + s
+	case strutil.PosMiddle:
+		left := len(pad) / 2
+		return pad[:left] + s + pad[left:]
+	default: // left / auto
+		return s + pad
+	}
+}
+
 // compareNumeric compares two cell values as numbers. ok is false when either
 // value is not numeric, so the caller can fall back to string comparison.
 func compareNumeric(a, b string) (cmp int, ok bool) {
@@ -499,7 +524,7 @@ func (t *Table) formatHeader() {
 
 			if i < len(t.colWidths) {
 				// 使用显示宽度对齐表头内容，与表体保持一致（避免多字节被按字节截断）
-				resized := strutil.Utf8Resize(headStr, t.colWidths[i], opts.Alignment)
+				resized := utf8ResizeTagged(headStr, t.colWidths[i], opts.Alignment)
 				// 应用颜色（优先使用 FirstColor 给第一列）
 				if i == 0 && opts.FirstColor != "" {
 					// 表头第一列使用 FirstColor
@@ -580,10 +605,10 @@ func (t *Table) formatBody() {
 					if row.Cells[j].width > 0 {
 						// 截断模式
 						if opts.OverflowFlag <= OverflowCut && row.Cells[j].valWidth > row.Cells[j].width {
-							lineStr = strutil.Utf8Truncate(lineStr, row.Cells[j].width, "")
+							lineStr = strutil.Utf8Truncate(color.ClearTag(lineStr), row.Cells[j].width, "")
 						} else {
-							// 填充至 cell.width 宽度
-							lineStr = strutil.Utf8Resize(lineStr, row.Cells[j].width, row.Cells[j].Align)
+							// 填充至 cell.width 宽度（保留 color 标签）
+							lineStr = utf8ResizeTagged(lineStr, row.Cells[j].width, row.Cells[j].Align)
 						}
 					}
 
@@ -775,7 +800,7 @@ func (c *Cell) calcWH() {
 
 	for _, s := range c.lines {
 		c.height++
-		w := strutil.Utf8Width(s)
+		w := displayWidth(s)
 		if w > c.width {
 			c.width = w
 		}

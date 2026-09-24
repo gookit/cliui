@@ -6,10 +6,16 @@ import (
 	"unicode/utf8"
 
 	"github.com/gookit/cliui/show/table"
+	"github.com/gookit/color"
 	"github.com/gookit/goutil/strutil"
 	"github.com/gookit/goutil/x/assert"
 	"github.com/gookit/goutil/x/ccolor"
 )
+
+// visibleWidth strips both gookit tags and ANSI codes before measuring.
+func visibleWidth(s string) int {
+	return strutil.TextWidth(ccolor.ClearCode(color.ClearTag(s)))
+}
 
 // F9: rendering the same table twice must be idempotent (no extra "#" column).
 func TestTable_RenderTwiceIsStable(t *testing.T) {
@@ -87,6 +93,32 @@ func TestTable_SetRowsMapStringValues(t *testing.T) {
 	is.Contains(out, "tom")
 	is.Contains(out, "admin")
 	is.Contains(out, "jane")
+}
+
+// T1: cell values carrying color tags must be padded by visible width.
+func TestTable_ColorTaggedCellWidth(t *testing.T) {
+	is := assert.New(t)
+
+	tb := table.New("", table.WithBorderFlags(table.BorderAll))
+	tb.SetHeads("Name")
+	tb.AddRow("<red>hi</>")
+	tb.AddRow("hello")
+
+	out := tb.String()
+	var lines []string
+	for _, line := range strings.Split(out, "\n") {
+		if strings.TrimSpace(ccolor.ClearCode(color.ClearTag(line))) != "" {
+			lines = append(lines, line)
+		}
+	}
+
+	// the tag must be preserved in the output
+	is.Contains(out, "hi")
+
+	w := visibleWidth(lines[0])
+	for _, line := range lines {
+		is.Eq(w, visibleWidth(line))
+	}
 }
 
 // F3: SortColumn must order numeric columns numerically.
