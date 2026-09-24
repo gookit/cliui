@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/gookit/cliui/interact/backend"
 	"github.com/gookit/cliui/interact/backend/plain"
@@ -74,6 +75,17 @@ type Session struct {
 	hidden   bool
 	lastW    int
 	lastH    int
+
+	// async read worker. One worker owns s.in, so a cancelled ReadEvent never
+	// starts a second reader on the same terminal.
+	workerOnce sync.Once
+	results    chan readResult
+}
+
+// readResult is one normalized event (or error) from the read worker.
+type readResult struct {
+	ev  backend.Event
+	err error
 }
 
 // Render redraws the current interaction block.
@@ -163,13 +175,35 @@ func cursorScreenRow(view backend.View) int {
 }
 
 // ReadEvent reads and normalizes one terminal event.
+//
+// Reading is done by a single background worker, so ctx cancellation returns
+// promptly and does not leave a second reader competing for the terminal.
 func (s *Session) ReadEvent(ctx context.Context) (backend.Event, error) {
+	s.startWorker()
+
 	select {
+	case r := <-s.results:
+		return r.ev, r.err
 	case <-ctx.Done():
 		return backend.Event{}, ctx.Err()
-	default:
 	}
+}
 
+// startWorker starts the single reader goroutine for this session.
+func (s *Session) startWorker() {
+	s.workerOnce.Do(func() {
+		s.results = make(chan readResult, 1)
+		go func() {
+			for {
+				ev, err := s.readEvent()
+				s.results <- readResult{ev: ev, err: err}
+			}
+		}()
+	})
+}
+
+// readEvent reads and normalizes one terminal event synchronously.
+func (s *Session) readEvent() (backend.Event, error) {
 	if ev, ok := s.detectResizeFromSize(); ok {
 		return ev, nil
 	}

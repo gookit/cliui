@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gookit/cliui/interact/backend"
 	"github.com/gookit/color"
@@ -206,6 +207,45 @@ func TestSession_RenderReturnsWriteError(t *testing.T) {
 	err := s.Render(backend.View{Lines: []string{"x"}})
 
 	is.True(err != nil)
+}
+
+// T3: ReadEvent must return promptly when ctx is cancelled.
+func TestSession_ReadEventCancel(t *testing.T) {
+	is := assert.New(t)
+
+	r, w, err := os.Pipe()
+	is.NoErr(err)
+	defer r.Close()
+	defer w.Close()
+
+	s := &Session{in: bufio.NewReader(r)}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		time.Sleep(10 * time.Millisecond)
+		cancel()
+	}()
+
+	_, err = s.ReadEvent(ctx)
+	is.True(errors.Is(err, context.Canceled))
+}
+
+// T3: the read worker still delivers events.
+func TestSession_ReadEventReadsThroughWorker(t *testing.T) {
+	is := assert.New(t)
+
+	r, w, err := os.Pipe()
+	is.NoErr(err)
+	defer r.Close()
+	defer w.Close()
+
+	s := &Session{in: bufio.NewReader(r)}
+
+	go func() { _, _ = w.Write([]byte("a")) }()
+
+	ev, err := s.ReadEvent(context.Background())
+	is.NoErr(err)
+	is.Eq("a", ev.Text)
 }
 
 func TestSession_ReadEventCtrlD(t *testing.T) {
