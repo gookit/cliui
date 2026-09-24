@@ -194,6 +194,28 @@ func TestSession_ReadEventEscapeSequences(t *testing.T) {
 	}
 }
 
+func TestSession_ReadEventCtrlD(t *testing.T) {
+	is := assert.New(t)
+
+	s := &Session{in: bufio.NewReader(bytes.NewBufferString("\x04"))}
+	ev, err := s.ReadEvent(context.Background())
+
+	is.Nil(err)
+	is.Eq(backend.EventInterrupt, ev.Type)
+}
+
+func TestSession_ReadEventIgnoresOtherControlBytes(t *testing.T) {
+	is := assert.New(t)
+
+	s := &Session{in: bufio.NewReader(bytes.NewBufferString("\x02"))}
+	ev, err := s.ReadEvent(context.Background())
+
+	is.Nil(err)
+	is.Eq(backend.EventKey, ev.Type)
+	is.Eq(backend.KeyUnknown, ev.Key)
+	is.Eq("", ev.Text)
+}
+
 func TestSession_ReadEventTab(t *testing.T) {
 	is := assert.New(t)
 

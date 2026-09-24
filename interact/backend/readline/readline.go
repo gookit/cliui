@@ -179,6 +179,9 @@ func (s *Session) ReadEvent(ctx context.Context) (backend.Event, error) {
 		return backend.Event{Type: backend.EventKey, Key: backend.KeyCtrlA}, nil
 	case 3:
 		return backend.Event{Type: backend.EventInterrupt, Key: backend.KeyCtrlC}, nil
+	case 4:
+		// Ctrl-D: end of input / EOF
+		return backend.Event{Type: backend.EventInterrupt}, nil
 	case 5:
 		return backend.Event{Type: backend.EventKey, Key: backend.KeyCtrlE}, nil
 	case 11:
@@ -196,6 +199,12 @@ func (s *Session) ReadEvent(ctx context.Context) (backend.Event, error) {
 	case 127, 8:
 		return backend.Event{Type: backend.EventKey, Key: backend.KeyBackspace}, nil
 	default:
+		if b < 32 {
+			// other control bytes (Ctrl-B, Ctrl-F, ...) must not be turned
+			// into literal text; emit an empty event for the caller to ignore.
+			return backend.Event{Type: backend.EventKey}, nil
+		}
+
 		if err := s.in.UnreadByte(); err != nil {
 			return backend.Event{}, err
 		}
