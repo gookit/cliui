@@ -57,24 +57,24 @@ func (m MsgBox) WithContent(format string, v ...any) MsgBox {
 	return m
 }
 
-// Render formats the message box as a banner string.
-func (m MsgBox) Render() string {
+// newBanner builds the banner used by Render and Println.
+func (m MsgBox) newBanner() *banner.Banner {
 	return banner.New(
 		m.line(),
 		banner.WithMinWidth(30),
 		banner.WithOverflowFlag(showcom.OverflowWrap),
 		banner.WithTextColor(m.TypeColor),
-	).Render()
+	)
+}
+
+// Render formats the message box as a banner string.
+func (m MsgBox) Render() string {
+	return m.newBanner().Render()
 }
 
 // Println prints the message box and returns its code.
 func (m MsgBox) Println() int {
-	banner.New(
-		m.line(),
-		banner.WithMinWidth(30),
-		banner.WithOverflowFlag(showcom.OverflowWrap),
-		banner.WithTextColor(m.TypeColor),
-	).Println()
+	m.newBanner().Println()
 	return m.Code
 }
 
