@@ -274,7 +274,10 @@ show.JSON(map[string]any{"name": "tom"})
 `Tab Writer` 用于对齐包含 tab 分隔符的文本，适合输出简单的两列或多列列表。
 
 ```go
-w := show.TabWriter([]string{"Name\tRole", "Tom\tAdmin"})
+w, err := show.TabWriter([]string{"Name\tRole", "Tom\tAdmin"})
+if err != nil {
+	panic(err)
+}
 w.Flush()
 ```
 

@@ -274,7 +274,10 @@ Output preview:
 `Tab Writer` aligns text that contains tab separators. It is useful for simple two-column or multi-column lists.
 
 ```go
-w := show.TabWriter([]string{"Name\tRole", "Tom\tAdmin"})
+w, err := show.TabWriter([]string{"Name\tRole", "Tom\tAdmin"})
+if err != nil {
+	panic(err)
+}
 w.Flush()
 ```
 

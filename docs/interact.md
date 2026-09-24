@@ -101,7 +101,11 @@ env: prod
 `Confirm` asks a yes/no question and returns a boolean. It is useful before delete, overwrite, deploy, and other confirmation-sensitive actions.
 
 ```go
-if interact.Confirm("Continue? ", true) {
+ok, err := interact.Confirm("Continue? ", true)
+if err != nil {
+	panic(err)
+}
+if ok {
 	fmt.Println("confirmed")
 }
 ```
@@ -118,14 +122,20 @@ confirmed
 `Question`/`Ask` handles a single question with a default value and optional validation.
 
 ```go
-name := interact.Ask("Your name?", "guest", nil)
+name, err := interact.Ask("Your name?", "guest", nil)
+if err != nil {
+	panic(err)
+}
 fmt.Println("name:", name)
 ```
 
 Use `NewQuestion` when you need to configure or reuse a question:
 
 ```go
-value := interact.NewQuestion("Your name?", "guest").Run()
+value, err := interact.NewQuestion("Your name?", "guest").Run()
+if err != nil {
+	panic(err)
+}
 fmt.Println(value.String())
 ```
 
@@ -141,11 +151,14 @@ tom
 `Select` chooses one value from a list. It is useful for environments, regions, templates, and operation types.
 
 ```go
-city := interact.SelectOne(
+city, err := interact.SelectOne(
 	"Your city?",
 	[]string{"chengdu", "beijing", "shanghai"},
 	"",
 )
+if err != nil {
+	panic(err)
+}
 fmt.Println("city:", city)
 ```
 
@@ -165,11 +178,14 @@ city: chengdu
 `Multi Select` chooses multiple values. It is useful for enabling modules, selecting services, or choosing tags.
 
 ```go
-services := interact.MultiSelect(
+services, err := interact.MultiSelect(
 	"Choose services",
 	[]string{"api", "worker", "web"},
 	[]string{"api"},
 )
+if err != nil {
+	panic(err)
+}
 fmt.Println("services:", services)
 ```
 
@@ -188,7 +204,10 @@ Use `NewSelect` directly when you need the selected key and value:
 
 ```go
 s := interact.NewSelect("Choose env", []string{"dev", "prod"})
-result := s.Run()
+result, err := s.Run()
+if err != nil {
+	panic(err)
+}
 fmt.Println(result.KeyString(), result.String())
 ```
 
@@ -271,33 +290,45 @@ func main() {
 	color.Green.Println("This's An Select Demo")
 	fmt.Println("----------------------------------------------------------")
 
-	ans := interact.SelectOne(
+	ans, err := interact.SelectOne(
 		"Your city name(use string slice/array)?",
 		[]string{"chengdu", "beijing", "shanghai"},
 		"",
 	)
+	if err != nil {
+		panic(err)
+	}
 	color.Info.Println("your select is:", ans)
 	fmt.Println("----------------------------------------------------------")
 
-	ans1 := interact.Choice(
+	ans1, err := interact.Choice(
 		"Your age(use int slice/array)?",
 		[]int{23, 34, 45},
 		"",
 	)
+	if err != nil {
+		panic(err)
+	}
 	color.Info.Println("your select is:", ans1)
 
 	fmt.Println("----------------------------------------------------------")
 
-	ans2 := interact.SingleSelect(
+	ans2, err := interact.SingleSelect(
 		"Your city name(use map)?",
 		map[string]string{"a": "chengdu", "b": "beijing", "c": "shanghai"},
 		"a",
 	)
+	if err != nil {
+		panic(err)
+	}
 	color.Info.Println("your select is:", ans2)
 
 	s := interact.NewSelect("Your city", []string{"chengdu", "beijing", "shanghai"})
 	s.DefOpt = "2"
-	r := s.Run()
+	r, err := s.Run()
+	if err != nil {
+		panic(err)
+	}
 	color.Info.Println("your select key:", r.K.String())
 	color.Info.Println("your select val:", r.String())
 }

@@ -132,7 +132,7 @@
 - 验证: `go build ./...`、`go vet ./...` 干净；`go test ./...` 全绿；`go test -count=3 ./progress/... ./interact/... ./show/...` 稳定通过
 - 未执行: `go test -race`（本机无 cgo/C 编译器，`-race requires cgo`），相关并发改动（F6）改为逻辑审查 + 重复运行验证
 
-阶段三条目仍未改动，待确认后再逐条处理。
+阶段三：按用户选择“只做破坏性 API 调整”，已完成第 1–4 项（legacy `interact` 去 `os.Exit`/`panic`、`show.JSON`/`TabWriter` 返回 error、`title.OptionFunc` 统一为 `func(*Options)`、删除死代码），详见 `docs/superpowers/specs/2026-09-23-cliui-api-breaking-design.md`。第 5–7 项为非破坏性/语义项，本次未做。
 
 ## 风险与回退
 
