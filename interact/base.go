@@ -21,25 +21,8 @@ var (
 	ErrMaxAttempts = errors.New("interact: max attempts exceeded")
 )
 
-// ComOptions struct
-type ComOptions struct {
-	// ValidFn check input value
-	ValidFn func(val any) (any, error)
-}
-
 // Value alias of structs.Value
 type Value = structs.Value
-
-// RunFace for interact methods
-type RunFace interface {
-	Run() *Value
-}
-
-// ItemFace for interact methods
-type ItemFace interface {
-	Name() string
-	Value() string
-}
 
 /*************************************************************
  * value for select
