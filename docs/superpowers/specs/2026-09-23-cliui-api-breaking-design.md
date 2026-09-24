@@ -99,3 +99,10 @@ title.New("Deploy", func(o *title.Options) { o.Width = 40 })
   - table：top/bottom 边框角字符不再受 `BorderLeft/BorderRight` 限制（新增 `edge` 参数）；`OverflowWrap` 现在会按列宽真正换行。
   - progress：`Progress`/`SpinnerFactory` 的 `Out` 默认留空，改为渲染时解析 `cutypes.Output`，与 `MultiProgress` 语义一致。
   - interact：`plain` backend 与 `Prompt` 改为每个输入流复用一个读取 goroutine，取消后不再重复读取或丢失已到达的行。
+
+## 后续补充（二）
+
+- `table`：反射处理 `[]map[string]string` 等非 `map[string]any` 行时，`MapIndex` 的 key 由 `*Cell` 改为按表头名转换到 map 的 key 类型，避免 panic。
+- `show` 缓存失效：`table`、`lists`、`banner`、`title` 的 mutator（Add/Set/With*/Config*）现在会调用 `ResetFormat()`，`String()` 不再返回变更前的旧结果；`List`/`Lists`/`PrettyJSON` 的 `Format` 改为幂等（先 `InitBuffer`），`Lists.Format` 让每个子列表使用独立 buffer。
+- `lists`：key 列填充改用显示宽度（`strutil.Utf8Padding` + `TextWidth`），中文 key 与英文 key 的 value 起始列对齐。
+- `progress`：`MultiProgress` 在可见块变短时先清空旧块再重绘，`Refresh()` 后不再残留多余行。
