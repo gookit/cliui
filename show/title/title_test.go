@@ -71,10 +71,10 @@ func TestTitleRender(t *testing.T) {
 func TestTitle_ShowNew(t *testing.T) {
 	buf := testutil.NewBuffer()
 
-	tl := title.New("", func(t *title.Title) {
-		t.Width = 40
-		t.PaddingLR = false
-		t.ShowBorder = true
+	tl := title.New("", func(o *title.Options) {
+		o.Width = 40
+		o.PaddingLR = false
+		o.ShowBorder = true
 	})
 	tl.SetOutput(buf)
 

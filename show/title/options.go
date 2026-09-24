@@ -31,67 +31,71 @@ type Options struct {
 
 	Indent int
 	Align  comdef.Align
+
+	// widthSet marks that Width was set explicitly, e.g. via WithWidth.
+	widthSet bool
 }
 
-// OptionFunc definition
-type OptionFunc func(t *Title)
+// OptionFunc definition. It configures the Options, consistent with the
+// banner, lists and table packages.
+type OptionFunc func(o *Options)
 
 // WithWidth 设置固定显示宽度
 func WithWidth(width int) OptionFunc {
-	return func(t *Title) {
-		t.Width = width
-		t.widthSet = true
+	return func(o *Options) {
+		o.Width = width
+		o.widthSet = true
 	}
 }
 
 // WithPercentWidth 使用终端宽度的百分比宽度
 func WithPercentWidth(percent int) OptionFunc {
-	return func(t *Title) {
-		t.PercentWidth = percent
+	return func(o *Options) {
+		o.PercentWidth = percent
 	}
 }
 
 // WithBorderTop setting the title border to top
 func WithBorderTop() OptionFunc {
-	return func(t *Title) {
-		t.ShowBorder = true
-		t.BorderPos = cutypes.BorderPosTop
+	return func(o *Options) {
+		o.ShowBorder = true
+		o.BorderPos = cutypes.BorderPosTop
 	}
 }
 
 // WithBorderBottom setting the title border to bottom
 func WithBorderBottom() OptionFunc {
-	return func(t *Title) {
-		t.ShowBorder = true
-		t.BorderPos = cutypes.BorderPosBottom
+	return func(o *Options) {
+		o.ShowBorder = true
+		o.BorderPos = cutypes.BorderPosBottom
 	}
 }
 
 // WithBorderBoth setting the title border to both top and bottom
 func WithBorderBoth() OptionFunc {
-	return func(t *Title) {
-		t.ShowBorder = true
-		t.BorderPos = cutypes.BorderPosTB
+	return func(o *Options) {
+		o.ShowBorder = true
+		o.BorderPos = cutypes.BorderPosTB
 	}
 }
 
 // WithoutBorder setting the title border to none
 func WithoutBorder() OptionFunc {
-	return func(t *Title) {
-		t.ShowBorder = false
+	return func(o *Options) {
+		o.ShowBorder = false
 	}
 }
 
 // WithAlignRight setting the title align to right
 func WithAlignRight() OptionFunc {
-	return func(t *Title) {
-		t.Align = comdef.Right
+	return func(o *Options) {
+		o.Align = comdef.Right
 	}
 }
 
 // WithAlignCenter setting the title align to center
 func WithAlignCenter() OptionFunc {
-	return func(t *Title) {
-		t.Align = comdef.Center
+	return func(o *Options) {
+		o.Align = comdef.Center
 	}
 }

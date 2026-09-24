@@ -18,8 +18,6 @@ type Title struct {
 	Options
 	Prefix string
 	Title  string
-
-	widthSet bool
 }
 
 // New Title instance
@@ -48,7 +46,7 @@ func New(title string, fns ...OptionFunc) *Title {
 // WithOptionFns 设置选项
 func (t *Title) WithOptionFns(fns []OptionFunc) *Title {
 	for _, fn := range fns {
-		fn(t)
+		fn(&t.Options)
 	}
 	return t
 }
@@ -110,7 +108,7 @@ func (t *Title) Format() {
 }
 
 func (t *Title) resolveWidth() int {
-	if t.Width > 0 && (t.widthSet || t.Width != DefaultWidth || t.PercentWidth <= 0) {
+	if t.Width > 0 && (t.Options.widthSet || t.Width != DefaultWidth || t.PercentWidth <= 0) {
 		return t.Width
 	}
 
