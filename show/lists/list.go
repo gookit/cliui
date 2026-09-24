@@ -89,6 +89,7 @@ func (l *List) WithOptionFns(fns []OptionFunc) *List {
 			fn(l.Opts)
 		}
 	}
+	l.ResetFormat()
 	return l
 }
 
@@ -103,6 +104,7 @@ func (l *List) Format() {
 		return
 	}
 
+	l.InitBuffer()
 	buf := l.Buffer()
 	if l.title != "" { // has title
 		title := strutil.UpperWord(l.title)
@@ -134,7 +136,7 @@ func (l *List) Format() {
 
 		// format key - parsed from map, struct
 		if items.itemType == ItemMap {
-			key := strutil.PadRight(item.Key, " ", keyWidth)
+			key := strutil.Utf8Padding(item.Key, " ", keyWidth, strutil.PosRight)
 			key = color.WrapTag(key, l.Opts.KeyStyle)
 			buf.WriteString(key + l.Opts.SepChar)
 		}

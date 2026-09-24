@@ -1,7 +1,6 @@
 package lists
 
 import (
-	"bytes"
 	"reflect"
 
 	"github.com/gookit/cliui/show/showcom"
@@ -56,6 +55,7 @@ func (ls *Lists) WithOptionFns(fns []OptionFunc) *Lists {
 	for _, fn := range fns {
 		fn(ls.Opts)
 	}
+	ls.ResetFormat()
 	return ls
 }
 
@@ -67,6 +67,7 @@ func (ls *Lists) WithOptions(fns ...OptionFunc) *Lists {
 // AddSublist with options func list
 func (ls *Lists) AddSublist(title string, data any) *Lists {
 	ls.rows = append(ls.rows, NewList(title, data))
+	ls.ResetFormat()
 	return ls
 }
 
@@ -76,11 +77,13 @@ func (ls *Lists) Format() {
 		return
 	}
 
-	ls.Buf = new(bytes.Buffer)
+	ls.InitBuffer()
 	for _, list := range ls.rows {
 		list.Opts = ls.Opts
-		list.SetBuffer(ls.Buf)
-		list.Format()
+		// each sublist formats into its own buffer, then its output is appended
+		list.SetBuffer(nil)
+		list.ResetFormat()
+		ls.Buf.WriteString(list.String())
 	}
 }
 

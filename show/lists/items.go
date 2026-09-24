@@ -4,7 +4,6 @@ import (
 	"reflect"
 	"sort"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/gookit/goutil/reflects"
 	"github.com/gookit/goutil/strutil"
@@ -180,7 +179,8 @@ func newItem(key any, rv reflect.Value, index int) *Item {
 	}
 
 	if item.Key != "" {
-		item.keyLen = utf8.RuneCountInString(item.Key)
+		// display width, not rune count, so CJK keys align with their padding
+		item.keyLen = strutil.TextWidth(item.Key)
 	}
 
 	// item.valLen = utf8.RuneCountInString(item.Val)
