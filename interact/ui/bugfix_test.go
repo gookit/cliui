@@ -1,11 +1,14 @@
 package ui
 
 import (
+	"bytes"
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/gookit/cliui/interact/backend"
 	"github.com/gookit/cliui/interact/backend/fake"
+	"github.com/gookit/cliui/interact/backend/plain"
 	"github.com/gookit/goutil/x/assert"
 )
 
@@ -43,4 +46,23 @@ func TestConfirm_SpaceDoesNotAccept(t *testing.T) {
 	got, err := cfm.Run(context.Background(), be)
 	is.Nil(err)
 	is.True(got)
+}
+
+// BCE-1: with a non-TTY stream every prompt must receive its own line; a
+// backend that reads ahead leaves the later prompts with EOF.
+func TestInput_SequentialPromptsKeepTheirLines(t *testing.T) {
+	is := assert.New(t)
+
+	in := strings.NewReader("tom\njerry\n")
+	out := new(bytes.Buffer)
+	be := plain.New()
+
+	first, err := NewInput("First").RunWithIO(context.Background(), be, in, out)
+	is.NoErr(err)
+
+	second, err := NewInput("Second").RunWithIO(context.Background(), be, in, out)
+	is.NoErr(err)
+
+	is.Eq("tom", first)
+	is.Eq("jerry", second)
 }

@@ -351,6 +351,7 @@ For the current `readline` backend:
 - `Select` accepts an item key, or the default key on an empty line.
 - `MultiSelect` accepts comma-separated item keys, or default keys on an empty line.
 - `plain` does not provide per-key filtering. Even when `Filterable` is set, input is still parsed as a submitted line.
+- `plain` reads each line on demand and never buffers ahead of the requested line, so sequential prompts over the same redirected stdin or pipe each receive their own line.
 
 ### readline
 
