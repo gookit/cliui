@@ -130,7 +130,8 @@ title.New("Deploy", func(o *title.Options) { o.Width = 40 })
 
 ## 后续补充（六）
 
-- `interact`：为兼容旧调用方，`AnswerIsYes`/`Confirm`/`Unconfirmed` 恢复为只返回 `bool` 的签名、`Ask`/`Query` 恢复为只返回 `string` 的签名（内部调用对应 `*E` 变体并忽略读取错误），并新增 `AnswerIsYesE`/`ConfirmE`/`UnconfirmedE`（返回 `(bool, error)`）与 `AskE`/`QueryE`（返回 `(string, error)`）。旧调用无需改动，需要处理错误的调用可用 `*E` 变体。
+- `interact`：为兼容旧调用方，恢复以下旧签名（内部调用对应 `*E` 变体并忽略错误）：`AnswerIsYes`/`Confirm`/`Unconfirmed` → `bool`；`Ask`/`Query`/`SelectOne`/`SelectOneKey`/`Choice`/`SingleSelect` → `string`；`Checkbox`/`MultiSelect` → `[]string`；`Question.Run` → `*Value`；`Select.Run` → `*SelectResult`。并新增对应 `*E` 变体（`AnswerIsYesE`/`ConfirmE`/`UnconfirmedE`/`AskE`/`QueryE`/`SelectOneE`/`SelectOneKeyE`/`ChoiceE`/`SingleSelectE`/`CheckboxE`/`MultiSelectE`，以及 `Question.RunE`/`Select.RunE`）返回带 `error` 的结果。旧调用无需改动，需要处理错误的调用用 `*E` 变体。
+- `show`：`JSON` 恢复为返回 `int`、`TabWriter` 恢复为返回 `*tabwriter.Writer`（内部调用 `JSONE`/`TabWriterE` 并忽略错误），新增 `JSONE` / `TabWriterE` 返回 `(T, error)`。
 
 ## 仍未处理（有意保留）
 

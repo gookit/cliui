@@ -40,8 +40,8 @@ func NewQuestion(q string, defVal ...string) *Question {
 	return &Question{Out: cutypes.Output, Q: q}
 }
 
-// Run and returns value
-func (q *Question) Run() (*Value, error) {
+// RunE and returns value, together with any read error.
+func (q *Question) RunE() (*Value, error) {
 	if err := q.render(); err != nil {
 		return nil, err
 	}
@@ -87,6 +87,16 @@ DoASK:
 	}
 
 	return &Value{V: ans}, nil
+}
+
+// Run and returns value.
+// it is a shortcut of RunE(), and returns an empty value on error.
+func (q *Question) Run() *Value {
+	v, _ := q.RunE()
+	if v == nil {
+		v = &Value{}
+	}
+	return v
 }
 
 func (q *Question) render() error {

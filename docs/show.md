@@ -261,6 +261,12 @@ tb.Println()
 show.JSON(map[string]any{"name": "tom"})
 ```
 
+Use `JSONE` when you need the marshal error:
+
+```go
+code, err := show.JSONE(map[string]any{"name": "tom"})
+```
+
 Output preview:
 
 ```json
@@ -274,7 +280,14 @@ Output preview:
 `Tab Writer` aligns text that contains tab separators. It is useful for simple two-column or multi-column lists.
 
 ```go
-w, err := show.TabWriter([]string{"Name\tRole", "Tom\tAdmin"})
+w := show.TabWriter([]string{"Name\tRole", "Tom\tAdmin"})
+w.Flush()
+```
+
+Use `TabWriterE` when you need to handle the write error:
+
+```go
+w, err := show.TabWriterE([]string{"Name\tRole", "Tom\tAdmin"})
 if err != nil {
 	panic(err)
 }

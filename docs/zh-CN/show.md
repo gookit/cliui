@@ -261,6 +261,12 @@ tb.Println()
 show.JSON(map[string]any{"name": "tom"})
 ```
 
+需要处理序列化错误时，使用 `JSONE`：
+
+```go
+code, err := show.JSONE(map[string]any{"name": "tom"})
+```
+
 效果示例：
 
 ```json
@@ -274,7 +280,14 @@ show.JSON(map[string]any{"name": "tom"})
 `Tab Writer` 用于对齐包含 tab 分隔符的文本，适合输出简单的两列或多列列表。
 
 ```go
-w, err := show.TabWriter([]string{"Name\tRole", "Tom\tAdmin"})
+w := show.TabWriter([]string{"Name\tRole", "Tom\tAdmin"})
+w.Flush()
+```
+
+需要处理写入错误时，使用 `TabWriterE`：
+
+```go
+w, err := show.TabWriterE([]string{"Name\tRole", "Tom\tAdmin"})
 if err != nil {
 	panic(err)
 }

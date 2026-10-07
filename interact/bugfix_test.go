@@ -26,7 +26,7 @@ func TestQuestionValidatesDefaultValue(t *testing.T) {
 		return nil
 	}
 
-	got, err := q.Run()
+	got, err := q.RunE()
 	is.NoErr(err)
 	is.Eq("tom", got.String())
 }

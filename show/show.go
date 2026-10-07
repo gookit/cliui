@@ -31,14 +31,14 @@ type ShownFace = showcom.ShownFace
 // AnyData format and render any type data.
 func AnyData(title string, v any) {
 	if v == nil {
-		_, _ = JSON(v)
+		_, _ = JSONE(v)
 		return
 	}
 
 	rv := reflect.ValueOf(v)
 	for rv.Kind() == reflect.Ptr || rv.Kind() == reflect.Interface {
 		if rv.IsNil() {
-			_, _ = JSON(nil)
+			_, _ = JSONE(nil)
 			return
 		}
 		rv = rv.Elem()
@@ -48,15 +48,15 @@ func AnyData(title string, v any) {
 	case reflect.Map, reflect.Struct, reflect.Slice, reflect.Array:
 		AList(title, rv.Interface())
 	default:
-		_, _ = JSON(v)
+		_, _ = JSONE(v)
 	}
 }
 
-// JSON print pretty JSON data.
+// JSONE print pretty JSON data.
 //
 // It returns show.OK on success, or show.ERR with the marshal error when the
 // value cannot be encoded as JSON.
-func JSON(v any, prefixAndIndent ...string) (int, error) {
+func JSONE(v any, prefixAndIndent ...string) (int, error) {
 	prefix := ""
 	indent := "    "
 
@@ -74,6 +74,13 @@ func JSON(v any, prefixAndIndent ...string) (int, error) {
 		return ERR, pj.Err
 	}
 	return OK, nil
+}
+
+// JSON print pretty JSON data.
+// it is a shortcut of JSONE(), and returns show.ERR on error.
+func JSON(v any, prefixAndIndent ...string) int {
+	code, _ := JSONE(v, prefixAndIndent...)
+	return code
 }
 
 // ATitle create a Title instance and print. options see: TitleOption
@@ -131,16 +138,17 @@ func Banner(content any, fns ...banner.OptionFunc) {
 	banner.New(content, fns...).Println()
 }
 
-// TabWriter create. more please see: package text/tabwriter/example_test.go
+// TabWriterE create a tabwriter and write rows. more please see:
+// package text/tabwriter/example_test.go
 //
 // Usage:
 //
-//	w := TabWriter([]string{
+//	w, err := TabWriterE([]string{
 //		"a\tb\tc\td\t.",
 //		"123\t12345\t1234567\t123456789\t."
 //	})
 //	w.Flush()
-func TabWriter(rows []string) (*tabwriter.Writer, error) {
+func TabWriterE(rows []string) (*tabwriter.Writer, error) {
 	w := tabwriter.NewWriter(cutypes.Output, 0, 4, 2, ' ', tabwriter.Debug)
 
 	for _, row := range rows {
@@ -150,4 +158,19 @@ func TabWriter(rows []string) (*tabwriter.Writer, error) {
 	}
 
 	return w, nil
+}
+
+// TabWriter create a tabwriter and write rows.
+// it is a shortcut of TabWriterE(), and returns nil on error.
+//
+// Usage:
+//
+//	w := TabWriter([]string{
+//		"a\tb\tc\td\t.",
+//		"123\t12345\t1234567\t123456789\t."
+//	})
+//	w.Flush()
+func TabWriter(rows []string) *tabwriter.Writer {
+	w, _ := TabWriterE(rows)
+	return w
 }

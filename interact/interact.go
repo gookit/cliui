@@ -44,7 +44,7 @@ func AskE(question, defVal string, fn func(ans string) error, maxTimes ...int) (
 		q.MaxTimes = maxTimes[0]
 	}
 
-	v, err := q.Run()
+	v, err := q.RunE()
 	if err != nil {
 		return "", err
 	}
@@ -73,16 +73,26 @@ func Query(question, defVal string, fn func(ans string) error, maxTimes ...int) 
 }
 
 // Choice is alias of method SelectOne()
-func Choice(title string, options any, defOpt string, allowQuit ...bool) (string, error) {
+func Choice(title string, options any, defOpt string, allowQuit ...bool) string {
 	return SelectOne(title, options, defOpt, allowQuit...)
+}
+
+// ChoiceE is alias of method SelectOneE()
+func ChoiceE(title string, options any, defOpt string, allowQuit ...bool) (string, error) {
+	return SelectOneE(title, options, defOpt, allowQuit...)
 }
 
 // SingleSelect is alias of method SelectOne()
-func SingleSelect(title string, options any, defOpt string, allowQuit ...bool) (string, error) {
+func SingleSelect(title string, options any, defOpt string, allowQuit ...bool) string {
 	return SelectOne(title, options, defOpt, allowQuit...)
 }
 
-// SelectOne select one of the options, returns selected option value
+// SingleSelectE is alias of method SelectOneE()
+func SingleSelectE(title string, options any, defOpt string, allowQuit ...bool) (string, error) {
+	return SelectOneE(title, options, defOpt, allowQuit...)
+}
+
+// SelectOneE select one of the options, returns selected option value and any error.
 //
 // Map options:
 //
@@ -99,49 +109,77 @@ func SingleSelect(title string, options any, defOpt string, allowQuit ...bool) (
 //	   'chengdu',
 //	   'beijing'
 //	}
-func SelectOne(title string, options any, defOpt string, allowQuit ...bool) (string, error) {
+func SelectOneE(title string, options any, defOpt string, allowQuit ...bool) (string, error) {
 	s := &Select{Title: title, Options: options, DefOpt: defOpt}
 
 	if len(allowQuit) > 0 {
 		s.DisableQuit = !allowQuit[0]
 	}
 
-	r, err := s.Run()
+	r, err := s.RunE()
 	if err != nil {
 		return "", err
 	}
 	return r.String(), nil
 }
 
-// SelectOneKey select one of the options, returns selected option key.
-func SelectOneKey(title string, options any, defOpt string, opFns ...func(*Select)) (string, error) {
+// SelectOne select one of the options, returns selected option value.
+// it is a shortcut of SelectOneE(), and returns an empty string on error.
+func SelectOne(title string, options any, defOpt string, allowQuit ...bool) string {
+	val, _ := SelectOneE(title, options, defOpt, allowQuit...)
+	return val
+}
+
+// SelectOneKeyE select one of the options, returns selected option key and any error.
+func SelectOneKeyE(title string, options any, defOpt string, opFns ...func(*Select)) (string, error) {
 	r, err := NewSelect(title, options, opFns...).With(func(s *Select) {
 		s.DefOpt = defOpt
-	}).Run()
+	}).RunE()
 	if err != nil {
 		return "", err
 	}
 	return r.KeyString(), nil
 }
 
+// SelectOneKey select one of the options, returns selected option key.
+// it is a shortcut of SelectOneKeyE(), and returns an empty string on error.
+func SelectOneKey(title string, options any, defOpt string, opFns ...func(*Select)) string {
+	key, _ := SelectOneKeyE(title, options, defOpt, opFns...)
+	return key
+}
+
 // Checkbox select multi of the options. is alias of method MultiSelect()
-func Checkbox(title string, options any, defOpts []string, allowQuit ...bool) ([]string, error) {
+func Checkbox(title string, options any, defOpts []string, allowQuit ...bool) []string {
 	return MultiSelect(title, options, defOpts, allowQuit...)
 }
 
-// MultiSelect select multi of the options, returns selected option values.
+// CheckboxE is alias of method MultiSelectE()
+func CheckboxE(title string, options any, defOpts []string, allowQuit ...bool) ([]string, error) {
+	return MultiSelectE(title, options, defOpts, allowQuit...)
+}
+
+// MultiSelectE select multi of the options, returns selected option values and any error.
 //
-// like SingleSelect(), but allow select multi option
-func MultiSelect(title string, options any, defOpts []string, allowQuit ...bool) ([]string, error) {
+// like SingleSelectE(), but allow select multi option
+func MultiSelectE(title string, options any, defOpts []string, allowQuit ...bool) ([]string, error) {
 	s := &Select{Title: title, Options: options, DefOpts: defOpts, MultiSelect: true}
 
 	if len(allowQuit) > 0 {
 		s.DisableQuit = !allowQuit[0]
 	}
 
-	r, err := s.Run()
+	r, err := s.RunE()
 	if err != nil {
 		return nil, err
 	}
 	return r.Strings(), nil
+}
+
+// MultiSelect select multi of the options, returns selected option values.
+// it is a shortcut of MultiSelectE(), and returns nil on error.
+//
+// like SingleSelect(), but allow select multi option
+func MultiSelect(title string, options any, defOpts []string, allowQuit ...bool) []string {
+	vals, _ := MultiSelectE(title, options, defOpts, allowQuit...)
+	return vals
 }

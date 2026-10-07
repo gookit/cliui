@@ -55,7 +55,7 @@ func (p *ChoicesParam) Run() (err error) {
 	s := interact.NewSelect(p.Desc(), p.Choices)
 	s.EnableMulti()
 
-	sr, err := s.Run()
+	sr, err := s.RunE()
 	if err != nil {
 		return err
 	}

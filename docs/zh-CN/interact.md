@@ -147,10 +147,7 @@ fmt.Println("name:", name)
 需要配置或复用问题时，可以使用 `NewQuestion`：
 
 ```go
-value, err := interact.NewQuestion("Your name?", "guest").Run()
-if err != nil {
-	panic(err)
-}
+value := interact.NewQuestion("Your name?", "guest").Run()
 fmt.Println(value.String())
 ```
 
@@ -166,14 +163,11 @@ tom
 `Select` 用于从多个候选项中选择一个值，适合环境、区域、模板、操作类型等单选场景。
 
 ```go
-city, err := interact.SelectOne(
+city := interact.SelectOne(
 	"Your city?",
 	[]string{"chengdu", "beijing", "shanghai"},
 	"",
 )
-if err != nil {
-	panic(err)
-}
 fmt.Println("city:", city)
 ```
 
@@ -193,14 +187,11 @@ city: chengdu
 `Multi Select` 用于选择多个值，适合批量启用模块、选择服务、选择标签等多选场景。
 
 ```go
-services, err := interact.MultiSelect(
+services := interact.MultiSelect(
 	"Choose services",
 	[]string{"api", "worker", "web"},
 	[]string{"api"},
 )
-if err != nil {
-	panic(err)
-}
 fmt.Println("services:", services)
 ```
 
@@ -219,10 +210,7 @@ services: [api web]
 
 ```go
 s := interact.NewSelect("Choose env", []string{"dev", "prod"})
-result, err := s.Run()
-if err != nil {
-	panic(err)
-}
+result := s.Run()
 fmt.Println(result.KeyString(), result.String())
 ```
 
@@ -305,45 +293,33 @@ func main() {
 	color.Green.Println("This's An Select Demo")
 	fmt.Println("----------------------------------------------------------")
 
-	ans, err := interact.SelectOne(
+	ans := interact.SelectOne(
 		"Your city name(use string slice/array)?",
 		[]string{"chengdu", "beijing", "shanghai"},
 		"",
 	)
-	if err != nil {
-		panic(err)
-	}
 	color.Info.Println("your select is:", ans)
 	fmt.Println("----------------------------------------------------------")
 
-	ans1, err := interact.Choice(
+	ans1 := interact.Choice(
 		"Your age(use int slice/array)?",
 		[]int{23, 34, 45},
 		"",
 	)
-	if err != nil {
-		panic(err)
-	}
 	color.Info.Println("your select is:", ans1)
 
 	fmt.Println("----------------------------------------------------------")
 
-	ans2, err := interact.SingleSelect(
+	ans2 := interact.SingleSelect(
 		"Your city name(use map)?",
 		map[string]string{"a": "chengdu", "b": "beijing", "c": "shanghai"},
 		"a",
 	)
-	if err != nil {
-		panic(err)
-	}
 	color.Info.Println("your select is:", ans2)
 
 	s := interact.NewSelect("Your city", []string{"chengdu", "beijing", "shanghai"})
 	s.DefOpt = "2"
-	r, err := s.Run()
-	if err != nil {
-		panic(err)
-	}
+	r := s.Run()
 	color.Info.Println("your select key:", r.K.String())
 	color.Info.Println("your select val:", r.String())
 }

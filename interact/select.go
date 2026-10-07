@@ -75,8 +75,8 @@ func (s *Select) EnableMulti() *Select {
 	return s
 }
 
-// Run select and receive use input answer
-func (s *Select) Run() (*SelectResult, error) {
+// RunE select and receive use input answer, and returns any read error.
+func (s *Select) RunE() (*SelectResult, error) {
 	keys, err := s.prepare()
 	if err != nil {
 		return nil, err
@@ -90,6 +90,16 @@ func (s *Select) Run() (*SelectResult, error) {
 		return s.selectMulti()
 	}
 	return s.selectOne()
+}
+
+// Run select and receive use input answer.
+// it is a shortcut of RunE(), and returns an empty result on error.
+func (s *Select) Run() *SelectResult {
+	r, _ := s.RunE()
+	if r == nil {
+		r = &SelectResult{}
+	}
+	return r
 }
 
 func (s *Select) prepare() (keys []string, err error) {
