@@ -130,7 +130,14 @@ confirmed
 `Question`/`Ask` handles a single question with a default value and optional validation.
 
 ```go
-name, err := interact.Ask("Your name?", "guest", nil)
+name := interact.Ask("Your name?", "guest", nil)
+fmt.Println("name:", name)
+```
+
+`AskE` returns the input together with any read error.
+
+```go
+name, err := interact.AskE("Your name?", "guest", nil)
 if err != nil {
 	panic(err)
 }

@@ -130,7 +130,14 @@ confirmed
 `Question`/`Ask` 用于带默认值和可选校验的问题输入，适合声明式地组织单个问题。
 
 ```go
-name, err := interact.Ask("Your name?", "guest", nil)
+name := interact.Ask("Your name?", "guest", nil)
+fmt.Println("name:", name)
+```
+
+`AskE` 返回输入内容，并一并返回读取错误。
+
+```go
+name, err := interact.AskE("Your name?", "guest", nil)
 if err != nil {
 	panic(err)
 }

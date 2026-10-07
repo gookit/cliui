@@ -31,14 +31,14 @@ func Unconfirmed(message string, defVal ...bool) bool {
 	return ok
 }
 
-// Ask a question and return the result of the input.
+// AskE a question and return the result of the input, together with any read error.
 //
 // Usage:
 //
-//	answer, err := Ask("Your name?", "", nil)
-//	answer, err := Ask("Your name?", "tom", nil)
-//	answer, err := Ask("Your name?", "", nil, 3)
-func Ask(question, defVal string, fn func(ans string) error, maxTimes ...int) (string, error) {
+//	answer, err := AskE("Your name?", "", nil)
+//	answer, err := AskE("Your name?", "tom", nil)
+//	answer, err := AskE("Your name?", "", nil, 3)
+func AskE(question, defVal string, fn func(ans string) error, maxTimes ...int) (string, error) {
 	q := &Question{Q: question, Func: fn, DefVal: defVal}
 	if len(maxTimes) > 0 {
 		q.MaxTimes = maxTimes[0]
@@ -51,8 +51,24 @@ func Ask(question, defVal string, fn func(ans string) error, maxTimes ...int) (s
 	return v.String(), nil
 }
 
+// Ask a question and return the result of the input.
+// it is a shortcut of AskE(), and returns an empty string on error.
+//
+// Usage:
+//
+//	answer := Ask("Your name?", "tom", nil)
+func Ask(question, defVal string, fn func(ans string) error, maxTimes ...int) string {
+	answer, _ := AskE(question, defVal, fn, maxTimes...)
+	return answer
+}
+
+// QueryE is alias of method AskE()
+func QueryE(question, defVal string, fn func(ans string) error, maxTimes ...int) (string, error) {
+	return AskE(question, defVal, fn, maxTimes...)
+}
+
 // Query is alias of method Ask()
-func Query(question, defVal string, fn func(ans string) error, maxTimes ...int) (string, error) {
+func Query(question, defVal string, fn func(ans string) error, maxTimes ...int) string {
 	return Ask(question, defVal, fn, maxTimes...)
 }
 
