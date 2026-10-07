@@ -51,14 +51,15 @@ func ReadFirst(question string) (string, error) {
 	return string(r), err
 }
 
-// AnswerIsYes check user inputted answer is right
+// AnswerIsYesE check user inputted answer is right.
+// it returns an error when reading the user input fails.
 //
 // Usage:
 //
 //	fmt.Print("are you OK?")
-//	ok, err := AnswerIsYes()
-//	ok, err := AnswerIsYes(true)
-func AnswerIsYes(defVal ...bool) (bool, error) {
+//	ok, err := AnswerIsYesE()
+//	ok, err := AnswerIsYesE(true)
+func AnswerIsYesE(defVal ...bool) (bool, error) {
 	mark := " [yes|no]: "
 	if len(defVal) > 0 {
 		var defShow string
@@ -88,7 +89,20 @@ func AnswerIsYes(defVal ...bool) (bool, error) {
 	}
 
 	_, _ = fmt.Fprint(cutypes.Output, "Please try again")
-	return AnswerIsYes(defVal...)
+	return AnswerIsYesE(defVal...)
+}
+
+// AnswerIsYes check user inputted answer is right.
+// it is a shortcut of AnswerIsYesE(), and returns false on read error.
+//
+// Usage:
+//
+//	fmt.Print("are you OK?")
+//	ok := AnswerIsYes()
+//	ok := AnswerIsYes(true)
+func AnswerIsYes(defVal ...bool) bool {
+	ok, _ := AnswerIsYesE(defVal...)
+	return ok
 }
 
 // ReadPassword from terminal

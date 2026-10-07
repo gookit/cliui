@@ -101,7 +101,15 @@ env: prod
 `Confirm` 用于确认类问题，返回布尔值，适合删除、覆盖、部署等需要用户确认的操作。
 
 ```go
-ok, err := interact.Confirm("Continue? ", true)
+if interact.Confirm("Continue? ", true) {
+	fmt.Println("confirmed")
+}
+```
+
+`ConfirmE` 是带错误返回的版本，会一并返回读取输入时的错误。
+
+```go
+ok, err := interact.ConfirmE("Continue? ", true)
 if err != nil {
 	panic(err)
 }

@@ -101,7 +101,15 @@ env: prod
 `Confirm` asks a yes/no question and returns a boolean. It is useful before delete, overwrite, deploy, and other confirmation-sensitive actions.
 
 ```go
-ok, err := interact.Confirm("Continue? ", true)
+if interact.Confirm("Continue? ", true) {
+	fmt.Println("confirmed")
+}
+```
+
+`ConfirmE` is the error-aware variant; it returns the answer together with any read error.
+
+```go
+ok, err := interact.ConfirmE("Continue? ", true)
 if err != nil {
 	panic(err)
 }

@@ -128,6 +128,10 @@ title.New("Deploy", func(o *title.Options) { o.Width = 40 })
 - `interact`：`readline.Session` 改为单个后台读取 worker 拥有 `s.in`，`ReadEvent` 通过 `select` 响应 `ctx.Done()`；取消后不再起第二个读取者，事件也不会丢失。
 - `progress`：包注释明确说明 `Progress`/`MultiProgress` 非并发安全，受管 bar 应通过 `MultiProgress` 在单 goroutine 内更新。
 
+## 后续补充（六）
+
+- `interact`：为兼容旧调用方，`AnswerIsYes`/`Confirm`/`Unconfirmed` 恢复为只返回 `bool` 的签名（内部调用 `*E` 变体并忽略读取错误），并新增 `AnswerIsYesE`/`ConfirmE`/`UnconfirmedE` 返回 `(bool, error)`。旧调用无需改动，需要处理错误的调用可用 `*E` 变体。
+
 ## 仍未处理（有意保留）
 
 - `progress`：`Progress.manager` 仍以“Add 后使用”为前提无锁读取；只读访问器未加锁——需引入 `Progress` 级锁并明确与 `MultiProgress` 的锁顺序，属较大改动；已在包注释声明非并发安全。

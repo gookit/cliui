@@ -5,16 +5,30 @@ import (
 	"github.com/gookit/color"
 )
 
-// Confirm a question, returns bool
-func Confirm(message string, defVal ...bool) (bool, error) {
+// ConfirmE a question, returns the answer and any read error.
+func ConfirmE(message string, defVal ...bool) (bool, error) {
 	color.Fprint(cutypes.Output, message)
-	return AnswerIsYes(defVal...)
+	return AnswerIsYesE(defVal...)
 }
 
-// Unconfirmed a question, returns bool
-func Unconfirmed(message string, defVal ...bool) (bool, error) {
-	ok, err := Confirm(message, defVal...)
+// Confirm a question, returns bool.
+// it is a shortcut of ConfirmE(), and returns false on read error.
+func Confirm(message string, defVal ...bool) bool {
+	ok, _ := ConfirmE(message, defVal...)
+	return ok
+}
+
+// UnconfirmedE a question, returns whether the user did NOT confirm, and any read error.
+func UnconfirmedE(message string, defVal ...bool) (bool, error) {
+	ok, err := ConfirmE(message, defVal...)
 	return !ok, err
+}
+
+// Unconfirmed a question, returns whether the user did NOT confirm.
+// it is a shortcut of UnconfirmedE(), and returns true on read error.
+func Unconfirmed(message string, defVal ...bool) bool {
+	ok, _ := UnconfirmedE(message, defVal...)
+	return ok
 }
 
 // Ask a question and return the result of the input.
