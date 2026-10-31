@@ -43,11 +43,14 @@ func promptLines(in io.Reader) chan result {
 	promptReaders.ch = ch
 
 	go func(r io.Reader) {
+		defer close(ch)
 		s := bufio.NewScanner(r)
 		for s.Scan() {
 			ch <- result{answer: strings.TrimSpace(s.Text())}
 		}
-		ch <- result{err: s.Err()}
+		if err := s.Err(); err != nil {
+			ch <- result{err: err}
+		}
 	}(in)
 
 	return ch
@@ -64,7 +67,10 @@ func Prompt(ctx context.Context, query, defaultAnswer string) (string, error) {
 	_, _ = fmt.Fprintf(cutypes.Output, "%s [%s]: ", query, defaultAnswer)
 
 	select {
-	case r := <-promptLines(cutypes.Input):
+	case r, ok := <-promptLines(cutypes.Input):
+		if !ok {
+			return "", io.EOF
+		}
 		if r.err != nil {
 			return "", r.err
 		}
