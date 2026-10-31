@@ -49,6 +49,16 @@ func ReadLineWithOutput(question string, out io.Writer) (string, error) {
 		color.Fprint(out, question)
 	}
 
-	answer, _, err := inputReader(cutypes.Input).ReadLine()
-	return strings.TrimSpace(string(answer)), err
+	reader := inputReader(cutypes.Input)
+	var answer []byte
+	for {
+		part, prefix, err := reader.ReadLine()
+		answer = append(answer, part...)
+		if err != nil || !prefix {
+			if err == io.EOF && len(answer) > 0 {
+				err = nil
+			}
+			return strings.TrimSpace(string(answer)), err
+		}
+	}
 }
