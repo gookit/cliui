@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -90,5 +91,16 @@ func TestFilteredSelectShrinksTerminalBlock(t *testing.T) {
 	beforeResult := raw[:resultAt]
 	if regexp.MustCompile(`\x1b\[[0-9]+B`).MatchString(beforeResult) {
 		t.Fatalf("cursor moved down before the result, leaving a visual gap; raw output:\n%s", raw)
+	}
+	cursorRows := regexp.MustCompile(`\x1b\[(\d+);1H`).FindAllStringSubmatch(beforeResult, -1)
+	if len(cursorRows) > 0 {
+		last := cursorRows[len(cursorRows)-1][1]
+		row, err := strconv.Atoi(last)
+		if err != nil {
+			t.Fatalf("parse final cursor row %q: %v", last, err)
+		}
+		if row > 8 {
+			t.Fatalf("cursor ended at row %d before the result, leaving a visual gap; raw output:\n%s", row, raw)
+		}
 	}
 }
