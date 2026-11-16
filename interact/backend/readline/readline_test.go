@@ -33,14 +33,55 @@ func TestBackend_NewSessionStrictRequiresFile(t *testing.T) {
 	is.True(errors.Is(err, backend.ErrFileRequired))
 }
 
-func TestSession_CloseWithoutState(t *testing.T) {
-	is := assert.New(t)
+func TestSession_CloseAfterRender(t *testing.T) {
+	tests := []struct {
+		name string
+		view backend.View
+		want string
+	}{
+		{name: "cursor at bottom", view: backend.View{Lines: []string{"one", "two", "choice"}, CursorRow: 2}, want: "\r\n"},
+		{name: "cursor at top", view: backend.View{Lines: []string{"one", "two", "choice"}, CursorRow: 0}, want: "\r\x1B[2B\n"},
+		{name: "wrapped last line", view: backend.View{Lines: []string{"one", strings.Repeat("x", 11)}, CursorRow: 1, Width: 10}, want: "\r\x1B[1B\n"},
+	}
 
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			is := assert.New(t)
+			buf := new(bytes.Buffer)
+			s := &Session{out: buf}
+			is.NoErr(s.Render(tt.view))
+			buf.Reset()
+			is.NoErr(s.Close())
+			is.Eq(tt.want, buf.String())
+		})
+	}
+}
+
+func TestSession_RenderRewindsFromActualCursorRow(t *testing.T) {
+	is := assert.New(t)
 	buf := new(bytes.Buffer)
-	s := &Session{out: buf, rendered: 2}
-	err := s.Close()
-	is.Nil(err)
-	is.Contains(buf.String(), "\x1B[1B")
+	s := &Session{out: buf}
+
+	is.NoErr(s.Render(backend.View{Lines: []string{"one", "two", "three"}, CursorRow: 0}))
+	buf.Reset()
+	is.NoErr(s.Render(backend.View{Lines: []string{"one", "two", "three"}, CursorRow: 2}))
+	is.NotContains(buf.String(), "\x1B[2A")
+	is.Contains(buf.String(), "\r\x1B[2Kone")
+}
+
+func TestSession_CloseAfterShrinkingView(t *testing.T) {
+	is := assert.New(t)
+	buf := new(bytes.Buffer)
+	s := &Session{out: buf}
+
+	is.NoErr(s.Render(backend.View{Lines: []string{"one", "two", "three", "four"}, CursorRow: 3}))
+	buf.Reset()
+	is.NoErr(s.Render(backend.View{Lines: []string{"one", "choice"}, CursorRow: 1}))
+	is.Contains(buf.String(), "\x1B[3A")
+	is.Contains(buf.String(), "\x1B[2A\r")
+	buf.Reset()
+	is.NoErr(s.Close())
+	is.Eq("\r\n", buf.String())
 }
 
 func TestSession_RenderTogglesCursorVisibility(t *testing.T) {
@@ -87,7 +128,8 @@ func TestSession_RenderTracksWrappedRows(t *testing.T) {
 	buf.Reset()
 	err = s.Render(backend.View{Lines: []string{"one", "two"}, CursorRow: 1, Width: 10})
 	is.Nil(err)
-	is.Contains(buf.String(), "\x1B[2A")
+	is.Contains(buf.String(), "\x1B[1A")
+	is.NotContains(buf.String(), "\x1B[2A")
 }
 
 func TestSession_RenderUsesCarriageReturnAfterNewline(t *testing.T) {

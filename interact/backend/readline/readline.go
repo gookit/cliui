@@ -70,9 +70,10 @@ type Session struct {
 	inFile   *os.File
 	in       *bufio.Reader
 	out      io.Writer
-	state    *term.State
-	rendered int
-	hidden   bool
+	state     *term.State
+	rendered  int
+	cursorRow int // screen row relative to the start of the rendered block
+	hidden    bool
 	lastW    int
 	lastH    int
 
@@ -112,8 +113,8 @@ func (s *Session) Render(view backend.View) error {
 
 	if s.rendered > 0 {
 		write("\r")
-		if s.rendered > 1 {
-			write(fmt.Sprintf("\x1B[%dA", s.rendered-1))
+		if s.cursorRow > 0 {
+			write(fmt.Sprintf("\x1B[%dA", s.cursorRow))
 		}
 	}
 
@@ -133,8 +134,13 @@ func (s *Session) Render(view backend.View) error {
 		}
 	}
 
+	// Clearing rows left by a shorter view also advances the cursor. Rewind
+	// from the last row actually written, not just the new view's last row.
+	writtenRows := currentRows + renderedLines - len(view.Lines)
+	cursorRow := writtenRows - 1
 	if view.CursorRow >= 0 && view.CursorRow < len(view.Lines) {
-		moveUp := currentRows - 1 - cursorScreenRow(view)
+		cursorRow = cursorScreenRow(view)
+		moveUp := writtenRows - 1 - cursorRow
 		if moveUp > 0 {
 			write(fmt.Sprintf("\x1B[%dA", moveUp))
 		}
@@ -145,6 +151,7 @@ func (s *Session) Render(view backend.View) error {
 	}
 
 	s.rendered = currentRows
+	s.cursorRow = cursorRow
 	return err
 }
 
@@ -403,8 +410,8 @@ func (s *Session) Size() (width, height int) {
 func (s *Session) Close() error {
 	if s.rendered > 0 {
 		fmt.Fprint(s.out, "\r")
-		if s.rendered > 1 {
-			fmt.Fprintf(s.out, "\x1B[%dB", s.rendered-1)
+		if remaining := s.rendered - 1 - s.cursorRow; remaining > 0 {
+			fmt.Fprintf(s.out, "\x1B[%dB", remaining)
 		}
 		fmt.Fprintln(s.out)
 	}
