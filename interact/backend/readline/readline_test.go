@@ -5,12 +5,14 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/gookit/cliui/interact/backend"
+	"github.com/gookit/cliui/interact/ui"
 	"github.com/gookit/color"
 	"github.com/gookit/goutil/x/assert"
 )
@@ -82,6 +84,39 @@ func TestSession_CloseAfterShrinkingView(t *testing.T) {
 	buf.Reset()
 	is.NoErr(s.Close())
 	is.Eq("\r\n", buf.String())
+}
+
+type fixedSessionBackend struct{ session backend.Session }
+
+func (b fixedSessionBackend) NewSession(io.Reader, io.Writer) (backend.Session, error) {
+	return b.session, nil
+}
+
+func TestSession_FilterSelectThenClose(t *testing.T) {
+	is := assert.New(t)
+	out := new(bytes.Buffer)
+	session := &Session{in: bufio.NewReader(strings.NewReader("1\r")), out: out}
+	items := make([]ui.Item, 12)
+	for i := range items {
+		items[i] = ui.Item{Key: string(rune('a' + i)), Label: "other asset"}
+	}
+	items[0].Label = "asset 1"
+
+	selectUI := ui.NewSelect("Choose asset", items)
+	selectUI.DefaultKey = "a"
+	selectUI.Filterable = true
+	selectUI.PageSize = 12
+	result, err := selectUI.RunWithIO(context.Background(), fixedSessionBackend{session}, nil, out)
+	is.NoErr(err)
+	if result == nil {
+		t.Fatal("expected a selected item")
+	}
+	is.Eq("a", result.Key)
+	// 17 rows initially, then 6 after filtering; the 11 old rows are cleared.
+	is.Contains(out.String(), "\x1B[11A\r")
+	is.Eq(34, strings.Count(out.String(), "\x1B[2K"))
+	out.WriteString("NEXT")
+	is.True(strings.HasSuffix(out.String(), "\r\n\x1B[?25hNEXT"))
 }
 
 func TestSession_RenderTogglesCursorVisibility(t *testing.T) {
