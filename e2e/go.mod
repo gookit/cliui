@@ -18,5 +18,3 @@ require (
 )
 
 replace github.com/gookit/cliui => ..
-
-replace github.com/gookit/gopty => ../../../gookit/gopty
